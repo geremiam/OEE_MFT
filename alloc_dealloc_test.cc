@@ -114,6 +114,51 @@ void Alloc2D_f_TEST()
     Dealloc2D(A);
 }
 
+void Alloc2D_z_TEST()
+{
+    /* Unit test for the routine Alloc2d_z: the indexing is checked for a 2*2
+       case. */
+    
+    const int NumRows = 2;
+    const int NumCols = 8;
+    std::complex<double>**  A = Alloc2D_z(NumRows, NumCols);
+    // Values are assigned to the array associated to the first element.
+    for (int i=0; i<NumRows*NumCols; ++i) A[0][i] = {(double)(i), -0.5*(double)(i)};
+    
+    // Indexing check:
+    for (int i=0; i<NumRows; ++i)
+    {
+        for (int j=0; j<NumCols; ++j)
+            std::cout << A[i][j] << " ";
+        std::cout << std::endl;
+    }
+    
+    // Memory deallocation
+    Dealloc2D(A);
+}
+
+void Alloc2D_c_TEST()
+{
+    /* Unit test for the routine Alloc2d_z: the indexing is checked for a 2*2
+       case. */
+    
+    const int NumRows = 2;
+    const int NumCols = 8;
+    std::complex<float>**  A = Alloc2D_c(NumRows, NumCols);
+    // Values are assigned to the array associated to the first element.
+    for (int i=0; i<NumRows*NumCols; ++i) A[0][i] = {(float)(i), -0.5f*(float)(i)};
+    
+    // Indexing check:
+    for (int i=0; i<NumRows; ++i)
+    {
+        for (int j=0; j<NumCols; ++j)
+            std::cout << A[i][j] << " ";
+        std::cout << std::endl;
+    }
+    
+    // Memory deallocation
+    Dealloc2D(A);
+}
 
 int main()
 {
@@ -124,6 +169,10 @@ int main()
     Alloc2D_d_TEST(); std::cout << "_-*-_-*-_-*-_-*-_-*-_" << std::endl;
     
     Alloc2D_f_TEST(); std::cout << "_-*-_-*-_-*-_-*-_-*-_" << std::endl;
+    
+    Alloc2D_z_TEST(); std::cout << "_-*-_-*-_-*-_-*-_-*-_" << std::endl;
+    
+    Alloc2D_c_TEST(); std::cout << "_-*-_-*-_-*-_-*-_-*-_" << std::endl;
     
     return 0;
 }

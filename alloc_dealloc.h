@@ -20,5 +20,8 @@ void Dealloc2D(float const *const *const Array);
 std::complex<double>** Alloc2D_z(const int NumRows, const int NumCols);
 void Dealloc2D(std::complex<double> const *const *const Array);
 
+std::complex<float>** Alloc2D_c(const int NumRows, const int NumCols);
+void Dealloc2D(std::complex<float> const *const *const Array);
+
 
 #endif

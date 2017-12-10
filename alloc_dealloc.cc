@@ -155,3 +155,24 @@ void Dealloc2D(std::complex<double> const *const *const Array)
     delete [] Array[0];
     delete [] Array;
 }
+
+std::complex<float>** Alloc2D_c(const int NumRows, const int NumCols)
+{
+    /* Allocates memory contiguously in row-major layout for a 2d array of size NumRows*NumCols. */
+    std::complex<float>** Array = new std::complex<float>* [NumRows];
+    
+    // Memory for the entire array is reserved at the first element.
+    Array[0] = new std::complex<float> [NumRows*NumCols];
+    // The pointers for the subsequent elements of Array are assigned to the appropriate location.
+    for (int i=1; i<NumRows; ++i) Array[i] = &Array[0][i*NumCols];
+    
+    // Two-dimensional array is returned.
+    return Array;
+}
+void Dealloc2D(std::complex<float> const *const *const Array)
+{
+    /* Deallocates memory for a contiguous 1d grid of arrays (i.e. a 2d array) of type 
+       "double". Memory is released in the order opposite to its allocation. */
+    delete [] Array[0];
+    delete [] Array;
+}

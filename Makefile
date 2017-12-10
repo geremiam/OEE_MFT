@@ -8,18 +8,25 @@ INC_FLAGS=# -I${LAPACKE_INC} -I${NETCDF_INC}
 # Compiler flags (add -fopenmp to compilation and linking for OpenMP)
 CXXFLAGS=-std=c++11 -O2 $(INC_FLAGS)
 # Linker flags (add -fopenmp to compilation and linking for OpenMP)
-LD_FLAGS=-L${LAPACKE_LIB} -L${NETCDF_LIB}
+LD_FLAGS=#-L${LAPACKE_LIB} -L${NETCDF_LIB}
 # Flags for linking with libraries
-LD_LIBS=-llapacke -lnetcdf
+LD_LIBS=#-llapacke -lnetcdf
 # List of object files to be linked together
-OBJECTS= math_routines.o alloc_dealloc.o init_routines.o
+OBJECTS= math_routines.o alloc_dealloc.o init_routines.o driver.o
 HEADERS= math_routines.h alloc_dealloc.h init_routines.h
 
 
-## all: Default target
+## all: Default target; builds the final executable
 .PHONY: all
-all: 
+all: driver
 
+# Linking of the object files into the final executable. Depends on all .o files.
+driver: $(OBJECTS)
+	$(CXX) $(LD_FLAGS) $(LD_LIBS) $(OBJECTS) -o driver
+
+# Compilation of the driver.cc source code into the driver.o object file.
+driver.o: driver.cc $(HEADERS)
+	$(CXX) $(CXXFLAGS) -c driver.cc -o driver.o
 
 # #######################################################################################
 
@@ -105,10 +112,10 @@ ut_math_routines_clean:
 
 # #######################################################################################
 
-## clean: remove object files and executable files (except unit test files)
+## clean: remove object files and executable files (other than unit test files)
 .PHONY: clean
 clean: 
-	rm -f $(OBJECTS)
+	rm -f $(OBJECTS) driver
 
 ## ut_clean: Run clean rules for all unit tests
 .PHONY: ut_clean
