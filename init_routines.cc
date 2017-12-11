@@ -5,7 +5,7 @@
 #include "init_routines.h" // Include module's header for consistency check
 
 
-double InitArray(const double xMin, const double xMax, const int NumPts, double* Array, 
+double LinInitArray(const double xMin, const double xMax, const int NumPts, double* Array, 
                  const bool endpoint)
 {
     // Assigns an equally spaced, NumPts-point grid, from xMin to xMax, to Array.
@@ -21,7 +21,7 @@ double InitArray(const double xMin, const double xMax, const int NumPts, double*
     return dx;
 }
 
-float InitArray(const float xMin, const float xMax, const int NumPts, float* Array, 
+float LinInitArray(const float xMin, const float xMax, const int NumPts, float* Array, 
                 const bool endpoint)
 {
     // Assigns an equally spaced, NumPts-point grid, from xMin to xMax, to Array.
@@ -35,4 +35,18 @@ float InitArray(const float xMin, const float xMax, const int NumPts, float* Arr
     for (int i=0; i<NumPts; ++i) Array[i] = xMin + i*dx;
     
     return dx;
+}
+
+void ZeroInitArray(const int NumPts, double* Array)
+{
+    // Initializes all values in the array to zero.
+    for (int i=0; i<NumPts; ++i)
+        Array[i] = 0.;
+}
+
+void ZeroInitArray(const int NumPts, float* Array)
+{
+    // Initializes all values in the array to zero.
+    for (int i=0; i<NumPts; ++i)
+        Array[i] = 0.;
 }

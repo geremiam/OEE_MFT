@@ -3,14 +3,29 @@
 #include <iostream>
 #include "init_routines.h"
 
-int InitArray_TEST()
+int LinInitArray_TEST()
 {
     const int NumPts = 20;
     double Array [NumPts] = {0.};
     const double Bounds [2] = {-3., 3.};
     
-    std::cout << "dx = " << InitArray(Bounds[0], Bounds[1], NumPts, Array) 
+    std::cout << "dx = " << LinInitArray(Bounds[0], Bounds[1], NumPts, Array) 
               << std::endl;
+    
+    for (int i=0; i<NumPts; ++i)
+        std::cout << "Array[" << i << "] = " << Array[i] << std::endl;
+}
+
+int ZeroInitArray_TEST()
+{
+    const int NumPts = 20;
+    double Array [NumPts];
+    
+    for (int i=0; i<NumPts; ++i)
+        std::cout << "Array[" << i << "] = " << Array[i] << std::endl;
+    std::cout << std::endl;
+    
+    ZeroInitArray(NumPts, Array);
     
     for (int i=0; i<NumPts; ++i)
         std::cout << "Array[" << i << "] = " << Array[i] << std::endl;
@@ -19,7 +34,8 @@ int InitArray_TEST()
 
 int main()
 {
-    InitArray_TEST();
+    //LinInitArray_TEST();
+    ZeroInitArray_TEST();
     
     return 0;
 }
