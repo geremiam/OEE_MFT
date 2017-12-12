@@ -6,6 +6,7 @@ applications.
 
 #include <iostream> // Input/output to command line
 #include <cmath> // Numerous math functions
+#include <algorithm> // Useful algorithms. Here, we use std::sort()
 #include "math_routines.h" // Include header file for consistency check
 
 bool nF0(double const energy)
@@ -35,4 +36,45 @@ float nF(const float beta, const float energy)
 {
     /* Fermi function. Overloaded for doubles. */
     return 1./( 1. + std::exp(beta*energy) );
+}
+
+double FermiEnerg(const int num_states, const int filled_states, 
+                  double const *const evals)
+{
+    /* Routine that finds the Fermi energy given the set of energy eigenvalues (of which 
+    there are num_states) and the number of filled sates. Remember to properly round 
+    filled_states to an integer when using. */
+    
+    // Allocate an array to hold a copy of evals
+    double *const evals_copy = new double [num_states];
+    // Copy the values
+    for (int i=0; i<num_states; ++i)
+        evals_copy[i] = evals[i];
+    
+    /* We call the sort function from the standard library. This function reorders the 
+    values in the array evals_copy in ascending order. */
+    std::sort(evals_copy, evals_copy+num_states);
+    
+    double FermiEnerg=-666; // To hold the Fermi energy
+    
+    if (filled_states<0)
+        std::cout << "ERROR: in function FermiEnerg, filled_states cannot be negative."
+                  << std::endl;
+    else if (filled_states==0)
+    {
+        std::cout << "WARNING: in function FermiEnerg, filled_states is zero."
+                  << std::endl;
+        FermiEnerg = evals_copy[0];
+    }
+    else if (filled_states>num_states)
+        std::cout << "ERROR: in function FermiEnerg, filled_states is too large."
+                  << std::endl;
+    else
+        FermiEnerg = evals_copy[filled_states-1];
+    
+    
+    // Deallocate memory for evals_copy
+    delete [] evals_copy;
+    
+    return FermiEnerg;
 }

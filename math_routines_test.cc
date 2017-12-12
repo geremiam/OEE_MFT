@@ -34,13 +34,26 @@ void test_nF()
     
 }
 
+void test_FermiEnerg()
+{
+    const int num_states = 7;
+    const double filled_states = num_states/2;
+    double const energies [num_states] = {0.9, 0.7, 0.8, 0.4, 0.5, 0.3, 0.4};
+    
+    const double FE = FermiEnerg(num_states, (int)(filled_states), energies);
+    
+    std::cout << "Fermi energy is " << FE << std::endl;
+}
+
 
 
 int main()
 {
-    test_nF0();
+    //test_nF0();
     
-    test_nF();
+    //test_nF();
+    
+    test_FermiEnerg();
     
     return 0;
 }

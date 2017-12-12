@@ -11,4 +11,7 @@ bool nF0(float  const energy);
 double nF(const double beta, const double energy);
 float  nF(const float  beta, const float  energy);
 
+double FermiEnerg(const int num_states, const int filled_states, 
+                  double const *const evals);
+
 #endif
