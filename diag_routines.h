@@ -1,5 +1,5 @@
 // diag_routines.h
-/* Description */
+/* Routines for finding eigenvalues and eigenvectors of matrices. */
 #ifndef DIAG_ROUTINES_H
 #define DIAG_ROUTINES_H
 
