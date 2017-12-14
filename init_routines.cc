@@ -37,14 +37,14 @@ float LinInitArray(const float xMin, const float xMax, const int NumPts, float* 
     return dx;
 }
 
-void ValInitArray(const int NumPts, double* Array, const double Value)
+void ValInitArray(const int NumPts, double*const Array, const double Value)
 {
     // Initializes all values in the array to a single value (zero by default).
     for (int i=0; i<NumPts; ++i)
         Array[i] = Value;
 }
 
-void ValInitArray(const int NumPts, float* Array, const float Value)
+void ValInitArray(const int NumPts, float*const Array, const float Value)
 {
     // Initializes all values in the array to a single value (zero by default).
     for (int i=0; i<NumPts; ++i)
