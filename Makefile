@@ -2,7 +2,7 @@
 # Automates the compilation and building of the MFT solver
 
 # Compiler name
-CXX=g++-7
+CXX=clang++#g++-7
 # Flags for including in path search
 INC_FLAGS=-I${LAPACKE_INC}# -I${NETCDF_INC}
 # Compiler flags (add -fopenmp to compilation and linking for OpenMP)
@@ -13,8 +13,8 @@ LD_FLAGS=-L${LAPACKE_LIB}# -L${NETCDF_LIB}
 LD_LIBS=-llapacke# -lnetcdf
 HAM=ham1
 # List of object files to be linked together
-OBJECTS= $(HAM).o math_routines.o alloc_dealloc.o init_routines.o diag_routines.o driver.o
-HEADERS= $(HAM).h math_routines.h alloc_dealloc.h init_routines.h diag_routines.h
+OBJECTS= $(HAM).o math_routines.o alloc_dealloc.o init_routines.o diag_routines.o kspace.o driver.o
+HEADERS= $(HAM).h math_routines.h alloc_dealloc.h init_routines.h diag_routines.h kspace.h
 
 
 ## all: Default target; builds the final executable
@@ -34,7 +34,7 @@ driver.o: driver.cc $(HEADERS)
 
 # Creation of the ham1.o object file, which depends on the module's header file and its 
 # source file
-ham1.o: ham1.cc ham1.h
+ham1.o: ham1.cc ham1.h math_routines.h
 	$(CXX) $(CXXFLAGS) -c ham1.cc -o ham1.o
 
 ## ut_ham1: Runs the testing suite for the module ham1
@@ -171,6 +171,31 @@ ut_diag_routines_clean:
 	rm -f diag_routines_test.o diag_routines.o diag_routines_test
 
 # #######################################################################################
+# MODULE KSPACE
+
+# kspace.o object file depends on header file, source file, and all included header files
+kspace.o: kspace.cc kspace.h alloc_dealloc.h init_routines.h
+	$(CXX) $(CXXFLAGS) -c kspace.cc -o kspace.o
+
+## ut_kspace: Runs the testing suite for the module kspace
+.PHONY: ut_kspace
+ut_kspace: kspace_test # Runs the testing suite's executable
+	./kspace_test
+
+# Testing suite executable depends on kspace_test.o, kspace.o, and the other modules used 
+# in the source code.
+kspace_test: kspace_test.o kspace.o alloc_dealloc.o init_routines.o
+	$(CXX) kspace_test.o kspace.o alloc_dealloc.o init_routines.o -o kspace_test
+
+# kspace_test.o object file depends on source file and kspace.h header
+kspace_test.o: kspace_test.cc kspace.h
+	$(CXX) $(CXXFLAGS) -c kspace_test.cc -o kspace_test.o
+
+# Deletion of the object files and executable files pertaining to this unit test.
+.PHONY: ut_kspace_clean
+ut_kspace_clean:
+	rm -f alloc_dealloc.o init_routines.o kspace_test.o kspace.o kspace_test
+# #######################################################################################
 
 ## clean: remove object files and executable files (other than unit test files)
 .PHONY: clean
@@ -183,7 +208,8 @@ ut_clean: ut_ham1_clean \
           ut_math_routines_clean \
           ut_alloc_dealloc_clean \
           ut_init_routines_clean \
-          ut_diag_routines_clean
+          ut_diag_routines_clean \
+          ut_kspace_clean
 
 ## help: Show targets and their descriptions
 .PHONY: help
