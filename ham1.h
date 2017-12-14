@@ -2,16 +2,21 @@
 #ifndef HAM1_H
 #define HAM1_H
 
-struct params_t
+class params_t
 {
-    int kx_pts=0;
-    const double* kx_bounds=NULL;
-    int ky_pts=0;
-    const double* ky_bounds=NULL;
+private:
+public:
+    // Members (pointers in particular) are initialized in the constructor
+    const int kx_pts;
+    const double*const kx_bounds;
+    const int ky_pts;
+    const double*const ky_bounds;
     
-    int bands_num = 0;
-    int ham_array_rows = ham_array_rows=0;
-    int ham_array_cols = ham_array_cols=0;
+    const int bands_num;
+    const int ham_array_rows;
+    const int ham_array_cols;
+    
+    params_t(); // Constructor declaration
 };
 
 void Set_params(params_t& params);

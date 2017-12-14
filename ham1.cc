@@ -15,26 +15,25 @@ const double kx_bounds [2] = {-pi/a, pi/a};
 const int ky_pts = 100;
 const double ky_bounds [2] = {-pi/a, pi/a};
 
+const int bands_num = 2; // The number of bands, i.e. the order of the matrix for each k
+const int ham_array_rows = bands_num; // Same as matrix order for full storage
+const int ham_array_cols = bands_num; // Same as matrix order for full storage
+
 /* TEMPORARY: Parameters for the Hamiltonian. We will have to figure out how to change 
 these in order to do a parameter study. */
 const double rho = 1.; // Average electron density
 const double U = 0.1;
 
 
-const int bands_num = 2; // The number of bands, i.e. the order of the matrix for each k
-const int ham_array_rows = bands_num; // Same as matrix order for full storage
-const int ham_array_cols = bands_num; // Same as matrix order for full storage
-
-void Set_params(params_t& params)
+// Implementation of constructor for class params_t
+/* Since the members are constant, we must use initialization lists. We avoid name 
+ambiguity by using the scope resolution operator with global consts.*/
+params_t::params_t()
+    :kx_pts(::kx_pts), kx_bounds(::kx_bounds), ky_pts(::ky_pts), ky_bounds(::ky_bounds),
+    bands_num(::bands_num), 
+    ham_array_rows(::ham_array_rows), ham_array_cols(::ham_array_cols)
 {
-    params.kx_pts = kx_pts;
-    params.kx_bounds = kx_bounds;
-    params.ky_pts = ky_pts;
-    params.ky_bounds = ky_bounds;
-    
-    params.bands_num = bands_num;
-    params.ham_array_rows = ham_array_rows;
-    params.ham_array_cols = ham_array_cols;
+    std::cout << "Instance of params_t declared and constructed." << std::endl;
 }
 
 double Dispersion(const double kx, const double ky)
