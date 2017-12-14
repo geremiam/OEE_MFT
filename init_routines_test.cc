@@ -3,7 +3,7 @@
 #include <iostream>
 #include "init_routines.h"
 
-int LinInitArray_TEST()
+void LinInitArray_TEST()
 {
     const int NumPts = 20;
     double Array [NumPts] = {0.};
@@ -16,7 +16,7 @@ int LinInitArray_TEST()
         std::cout << "Array[" << i << "] = " << Array[i] << std::endl;
 }
 
-int ZeroInitArray_TEST()
+void ValInitArray_TEST()
 {
     const int NumPts = 20;
     double Array [NumPts];
@@ -25,7 +25,7 @@ int ZeroInitArray_TEST()
         std::cout << "Array[" << i << "] = " << Array[i] << std::endl;
     std::cout << std::endl;
     
-    ZeroInitArray(NumPts, Array);
+    ValInitArray(NumPts, Array, 1.);
     
     for (int i=0; i<NumPts; ++i)
         std::cout << "Array[" << i << "] = " << Array[i] << std::endl;
@@ -35,7 +35,7 @@ int ZeroInitArray_TEST()
 int main()
 {
     //LinInitArray_TEST();
-    ZeroInitArray_TEST();
+    ValInitArray_TEST();
     
     return 0;
 }

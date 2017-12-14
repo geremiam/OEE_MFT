@@ -8,7 +8,7 @@ double LinInitArray(const double xMin, const double xMax, const int NumPts, doub
 float  LinInitArray(const float  xMin, const float  xMax, const int NumPts, float*  Array, 
                  const bool endpoint=false);
 
-void ZeroInitArray(const int NumPts, double* Array);
-void ZeroInitArray(const int NumPts, float*  Array);
+void ValInitArray(const int NumPts, double* Array, const double Value=0.);
+void ValInitArray(const int NumPts, float*  Array, const float  Value=0.f);
 
 #endif

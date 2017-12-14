@@ -19,10 +19,11 @@ kspace_t::kspace_t(const int kx_pts_, const double*const kx_bounds_,
 {
     std::cout << "kspace_t instance created." << std::endl;
     // The momentum grids are initialized
-    LinInitArray(kx_bounds[0], kx_bounds[1], kx_pts, kx_grid);
-    LinInitArray(ky_bounds[0], ky_bounds[1], ky_pts, ky_grid);
+    const bool endpoint = false; // Should not include end because k space is periodic
+    LinInitArray(kx_bounds[0], kx_bounds[1], kx_pts, kx_grid, endpoint);
+    LinInitArray(ky_bounds[0], ky_bounds[1], ky_pts, ky_grid, endpoint);
     // The energies grid is initialized to zero
-    ZeroInitArray(kx_pts*ky_pts*bands_num, energies[0][0]);
+    ValInitArray(kx_pts*ky_pts*bands_num, energies[0][0], 0.);
 }
 
 // Destructor implementation
