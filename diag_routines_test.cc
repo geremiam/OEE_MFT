@@ -14,6 +14,7 @@ void test_simple_zheev()
                                            {3,4},   {5,6},    {0,0},   {0,0},
                                            {7,8},   {9,10},   {11,12}, {0,0},
                                            {13,14}, {15, 16}, {17,18}, {19,20}};
+    std::complex<double> z [order*order];
     
     std::cout << "a =\n";
     PrintMatrix(order, a);
@@ -21,13 +22,16 @@ void test_simple_zheev()
     double w [order]={0.};
     
     const bool OutputEvecs = true;
-    simple_zheev(order, a, w, OutputEvecs);
+    simple_zheev(order, a, w, OutputEvecs, z);
     
     std::cout << "\nw = ";
     PrintVector(order, w);
     
     std::cout << "\na =\n";
     PrintMatrix(order, a);
+    
+    std::cout << "\nz =\n";
+    PrintMatrix(order, z);
 }
 
 int main()

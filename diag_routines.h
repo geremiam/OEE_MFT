@@ -4,6 +4,6 @@
 #define DIAG_ROUTINES_H
 
 int simple_zheev(const int MatOrder, std::complex<double>*const a, double*const w, 
-                 const bool OutputEvecs=false);
+                 const bool OutputEvecs=false, std::complex<double>* z=NULL);
 
 #endif

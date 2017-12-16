@@ -11,7 +11,7 @@ lapacke.h. */
 void ErrorMessage(const int info);
 
 int simple_zheev(const int MatOrder, std::complex<double>*const a, double*const w, 
-                 const bool OutputEvecs)
+                 const bool OutputEvecs, std::complex<double>* z)
 {
     /*
     https://software.intel.com/en-us/mkl-developer-reference-c-heev
@@ -22,21 +22,26 @@ int simple_zheev(const int MatOrder, std::complex<double>*const a, double*const 
     MatOrder*MatOrder array), though only the lower-triangle of the matrix is referenced 
     (could have chosen the upper triangle). The evals are written to the array w (of 
     length MatOrder) in ascending order. If OutputEvecs is true, the orthonormal evecs 
-    are written to a as column vectors (in row-major storage of course), in the order 
-    corresponding to the evals in w.
+    are written to z as column vectors (in row-major storage of course), in the order 
+    corresponding to the evals in w; otherwise, z is not referenced.
     */
     /* We presume we are working with full arrays and not subarrays, so leading dimension 
     is the same as MatOrder. */
     const int lda=MatOrder;
     // Initialize info to unlikely value.
     int info=-99;
-    // Choose the job type
-    char jobz;
-    if (!OutputEvecs) jobz = 'N'; else jobz = 'V';
     // We use the lower triangle of the Hermitian matrix.
     const char uplo = 'L';
     
-    info = LAPACKE_zheev(LAPACK_ROW_MAJOR, jobz, uplo, MatOrder, a, lda, w);
+    // Choose the job type
+    if (!OutputEvecs)
+        info = LAPACKE_zheev(LAPACK_ROW_MAJOR, 'N', uplo, MatOrder, a, lda, w);
+    else
+    {
+        info = LAPACKE_zheev(LAPACK_ROW_MAJOR, 'V', uplo, MatOrder, a, lda, w);
+        for (int i=0; i<MatOrder*MatOrder; ++i)
+            z[i] = a[i];
+    }
     
     // Give error message if 'info' is nonzero.
     ErrorMessage(info);
