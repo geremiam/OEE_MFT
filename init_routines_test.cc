@@ -1,6 +1,7 @@
 // InitRoutines.cc
 
 #include <iostream>
+#include <complex>
 #include "init_routines.h"
 
 void LinInitArray_TEST()
@@ -29,6 +30,19 @@ void ValInitArray_TEST()
     
     for (int i=0; i<NumPts; ++i)
         std::cout << "Array[" << i << "] = " << Array[i] << std::endl;
+    
+    
+    std::complex<double> Array2 [NumPts];
+    
+    for (int i=0; i<NumPts; ++i)
+        std::cout << "Array2[" << i << "] = " << Array2[i] << std::endl;
+    std::cout << std::endl;
+    
+    ValInitArray(NumPts, Array2, {1.,2.});
+    
+    for (int i=0; i<NumPts; ++i)
+        std::cout << "Array2[" << i << "] = " << Array2[i] << std::endl;
+    std::cout << std::endl;
 }
 
 

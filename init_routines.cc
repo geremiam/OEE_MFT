@@ -2,6 +2,7 @@
 /* This module contains routines for initializing arrays to specific values. */
 
 #include <iostream> // For input/output to command line
+#include <complex> // For complex numbers
 #include "init_routines.h" // Include module's header for consistency check
 
 
@@ -45,6 +46,22 @@ void ValInitArray(const int NumPts, double*const Array, const double Value)
 }
 
 void ValInitArray(const int NumPts, float*const Array, const float Value)
+{
+    // Initializes all values in the array to a single value (zero by default).
+    for (int i=0; i<NumPts; ++i)
+        Array[i] = Value;
+}
+
+void ValInitArray(const int NumPts, std::complex<double>*const Array, 
+                  const std::complex<double> Value)
+{
+    // Initializes all values in the array to a single value (zero by default).
+    for (int i=0; i<NumPts; ++i)
+        Array[i] = Value;
+}
+
+void ValInitArray(const int NumPts, std::complex<float>*const Array, 
+                  const std::complex<float> Value)
 {
     // Initializes all values in the array to a single value (zero by default).
     for (int i=0; i<NumPts; ++i)
