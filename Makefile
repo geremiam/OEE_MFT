@@ -11,51 +11,32 @@ CXXFLAGS=-std=c++11 -O2
 LD_FLAGS=-L${LAPACKE_LIB}# -L${NETCDF_LIB}
 # Flags for linking with libraries
 LD_LIBS=-llapacke# -lnetcdf
-HAM=ham1
-# List of object files to be linked together
-OBJECTS= $(HAM).o math_routines.o alloc_dealloc.o init_routines.o diag_routines.o kspace.o driver.o
-HEADERS= $(HAM).h math_routines.h alloc_dealloc.h init_routines.h diag_routines.h kspace.h
+# List of object files and header files belonging to modules
+OBJECTS=alloc_dealloc.o init_routines.o math_routines.o diag_routines.o kspace.o
+HEADERS=alloc_dealloc.h init_routines.h math_routines.h diag_routines.h kspace.h
 
 
-## all: Default target; builds the final executable
+## all: Default target; empty
 .PHONY: all
-all: driver
-
-# Linking of the object files into the final executable. Depends on all .o files.
-driver: $(OBJECTS)
-	$(CXX) $(LD_FLAGS) $(LD_LIBS) $(OBJECTS) -o driver
-
-# Compilation of the driver.cc source code into the driver.o object file.
-driver.o: driver.cc $(HEADERS)
-	$(CXX) $(CXXFLAGS) $(INC_FLAGS) -c driver.cc -o driver.o
+all: help
 
 # #######################################################################################
-# MODULE HAM1
+# DRIVER_HAM1
 
-# Creation of the ham1.o object file, which depends on the module's header file and its 
-# source file
-ham1.o: ham1.cc ham1.h math_routines.h
-	$(CXX) $(CXXFLAGS) -c ham1.cc -o ham1.o
+## driver_ham1: Builds the final executable for driver_ham1
+# Linking of the object files into the final executable. Depends on all .o files.
+driver_ham1: driver_ham1.o $(OBJECTS)
+	$(CXX) $(LD_FLAGS) $(LD_LIBS) driver_ham1.o $(OBJECTS) -o driver_ham1
 
-## ut_ham1: Runs the testing suite for the module ham1
-.PHONY: ut_ham1
-ut_ham1: ham1_test # Runs the testing suite's executable
-	./ham1_test
+# Creation of the driver_ham1.o object file, which depends on the module's header file 
+# and the other headers
+driver_ham1.o: driver_ham1.cc $(HEADERS)
+	$(CXX) $(CXXFLAGS) $(INC_FLAGS) -c driver_ham1.cc -o driver_ham1.o
 
-# Linking of the ham1_test.o object and ham1.o object files to create 
-# the executable file.
-ham1_test: ham1_test.o ham1.o
-	$(CXX) ham1_test.o ham1.o -o ham1_test
-
-# Creation of the ham1_test.o object file, which depends on its source file and 
-# on the ham1.h header file.
-ham1_test.o: ham1_test.cc ham1.h
-	$(CXX) $(CXXFLAGS) -c ham1_test.cc -o ham1_test.o
-
-# Deletion of the object files and executable files pertaining to this unit test.
-.PHONY: ut_ham1_clean
-ut_ham1_clean:
-	rm -f ham1_test.o ham1.o ham1_test
+# Deletion of the object file and executable file for this driver
+.PHONY: driver_ham1_clean
+driver_ham1_clean:
+	rm -f driver_ham1.o driver_ham1
 
 # #######################################################################################
 # MODULE ALLOC_DEALLOC
@@ -199,19 +180,18 @@ ut_kspace_clean:
 
 ## clean: remove object files and executable files (other than unit test files)
 .PHONY: clean
-clean: 
-	rm -f $(OBJECTS) driver
+clean: driver_ham1_clean
+	rm -f $(OBJECTS)
 
-## ut_clean: Run clean rules for all unit tests
+## ut_clean: Runs clean rules for all unit tests
 .PHONY: ut_clean
-ut_clean: ut_ham1_clean \
-          ut_math_routines_clean \
-          ut_alloc_dealloc_clean \
+ut_clean: ut_alloc_dealloc_clean \
           ut_init_routines_clean \
+          ut_math_routines_clean \
           ut_diag_routines_clean \
           ut_kspace_clean
 
-## help: Show targets and their descriptions
+## help: Shows targets and their descriptions
 .PHONY: help
 help: Makefile
 	@sed -n 's/^##//p' $<
