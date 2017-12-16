@@ -12,18 +12,19 @@ private:
     kspace_t(const kspace_t&);
     // Private assignment operator (prohibits assignment)
     const kspace_t& operator=(const kspace_t&);
-public:
+    
     // Declare quantities relevant to the momentum space
     const int kx_pts;
     const double*const kx_bounds; // Two-component array
-    double*const kx_grid; // kx coordinate variable
-    
     const int ky_pts;
     const double*const ky_bounds; // Two-component array
-    double*const ky_grid; // ky coordinate variable
-    
     // Declare quantities relevant to the dispersion
     const int bands_num;
+public:
+    double*const kx_grid; // kx coordinate variable
+    
+    double*const ky_grid; // ky coordinate variable
+    
     double*const*const*const energies; // energy variable
     
     // Constructor declaration
