@@ -39,21 +39,21 @@ float nF(const float beta, const float energy)
 }
 
 double FermiEnerg(const int num_states, const int filled_states, 
-                  double const *const evals)
+                  double const *const energies)
 {
     /* Routine that finds the Fermi energy given the set of energy eigenvalues (of which 
     there are num_states) and the number of filled sates. Remember to properly round 
     filled_states to an integer when using. */
     
-    // Allocate an array to hold a copy of evals
-    double *const evals_copy = new double [num_states];
+    // Allocate an array to hold a copy of energies
+    double *const energies_copy = new double [num_states];
     // Copy the values
     for (int i=0; i<num_states; ++i)
-        evals_copy[i] = evals[i];
+        energies_copy[i] = energies[i];
     
     /* We call the sort function from the standard library. This function reorders the 
-    values in the array evals_copy in ascending order. */
-    std::sort(evals_copy, evals_copy+num_states);
+    values in the array energies_copy in ascending order. */
+    std::sort(energies_copy, energies_copy+num_states);
     
     double FermiEnerg=-666; // To hold the Fermi energy
     
@@ -64,17 +64,17 @@ double FermiEnerg(const int num_states, const int filled_states,
     {
         std::cout << "WARNING: in function FermiEnerg, filled_states is zero."
                   << std::endl;
-        FermiEnerg = evals_copy[0];
+        FermiEnerg = energies_copy[0];
     }
     else if (filled_states>num_states)
         std::cout << "ERROR: in function FermiEnerg, filled_states is too large."
                   << std::endl;
     else
-        FermiEnerg = evals_copy[filled_states-1];
+        FermiEnerg = energies_copy[filled_states-1];
     
     
-    // Deallocate memory for evals_copy
-    delete [] evals_copy;
+    // Deallocate memory for energies_copy
+    delete [] energies_copy;
     
     return FermiEnerg;
 }
