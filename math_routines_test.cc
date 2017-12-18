@@ -2,6 +2,7 @@
 /* Testing suite for the module math_routines. */
 
 #include <iostream> // For terminal input and output
+#include <complex>
 #include "math_routines.h" // Module's header
 
 void test_nF0()
@@ -12,8 +13,10 @@ void test_nF0()
     const double E [ArrLen] = {-1., -0.1, 0.2, 0.7};
     const float  e [ArrLen] = {-1., -0.1, 0.2, 0.7};
     
+    const std::complex<double> z = {2., 3.};
+    
     for (int i=0; i<ArrLen; ++i)
-        std::cout << "nF0(" << E[i] << ") = " << nF0(E[i]) << "\t"
+        std::cout << "nF0(" << E[i] << ") = " << z*nF0(E[i]) << "\t"
                   << "nF0(" << e[i] << ") = " << nF0(e[i]) << std::endl;
 }
 
@@ -49,11 +52,11 @@ void test_FermiEnerg()
 
 int main()
 {
-    //test_nF0();
+    test_nF0();
     
     //test_nF();
     
-    test_FermiEnerg();
+    //test_FermiEnerg();
     
     return 0;
 }

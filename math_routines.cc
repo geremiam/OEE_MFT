@@ -9,7 +9,7 @@ applications.
 #include <algorithm> // Useful algorithms. Here, we use std::sort()
 #include "math_routines.h" // Include header file for consistency check
 
-bool nF0(double const energy)
+double nF0(double const energy)
 {
     /* Zero-temperature Fermi function. Overloaded for floats. */
     bool ans = true;
@@ -18,7 +18,7 @@ bool nF0(double const energy)
     
     return ans;    
 }
-bool nF0(float const energy)
+float  nF0(float const energy)
 {
     /* Zero-temperature Fermi function. Overloaded for doubles. */
     bool ans = true;
@@ -54,6 +54,9 @@ double FermiEnerg(const int num_states, const int filled_states,
     /* We call the sort function from the standard library. This function reorders the 
     values in the array energies_copy in ascending order. */
     std::sort(energies_copy, energies_copy+num_states);
+    
+    std::cout << "Max energy, Min energy: " << energies_copy[0] << " " 
+                << energies_copy[num_states-1] << "\t";
     
     double FermiEnerg=-666; // To hold the Fermi energy
     
