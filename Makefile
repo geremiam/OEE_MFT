@@ -178,7 +178,7 @@ ut_kspace_clean:
 	rm -f alloc_dealloc.o init_routines.o kspace_test.o kspace.o kspace_test
 # #######################################################################################
 
-## clean: remove object files and executable files (other than unit test files)
+## clean: Removes module object files as well as driver object files and executables
 .PHONY: clean
 clean: driver_ham1_clean
 	rm -f $(OBJECTS)
