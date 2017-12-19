@@ -4,16 +4,16 @@
 # Compiler name
 CXX=clang++#g++-7
 # Flags for including in path search
-INC_FLAGS=-I${LAPACKE_INC}# -I${NETCDF_INC}
+INC_FLAGS=-I${LAPACKE_INC} -I${NETCDF_INC}
 # Compiler flags (add -fopenmp to compilation and linking for OpenMP)
 CXXFLAGS=-std=c++11 -O2
 # Linker flags (add -fopenmp to compilation and linking for OpenMP)
-LD_FLAGS=-L${LAPACKE_LIB}# -L${NETCDF_LIB}
+LD_FLAGS=-L${LAPACKE_LIB} -L${NETCDF_LIB}
 # Flags for linking with libraries
-LD_LIBS=-llapacke# -lnetcdf
+LD_LIBS=-llapacke -lnetcdf
 # List of object files and header files belonging to modules
-OBJECTS=alloc_dealloc.o init_routines.o math_routines.o diag_routines.o kspace.o
-HEADERS=alloc_dealloc.h init_routines.h math_routines.h diag_routines.h kspace.h
+OBJECTS=alloc_dealloc.o init_routines.o math_routines.o diag_routines.o kspace.o nc_IO.o
+HEADERS=alloc_dealloc.h init_routines.h math_routines.h diag_routines.h kspace.h nc_IO.h
 
 
 ## all: Default target; empty
@@ -177,6 +177,31 @@ kspace_test.o: kspace_test.cc kspace.h
 ut_kspace_clean:
 	rm -f alloc_dealloc.o init_routines.o kspace_test.o kspace.o kspace_test
 # #######################################################################################
+# MODULE NC_IO
+
+# nc_IO.o object file depends on header file, source file, and all included header files
+nc_IO.o: nc_IO.cc nc_IO.h
+	$(CXX) $(CXXFLAGS) -I${NETCDF_INC} -c nc_IO.cc -o nc_IO.o
+
+## ut_nc_IO: Runs the testing suite for the module nc_IO
+.PHONY: ut_nc_IO
+ut_nc_IO: nc_IO_test # Runs the testing suite's executable
+	./nc_IO_test
+
+# Testing suite executable depends on nc_IO_test.o, Z.o, and the other modules used 
+# in the source code.
+nc_IO_test: nc_IO_test.o nc_IO.o
+	$(CXX) -L${NETCDF_LIB} -lnetcdf nc_IO_test.o nc_IO.o -o nc_IO_test
+
+# nc_IO_test.o object file depends on source file and nc_IO.h header
+nc_IO_test.o: nc_IO_test.cc nc_IO.h
+	$(CXX) $(CXXFLAGS) -c nc_IO_test.cc -o nc_IO_test.o
+
+# Deletion of the object files and executable files pertaining to this unit test.
+.PHONY: ut_nc_IO_clean
+ut_nc_IO_clean:
+	rm -f nc_IO_test.o nc_IO.o nc_IO_test
+# #######################################################################################
 
 ## clean: Removes module object files as well as driver object files and executables
 .PHONY: clean
@@ -189,7 +214,8 @@ ut_clean: ut_alloc_dealloc_clean \
           ut_init_routines_clean \
           ut_math_routines_clean \
           ut_diag_routines_clean \
-          ut_kspace_clean
+          ut_kspace_clean \
+          ut_nc_IO_clean
 
 ## help: Shows targets and their descriptions
 .PHONY: help

@@ -9,6 +9,7 @@
 #include "math_routines.h" // Various custom math functions
 #include "diag_routines.h" // Routines for finding evals and evecs
 #include "kspace.h" // Defines a class for holding a band structure
+#include "nc_IO.h" // Class for creating simple NetCDF datasets
 
 const double pi = 3.141592653589793238462643383279502884197169399375105820974944592307816406286;
 
@@ -72,6 +73,7 @@ double Evaluate_M_term(const double mu, const double*const evals,
 }
 
 
+
 // ######################################################################################
 int main(int argc, char* argv[])
 {
@@ -98,6 +100,7 @@ int main(int argc, char* argv[])
     double*const M_grid = new double [U_pts]; // Allocate memory
     const double M_startval = 0.1; // Choose a starting value
     ValInitArray(U_pts, M_grid, M_startval); // Initialize to the starting value
+    
     
     
     const double tol = 1.e-15;
@@ -153,12 +156,38 @@ int main(int argc, char* argv[])
         std::cout << std::endl;
     }
     
+    
+    
     // Print out M array
     std::cout << std::endl;
     std::cout << "M_grid = " << std::endl;
     for (int h=0; h<U_pts; ++h)
         std::cout << M_grid[h] << " ";
     std::cout << std::endl;
+    
+    
+    
+    // We save to a NetCDF dataset using the class defined in nc_IO
+    const std::string GlobalAttr = "The global attributes";
+    const std::string path="data/ham1/";
+    
+    const int dims_num_ = 1;
+    const std::string dim_names [dims_num_] = {"U"};
+    const int dim_lengths [dims_num_] = {U_pts};
+    
+    const int vars_num_ = 1;
+    const std::string var_names [vars_num_] = {"M"};
+    
+    newDS_t newDS(GlobalAttr, dims_num_, dim_names, dim_lengths,
+                  vars_num_, var_names, path);
+    
+    const double*const coord_vars [dims_num_] = {U_grid};
+    newDS.WriteCoordVars(coord_vars);
+    
+    const double*const vars [vars_num_] = {M_grid};
+    newDS.WriteVars(vars);
+    
+    
     
     // Deallocate memory
     delete [] M_grid;
