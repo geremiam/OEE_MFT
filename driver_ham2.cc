@@ -1,79 +1,94 @@
-// driver_ham1.cc
-/* Defines the Hamiltonian and relevant parameters. 
-This is a mean-field Hamiltonian for ferromagnetic order on a square lattice with NN 
-hopping. The mean-field theory is solvable in other ways, so it would be good to compare 
-with this solution as an integrated test. */
+// driver_ham2.cc
+/* Mean-field theory of antiferromagnetism in the Haldane-Hubbard model. This driver 
+defines model-specific parameters and functions, and performs the iteration until self-
+consistency is achieved. The data is saved as a NetCDF dataset. */
 #include <iostream>
 #include <complex> // For complex numbers
 #include <cmath> // For many math functions
+#include <string>
 #include "init_routines.h" // Array initialization
 #include "alloc_dealloc.h" // Multidim array allocation
 #include "math_routines.h" // Various custom math functions
 #include "diag_routines.h" // Routines for finding evals and evecs
 #include "kspace.h" // Defines a class for holding a band structure
 #include "nc_IO.h" // Class for creating simple NetCDF datasets
+using std::to_string;
+//using std::cos; using std::sin; using std::conj; // Not sure if these are necessary
+using std::polar;
 
 const double pi = 3.141592653589793238462643383279502884197169399375105820974944592307816406286;
 
 /* Make sure the rectangular zone used here is equivalent to the first Brillouin zone. */
-const double a = 1.;
-const int kx_pts = 200;
-const double kx_bounds [2] = {-pi/a, pi/a};
+const double a = 1.; // We take a to be the NN distance
+const int kx_pts = 173;
+const double kx_bounds [2] = {-(2.*pi)/(3.*sqrt(3.)*a), (4.*pi)/(3.*sqrt(3.)*a)};
 const int ky_pts = 200;
-const double ky_bounds [2] = {-pi/a, pi/a};
+const double ky_bounds [2] = {-(2.*pi)/(3.*a), (2.*pi)/(3.*a)};
 
-const int bands_num = 2; // The number of bands, i.e. the order of the matrix for each k
+const int bands_num = 4; // The number of bands, i.e. the order of the matrix for each k
 const int ham_array_rows = bands_num; // Same as matrix order for full storage
 const int ham_array_cols = bands_num; // Same as matrix order for full storage
 
 /* We define the parameter space for the Hamiltonian, which will be scanned for the 
 parameter study. */
-const double t = 1.;
+const double t1 = 1.; // t1 is set to 1, and so we measure all other energies in units of t1
+const double t2 = 0.; // NNN hopping amplitude
+const double phi = 0.; // Flux phase in the Haldane model
+const double eps = 0.; // Potential difference between A and B sublattices
 const double rho = 1.; // Average electron density (FIXED)
-const int U_pts = 11;
-const double U_bounds [2] = {0., 4.};
+const int U_pts = 24; const double U_bounds [2] = {0., 7.}; // Hubbard interaction
+const double M_startval = 0.1; // Choose a starting value
 
-double Dispersion(const double kx, const double ky)
+void Dispersion(const double kx, const double ky, const double t2_, 
+                std::complex<double>*const h)
 {
-    /* Non-interacting dispersion relation, excluding the chemical potential. */
-    return -2.*t*(std::cos(a*kx)+std::cos(a*ky));
+    /* Assigns to h the values of the momentum-dependant 2*2 Haldane Hamiltonian. */
+    h[0] = +eps - 2.*t2_*( 2.*cos(sqrt(3.)/2.*a*kx-phi)*cos(3./2.*a*ky) + cos(sqrt(3.)*a*kx+phi) );
+    h[2] = -t1*( polar(1.0,a*ky) + polar(1.0,-a*ky/2.)*2.*cos(sqrt(3.)/2.*a*kx) );
+    h[3] = conj(h[2]);
+    h[4] = -eps - 2.*t2_*( 2.*cos(sqrt(3.)/2.*a*kx+phi)*cos(3./2.*a*ky) + cos(sqrt(3.)*a*kx-phi) );
 }
 
-void Evaluate_ham(const double kx, const double ky, const double U, const double rho, 
-                  const double M, std::complex<double>*const*const ham_array)
+void Evaluate_ham(const double kx, const double ky, const double t2_, 
+                  const double rho_, const double U_, 
+                  const double M_, std::complex<double>*const*const H)
 {
-    /* Given the parameters kx, ky, and M, calculate the k-space Hamiltonian and assign 
-    it to ham_array in full storage layout. */
-    const double epsilon = Dispersion(kx, ky);
+    /* Given the parameters kx, ky, and M, calculate the 4*4 k-space Hamiltonian and 
+    assign it to ham_array in full storage layout. */
+    // We calculate the kinetic energy part of the Hamiltonian
+    std::complex<double> h [4] = {0.,0.};
+    Dispersion(kx, ky, t2_, h);
     
-    ham_array[0][0] = epsilon + U*rho/2.;
-    ham_array[0][1] = - U*M;
-    ham_array[1][0] = - U*M;
-    ham_array[1][1] = epsilon + U*rho/2.;
+    H[0][0] = h[0]+U_*rho_/2.; H[0][1] = h[1];        H[0][2] = -U_*M_; H[0][3] = 0.;
+    H[1][0] = h[2]; H[1][1] = h[3]+U_*rho_/2.;        H[1][2] = 0.;     H[1][3] = +U_*M_;
+    
+    H[2][0] = -U_*M_; H[2][1] = 0.;            H[2][2] = h[0]+U_*rho_/2.; H[2][3] = h[1];
+    H[3][0] = 0.;     H[3][1] = +U_*M_;        H[3][2] = h[2]; H[3][3] = h[3]+U_*rho_/2.;
 }
 
-// Evaluates the contribution to the OP from a single k (see notes)
 double Evaluate_M_term(const double mu, const double*const evals, 
                        const std::complex<double>*const*const evecs)
 {
-    // Not good to implement matrix mult. by hand... we will do it for simplicity
-    const double sigma1 [bands_num][bands_num] = {{0., 1.}, 
-                                                  {1., 0.}};
+    // Evaluates the contribution to the OP from a single k (see notes)
+    // Not good to implement matrix mult. by hand... but we will for simplicity
+    const double A [bands_num][bands_num] = {{0., 0., +1., 0.}, 
+                                             {0., 0., 0., -1.},
+                                             {+1., 0., 0., 0.},
+                                             {0., -1., 0., 0.}};
     // Calculate the trace (see notes)
     std::complex<double> accumulator = {0.,0.};
     for (int a=0; a<bands_num; ++a)
         for (int b=0; b<bands_num; ++b)
             for (int c=0; c<bands_num; ++c)
-                accumulator += std::conj(evecs[b][a]) * sigma1[b][c] * evecs[c][a] * nF0(evals[a] - mu);
+                accumulator += conj(evecs[b][a])*A[b][c]*evecs[c][a]*nF0(evals[a]-mu);
     
     // Test for zero imaginary part
-    const double imag_part = std::imag(accumulator/(2.*kx_pts*ky_pts));
+    const double imag_part = std::imag(accumulator/(4.*kx_pts*ky_pts));
     if (imag_part>1.e-15)
         std::cout << "WARNING: M has nonzero imaginary part: " << imag_part << std::endl;
     
-    return std::real(accumulator/(2.*kx_pts*ky_pts));
+    return std::real(accumulator/(4.*kx_pts*ky_pts));
 }
-
 
 
 // ######################################################################################
@@ -95,17 +110,12 @@ int main(int argc, char* argv[])
     const bool endpoint = true; // Include endpoint (not an important choice)
     LinInitArray(U_bounds[0], U_bounds[1], U_pts, U_grid, endpoint); // Initialize
     
-    // TEMPORARY: for testing, take a single U value
-    //const double U = 0.6;
-    
     // Define the order parameter array, which spans the parameter space
     double*const M_grid = new double [U_pts]; // Allocate memory
-    const double M_startval = 0.1; // Choose a starting value
     ValInitArray(U_pts, M_grid, M_startval); // Initialize to the starting value
     
-    
-    
-    const double tol = 1.e-15;
+    // Choose a tolerance for the equality of M and Mprime and print it.
+    const double tol = 1.e-6;
     std::cout << "tol = " << std::scientific << tol << std::endl;
     
     for (int h=0; h<U_pts; ++h) // Loop over values of U
@@ -123,15 +133,16 @@ int main(int argc, char* argv[])
             
             // Given the parameters, diagonalize the Hamiltonian at each grid point
             for (int i=0; i<kx_pts; ++i)
-                for (int j=0; j<ky_pts; ++j)
-                    {
-                        Evaluate_ham(kspace.kx_grid[i], kspace.ky_grid[j], U_grid[h], rho, M, ham_array);
-                        simple_zheev(bands_num, &(ham_array[0][0]), &(kspace.energies[i][j][0]));
-                    }
+            for (int j=0; j<ky_pts; ++j)
+            {
+                Evaluate_ham(kspace.kx_grid[i], kspace.ky_grid[j], t2, rho, U_grid[h], M, 
+                             ham_array);
+                simple_zheev(bands_num, &(ham_array[0][0]), &(kspace.energies[i][j][0]));
+            }
             
             // Use all the energies to compute the chemical potential
             const int num_states = kx_pts*ky_pts*bands_num;
-            const int filled_states = kx_pts*ky_pts*rho; // Be careful about lattice basis
+            const int filled_states = 2*kx_pts*ky_pts*rho;//Be careful about lattice basis
             double mu = FermiEnerg(num_states, filled_states, &(kspace.energies[0][0][0]));
             std::cout << "mu = " << mu << "\t";
             
@@ -140,24 +151,24 @@ int main(int argc, char* argv[])
             double accumulator = 0;
             
             for (int i=0; i<kx_pts; ++i)
-                for (int j=0; j<ky_pts; ++j)
-                    {
-                        Evaluate_ham(kspace.kx_grid[i], kspace.ky_grid[j], U_grid[h], rho, M, ham_array);
-                        simple_zheev(bands_num, &(ham_array[0][0]), &(kspace.energies[i][j][0]), 
-                                     true, &(evecs[0][0]));
-                        accumulator += Evaluate_M_term(mu, 
-                                                         &(kspace.energies[i][j][0]), evecs);
-                    }
+            for (int j=0; j<ky_pts; ++j)
+            {
+                Evaluate_ham(kspace.kx_grid[i], kspace.ky_grid[j], t2, rho, U_grid[h], M, 
+                             ham_array);
+                simple_zheev(bands_num, &(ham_array[0][0]), &(kspace.energies[i][j][0]), 
+                             true, &(evecs[0][0]));
+                accumulator += Evaluate_M_term(mu, &(kspace.energies[i][j][0]), evecs);
+            }
             Mprime = accumulator;
             // Print out final M value
             std::cout << "Mprime = " << Mprime << "\t";
             std::cout << "abs(Mprime-M) = " << std::abs(Mprime-M) << std::endl;
         } while (std::abs(Mprime-M) > tol);
         
+        // We save the converged M value to the array M_grid.
         M_grid[h] = Mprime;
         std::cout << std::endl;
     }
-    
     
     
     // Print out M array
@@ -168,10 +179,17 @@ int main(int argc, char* argv[])
     std::cout << std::endl;
     
     
-    
     // We save to a NetCDF dataset using the class defined in nc_IO
-    const std::string GlobalAttr = "The global attributes";
-    const std::string path="data/ham1/";
+    const std::string GlobalAttr = "Haldane Hubbard model (ham2)"
+        ": NN distance a = "+to_string(a)+"; kx_pts = "+to_string(kx_pts)+
+        "; kx_bounds = "+to_string(kx_bounds[0])+", "+to_string(kx_bounds[1])+
+        "; ky_pts = " + to_string(ky_pts)+
+        "; ky_bounds = "+to_string(ky_bounds[0])+", "+to_string(ky_bounds[1])+
+        "; bands_num = "+to_string(bands_num)+"; t1 = "+to_string(t1)+
+        "; phi = "+to_string(phi)+"; eps = "+to_string(eps)+"; rho = "+to_string(rho)+
+        "; M_startval = "+to_string(M_startval);
+        
+    const std::string path="data/ham2/";
     
     const int dims_num_ = 1;
     const std::string dim_names [dims_num_] = {"U"};
@@ -188,7 +206,6 @@ int main(int argc, char* argv[])
     
     const double*const vars [vars_num_] = {M_grid};
     newDS.WriteVars(vars);
-    
     
     
     // Deallocate memory

@@ -39,6 +39,23 @@ driver_ham1_clean:
 	rm -f driver_ham1.o driver_ham1
 
 # #######################################################################################
+# DRIVER_HAM2
+
+## driver_ham2: Builds the final executable for driver_ham2
+# Linking of the object files into the final executable. Depends on all .o files.
+driver_ham2: driver_ham2.o $(OBJECTS)
+	$(CXX) $(LD_FLAGS) $(LD_LIBS) driver_ham2.o $(OBJECTS) -o driver_ham2
+
+# Creation of the driver_ham2.o object file, which depends on the header files
+driver_ham2.o: driver_ham2.cc $(HEADERS)
+	$(CXX) $(CXXFLAGS) $(INC_FLAGS) -c driver_ham2.cc -o driver_ham2.o
+
+# Deletion of the object file and executable file for this driver
+.PHONY: driver_ham2_clean
+driver_ham2_clean:
+	rm -f driver_ham2.o driver_ham2
+
+# #######################################################################################
 # MODULE ALLOC_DEALLOC
 
 # Creation of the alloc_dealloc.o object file, which depends on the module's header file 
@@ -205,7 +222,7 @@ ut_nc_IO_clean:
 
 ## clean: Removes module object files as well as driver object files and executables
 .PHONY: clean
-clean: driver_ham1_clean
+clean: driver_ham1_clean driver_ham2_clean
 	rm -f $(OBJECTS)
 
 ## ut_clean: Runs clean rules for all unit tests
