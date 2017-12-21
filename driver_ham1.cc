@@ -1,6 +1,8 @@
 // ham1.cc
 /* Defines the Hamiltonian (in row-major full storage layout) and relevant parameters. 
-*/
+This is a mean-field Hamiltonian for ferromagnetic order on a square lattice with NN 
+hopping. The mean-field theory is solvable in other ways, so it would be good to compare 
+with this solution as an integrated test. */
 #include <iostream>
 #include <complex> // For complex numbers
 #include <cmath> // For many math functions
