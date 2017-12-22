@@ -44,9 +44,9 @@ void Dispersion(const double kx, const double ky, const double t2_,
 {
     /* Assigns to h the values of the momentum-dependant 2*2 Haldane Hamiltonian. */
     h[0] = +eps - 2.*t2_*( 2.*cos(sqrt(3.)/2.*a*kx-phi)*cos(3./2.*a*ky) + cos(sqrt(3.)*a*kx+phi) );
-    h[2] = -t1*( polar(1.0,a*ky) + polar(1.0,-a*ky/2.)*2.*cos(sqrt(3.)/2.*a*kx) );
-    h[3] = conj(h[2]);
-    h[4] = -eps - 2.*t2_*( 2.*cos(sqrt(3.)/2.*a*kx+phi)*cos(3./2.*a*ky) + cos(sqrt(3.)*a*kx-phi) );
+    h[1] = -t1*( polar(1.0,a*ky) + polar(1.0,-a*ky/2.)*2.*cos(sqrt(3.)/2.*a*kx) );
+    h[2] = conj(h[1]);
+    h[3] = -eps - 2.*t2_*( 2.*cos(sqrt(3.)/2.*a*kx+phi)*cos(3./2.*a*ky) + cos(sqrt(3.)*a*kx-phi) );
 }
 
 void Evaluate_ham(const double kx, const double ky, const double t2_, 
