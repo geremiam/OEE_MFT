@@ -48,7 +48,7 @@ void ValInitArray_TEST()
 
 int main()
 {
-    //LinInitArray_TEST();
+    LinInitArray_TEST();
     ValInitArray_TEST();
     
     return 0;

@@ -6,34 +6,34 @@
 #include "init_routines.h" // Include module's header for consistency check
 
 
-double LinInitArray(const double xMin, const double xMax, const int NumPts, double* Array, 
-                 const bool endpoint)
+double LinInitArray(const double xMin, const double xMax, const int NumPts, 
+                    double*const Array, const bool endpoint)
 {
     // Assigns an equally spaced, NumPts-point grid, from xMin to xMax, to Array.
-    double dx=0;
+    double dx=0.;
     
     if (endpoint)
-        dx = (xMax-xMin)/(NumPts-1);
+        dx = (xMax-xMin)/double(NumPts-1);
     else
-        dx = (xMax-xMin)/(NumPts);
+        dx = (xMax-xMin)/double(NumPts);
     
-    for (int i=0; i<NumPts; ++i) Array[i] = xMin + i*dx;
+    for (int i=0; i<NumPts; ++i) Array[i] = xMin + double(i)*dx;
     
     return dx;
 }
 
-float LinInitArray(const float xMin, const float xMax, const int NumPts, float* Array, 
-                const bool endpoint)
+float LinInitArray(const float xMin, const float xMax, const int NumPts, 
+                   float*const Array, const bool endpoint)
 {
     // Assigns an equally spaced, NumPts-point grid, from xMin to xMax, to Array.
-    float dx=0;
+    float dx=0.f;
     
     if (endpoint)
-        dx = (xMax-xMin)/(NumPts-1);
+        dx = (xMax-xMin)/float(NumPts-1);
     else
-        dx = (xMax-xMin)/(NumPts);
+        dx = (xMax-xMin)/float(NumPts);
     
-    for (int i=0; i<NumPts; ++i) Array[i] = xMin + i*dx;
+    for (int i=0; i<NumPts; ++i) Array[i] = xMin + float(i)*dx;
     
     return dx;
 }

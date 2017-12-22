@@ -74,7 +74,8 @@ public:
         std::cout << "pspace_t instance created." << std::endl;
     }
     // Destructor declaration
-    ~pspace_t() {
+    ~pspace_t()
+    {
         delete [] U_grid;
         delete [] M_grid;
         std::cout << "pspace_t instance deleted." << std::endl;
@@ -142,10 +143,10 @@ double Evaluate_M_term(const double mu, const double*const evals,
                                              {0., -1., 0., 0.}};
     // Calculate the trace (see notes)
     std::complex<double> accumulator = {0.,0.};
-    for (int a=0; a<bands_num; ++a)
-        for (int b=0; b<bands_num; ++b)
-            for (int c=0; c<bands_num; ++c)
-                accumulator += conj(evecs[b][a])*A[b][c]*evecs[c][a]*nF0(evals[a]-mu);
+    for (int b=0; b<bands_num; ++b)
+        for (int c=0; c<bands_num; ++c)
+            for (int d=0; d<bands_num; ++d)
+                accumulator += conj(evecs[c][b])*A[c][d]*evecs[d][b]*nF0(evals[b]-mu);
     
     // Test for zero imaginary part
     const double imag_part = std::imag(accumulator/(4.*kx_pts*ky_pts));
@@ -200,8 +201,9 @@ int main(int argc, char* argv[])
             }
             
             // Use all the energies to compute the chemical potential
+            // Be careful about lattice basis
             const int num_states = kx_pts*ky_pts*bands_num;
-            const int filled_states = 2*kx_pts*ky_pts*rho;//Be careful about lattice basis
+            const int filled_states = int( 2. * double(kx_pts*ky_pts) * rho );
             double mu = FermiEnerg(num_states, filled_states, &(kspace.energies[0][0][0]));
             std::cout << "mu = " << mu << "\t";
             

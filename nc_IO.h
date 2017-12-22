@@ -3,8 +3,6 @@
 #ifndef NC_IO_H
 #define NC_IO_H
 
-std::string DateTime();
-
 class newDS_t
 {
 private:

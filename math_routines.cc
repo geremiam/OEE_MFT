@@ -35,7 +35,7 @@ double nF(const double beta, const double energy)
 float nF(const float beta, const float energy)
 {
     /* Fermi function. Overloaded for doubles. */
-    return 1./( 1. + std::exp(beta*energy) );
+    return 1.f/( 1.f + std::exp(beta*energy) );
 }
 
 double FermiEnerg(const int num_states, const int filled_states, 

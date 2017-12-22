@@ -61,10 +61,10 @@ double Evaluate_M_term(const double mu, const double*const evals,
                                                   {1., 0.}};
     // Calculate the trace (see notes)
     std::complex<double> accumulator = {0.,0.};
-    for (int a=0; a<bands_num; ++a)
-        for (int b=0; b<bands_num; ++b)
-            for (int c=0; c<bands_num; ++c)
-                accumulator += std::conj(evecs[b][a]) * sigma1[b][c] * evecs[c][a] * nF0(evals[a] - mu);
+    for (int b=0; b<bands_num; ++b)
+        for (int c=0; c<bands_num; ++c)
+            for (int d=0; d<bands_num; ++d)
+                accumulator += std::conj(evecs[c][b]) * sigma1[c][d] * evecs[d][b] * nF0(evals[b] - mu);
     
     // Test for zero imaginary part
     const double imag_part = std::imag(accumulator/(2.*kx_pts*ky_pts));
@@ -130,8 +130,9 @@ int main(int argc, char* argv[])
                     }
             
             // Use all the energies to compute the chemical potential
+            // Be careful about lattice basis
             const int num_states = kx_pts*ky_pts*bands_num;
-            const int filled_states = kx_pts*ky_pts*rho; // Be careful about lattice basis
+            const int filled_states = int( double(kx_pts*ky_pts) * rho );
             double mu = FermiEnerg(num_states, filled_states, &(kspace.energies[0][0][0]));
             std::cout << "mu = " << mu << "\t";
             
