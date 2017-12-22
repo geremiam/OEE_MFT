@@ -80,8 +80,27 @@ public:
         std::cout << "pspace_t instance deleted." << std::endl;
     }
     
-    void SaveData() {
+    void SaveData(const std::string GlobalAttr_, const std::string path_)
+    {
+        /* Method for saving the data of this class. This method uses the class from the 
+        module nc_IO that creates a simple NetCDF class and allows writing of variables.*/
+        /* We define parameters required to create the dataset. Don't forget to adjust 
+        these depending on the parameter space defined above. */
+        const int dims_num = 1;
+        const std::string dim_names [dims_num] = {"U"};
+        const int dim_lengths [dims_num] = {U_pts};
+        const int vars_num = 1; // Variables other than coord variables
+        const std::string var_names [vars_num] = {"M"};
         
+        // Constructor for the dataset class creates a dataset
+        newDS_t newDS(GlobalAttr_, dims_num, dim_names, dim_lengths,
+                      vars_num, var_names, path_);
+        
+        const double*const coord_vars [dims_num] = {U_grid};
+        newDS.WriteCoordVars(coord_vars); // Write the coordinate variables
+        
+        const double*const vars [vars_num] = {M_grid};
+        newDS.WriteVars(vars); // Write the variables
     }
 };
 
@@ -227,25 +246,11 @@ int main(int argc, char* argv[])
         "; ky_bounds = "+to_string(ky_bounds[0])+", "+to_string(ky_bounds[1])+
         "; bands_num = "+to_string(bands_num)+"; t1 = "+to_string(t1)+
         "; phi = "+to_string(phi)+"; eps = "+to_string(eps)+"; rho = "+to_string(rho)+
-        "; M_startval = "+to_string(M_startval);
+        "; M_startval = "+to_string(M_startval); // Define a string of metadata
         
-    const std::string path="data/ham2/";
+    const std::string path="data/ham2/"; //Choose the path for saving (include final '/')
     
-    const int dims_num_ = 1;
-    const std::string dim_names [dims_num_] = {"U"};
-    const int dim_lengths [dims_num_] = {U_pts};
-    
-    const int vars_num_ = 1;
-    const std::string var_names [vars_num_] = {"M"};
-    
-    newDS_t newDS(GlobalAttr, dims_num_, dim_names, dim_lengths,
-                  vars_num_, var_names, path);
-    
-    const double*const coord_vars [dims_num_] = {pspace.U_grid};
-    newDS.WriteCoordVars(coord_vars);
-    
-    const double*const vars [vars_num_] = {pspace.M_grid};
-    newDS.WriteVars(vars);
+    pspace.SaveData(GlobalAttr, path); // Call saving method
     
     
     // Deallocate memory
