@@ -31,7 +31,8 @@ def ColorPlot1(row, col, z, AxLabels=["", ""], clim=[]):
 
 def ColorPlot2(row, col, z, AxLabels=["", ""], clim=[]):
     """ In development... This is similar to the previous routine, but uses pcolormesh 
-    instead of imshow. """
+    instead of imshow. 
+    https://ocefpaf.github.io/python4oceanographers/blog/2015/01/05/pcolor/ """
     
     fig, axes = plt.subplots()
     
