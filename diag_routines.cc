@@ -11,7 +11,7 @@ lapacke.h. */
 void ErrorMessage(const int info);
 
 int simple_zheev(const int MatOrder, std::complex<double>*const a, double*const w, 
-                 const bool OutputEvecs, std::complex<double>* z)
+                 const bool OutputEvecs, std::complex<double>*const z)
 {
     /*
     https://software.intel.com/en-us/mkl-developer-reference-c-heev
