@@ -33,7 +33,7 @@ const int ham_array_cols = bands_num; // Same as matrix order for full storage
 /* We define the parameter space for the Hamiltonian, which will be scanned for the 
 parameter study. */
 const double t1 = 1.; // t1 is set to 1, so we measure all other energies in units of t1
-const double phi = 0.; // Flux phase in the Haldane model
+const double phi = pi/2.; // Flux phase in the Haldane model
 const double eps = 0.; // Potential difference between A and B sublattices
 const double rho = 1.; // Average electron density (FIXED)
 const int U_pts = 16; const double U_bounds [2] = {0., 15.}; // Hubbard interaction
