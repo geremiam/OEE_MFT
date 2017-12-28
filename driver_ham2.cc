@@ -25,18 +25,19 @@ const double kx_bounds [2] = {-(2.*pi)/(3.*sqrt(3.)*a), (4.*pi)/(3.*sqrt(3.)*a)}
 const int ky_pts = 200;
 const double ky_bounds [2] = {-(2.*pi)/(3.*a), (2.*pi)/(3.*a)};
 
+// Fixed parameters that depend on the Hamiltonian
 const int bands_num = 4; // The number of bands, i.e. the order of the matrix for each k
 const int ham_array_rows = bands_num; // Same as matrix order for full storage
 const int ham_array_cols = bands_num; // Same as matrix order for full storage
 
 /* We define the parameter space for the Hamiltonian, which will be scanned for the 
 parameter study. */
-const double t1 = 1.; // t1 is set to 1, and so we measure all other energies in units of t1
-const double t2 = 0.; // NNN hopping amplitude
-const double phi = 0.; // Flux phase in the Haldane model
+const double t1 = 1.; // t1 is set to 1, so we measure all other energies in units of t1
+const double phi = pi/2.; // Flux phase in the Haldane model
 const double eps = 0.; // Potential difference between A and B sublattices
 const double rho = 1.; // Average electron density (FIXED)
-const int U_pts = 24; const double U_bounds [2] = {0., 7.}; // Hubbard interaction
+const int U_pts = 16; const double U_bounds [2] = {0., 15.}; // Hubbard interaction
+const int t2_pts = 11; const double t2_bounds [2] = {0., 2.}; // NNN hopping amplitude
 const double M_startval = 0.1; // Choose a starting value
 
 // Class that defines the parameter space for this Hamiltonian
@@ -48,37 +49,45 @@ private:
     // Private assignment operator (prohibits assignment)
     const pspace_t& operator=(const pspace_t&);
     
+    // NNN hopping amplitude
+    const int t2_pts;
+    const double*const t2_bounds; // Two-component array
     // Hubbard interaction
     const int U_pts;
     const double*const U_bounds; // Two-component array
 public:
+    double*const t2_grid; // t2 coordinate variable
     double*const U_grid; // U coordinate variable
     
-    double*const M_grid; // M variable
+    double*const*const M_grid; // M variable
     
     // Constructor declaration
-    pspace_t(const int U_pts_, const double*const U_bounds_)
-        :U_pts(U_pts_), U_bounds(U_bounds_), U_grid(new double [U_pts_]),
-        M_grid(new double [U_pts_])
+    pspace_t(const int t2_pts_, const double*const t2_bounds_, 
+             const int U_pts_,  const double*const U_bounds_)
+        :t2_pts(t2_pts_), t2_bounds(t2_bounds_), t2_grid(new double [t2_pts_]),
+         U_pts(U_pts_),   U_bounds(U_bounds_),   U_grid(new double [U_pts_]),
+         M_grid(Alloc2D_d(t2_pts, U_pts)) // Important -- Note order: t2, U
     {
         /* The initialization list initialized the parameters and allocates memory for 
         the arrays. */
         
         // Coordinate variables are initialized
         const bool endpoint = true; // Include endpoint (not an important choice)
-        LinInitArray(U_bounds[0], U_bounds[1], U_pts, U_grid, endpoint);
+        LinInitArray(t2_bounds[0], t2_bounds[1], t2_pts, t2_grid, endpoint);
+        LinInitArray(U_bounds[0],  U_bounds[1],  U_pts,  U_grid,  endpoint);
         
-        // The other parameters (the order parameters) span the coordinate space
-        ValInitArray(U_pts, M_grid); // Initialize to zero (for now)
+        // The other variables (the order parameters) span the coordinate space
+        ValInitArray(t2_pts*U_pts, &(M_grid[0][0])); // Initialize to zero (for now)
         
-        std::cout << "pspace_t instance created." << std::endl;
+        std::cout << "Instance of pspace_t created." << std::endl;
     }
     // Destructor declaration
     ~pspace_t()
     {
+        delete [] t2_grid;
         delete [] U_grid;
-        delete [] M_grid;
-        std::cout << "pspace_t instance deleted." << std::endl;
+        Dealloc2D(M_grid);
+        std::cout << "Instance of pspace_t deleted." << std::endl;
     }
     
     void SaveData(const std::string GlobalAttr_, const std::string path_)
@@ -86,10 +95,11 @@ public:
         /* Method for saving the data of this class. This method uses the class from the 
         module nc_IO that creates a simple NetCDF class and allows writing of variables.*/
         /* We define parameters required to create the dataset. Don't forget to adjust 
-        these depending on the parameter space defined above. */
-        const int dims_num = 1;
-        const std::string dim_names [dims_num] = {"U"};
-        const int dim_lengths [dims_num] = {U_pts};
+        these depending on the parameter space defined above. 
+        Important: Note that the order of the variables must be kept consistent. */
+        const int dims_num = 2;
+        const std::string dim_names [dims_num] = {"t2", "U"};
+        const int dim_lengths [dims_num] = {t2_pts, U_pts};
         const int vars_num = 1; // Variables other than coord variables
         const std::string var_names [vars_num] = {"M"};
         
@@ -97,10 +107,10 @@ public:
         newDS_t newDS(GlobalAttr_, dims_num, dim_names, dim_lengths,
                       vars_num, var_names, path_);
         
-        const double*const coord_vars [dims_num] = {U_grid};
+        const double*const coord_vars [dims_num] = {t2_grid, U_grid};
         newDS.WriteCoordVars(coord_vars); // Write the coordinate variables
         
-        const double*const vars [vars_num] = {M_grid};
+        const double*const vars [vars_num] = {&(M_grid[0][0])};
         newDS.WriteVars(vars); // Write the variables
     }
 };
@@ -171,20 +181,25 @@ int main(int argc, char* argv[])
     std::complex<double>*const*const evecs = Alloc2D_z(bands_num, bands_num);
     ValInitArray(bands_num*bands_num, &(evecs[0][0])); // Initialize to zero
     
-    pspace_t pspace(U_pts, U_bounds); // Declare object of type pspace (parameter space)
-    ValInitArray(U_pts, pspace.M_grid, M_startval); // Initialize to the starting value
+    // Declare object of type pspace (parameter space)
+    pspace_t pspace(t2_pts, t2_bounds, U_pts, U_bounds);
+    // Initialize to the starting value
+    ValInitArray(t2_pts*U_pts, &(pspace.M_grid[0][0]), M_startval);
     
     // Choose a tolerance for the equality of M and Mprime and print it.
     const double tol = 1.e-6;
-    std::cout << "tol = " << std::scientific << tol << std::endl;
+    std::cout << "\ntol = " << std::scientific << tol << std::endl << std::endl;
     
-    for (int h=0; h<U_pts; ++h) // Loop over values of U
+    // Loop over values of the parameter space
+    for (int g=0; g<t2_pts; ++g)
+    for (int h=0; h<U_pts;  ++h)
     {
     
         double M =      M_startval;
         double Mprime = M_startval;
         
-        std::cout << "U = " << pspace.U_grid[h] << std::endl; // Print current value of U
+        std::cout << "t2 = " << pspace.t2_grid[g] << ", "
+                  << "U = "  << pspace.U_grid[h] << std::endl; // Print current params
         
         do // Iterate until self-consistency is achieved
         {
@@ -195,8 +210,8 @@ int main(int argc, char* argv[])
             for (int i=0; i<kx_pts; ++i)
             for (int j=0; j<ky_pts; ++j)
             {
-                Evaluate_ham(kspace.kx_grid[i], kspace.ky_grid[j], t2, rho, 
-                             pspace.U_grid[h], M, ham_array);
+                Evaluate_ham(kspace.kx_grid[i], kspace.ky_grid[j], pspace.t2_grid[g], 
+                             rho, pspace.U_grid[h], M, ham_array);
                 simple_zheev(bands_num, &(ham_array[0][0]), &(kspace.energies[i][j][0]));
             }
             
@@ -214,8 +229,8 @@ int main(int argc, char* argv[])
             for (int i=0; i<kx_pts; ++i)
             for (int j=0; j<ky_pts; ++j)
             {
-                Evaluate_ham(kspace.kx_grid[i], kspace.ky_grid[j], t2, rho, 
-                             pspace.U_grid[h], M, ham_array);
+                Evaluate_ham(kspace.kx_grid[i], kspace.ky_grid[j], pspace.t2_grid[g], 
+                             rho, pspace.U_grid[h], M, ham_array);
                 simple_zheev(bands_num, &(ham_array[0][0]), &(kspace.energies[i][j][0]), 
                              true, &(evecs[0][0]));
                 accumulator += Evaluate_M_term(mu, &(kspace.energies[i][j][0]), evecs);
@@ -227,7 +242,7 @@ int main(int argc, char* argv[])
         } while (std::abs(Mprime-M) > tol);
         
         // We save the converged M value to the array pspace.M_grid.
-        pspace.M_grid[h] = Mprime;
+        pspace.M_grid[g][h] = Mprime;
         std::cout << std::endl;
     }
     
@@ -235,8 +250,12 @@ int main(int argc, char* argv[])
     // Print out M array
     std::cout << std::endl;
     std::cout << "pspace.M_grid = " << std::endl;
-    for (int h=0; h<U_pts; ++h)
-        std::cout << pspace.M_grid[h] << " ";
+    for (int g=0; g<t2_pts; ++g)
+    {
+        for (int h=0; h<U_pts;  ++h)
+            std::cout << pspace.M_grid[g][h] << " ";
+        std::cout << std::endl;
+    }
     std::cout << std::endl;
     
     
