@@ -161,7 +161,7 @@ double Evaluate_M_term(const double mu, const double*const evals,
     // Test for zero imaginary part
     const double imag_part = std::imag(accumulator/(4.*kx_pts*ky_pts));
     if (imag_part>1.e-15)
-        std::cout << "WARNING: M has nonzero imaginary part: " << imag_part << std::endl;
+        std::cerr << "WARNING: M has nonzero imaginary part: " << imag_part << std::endl;
     
     return std::real(accumulator/(4.*kx_pts*ky_pts));
 }
@@ -170,17 +170,6 @@ double Evaluate_M_term(const double mu, const double*const evals,
 // ######################################################################################
 int main(int argc, char* argv[])
 {
-    // Declare (and construct) and instance of kspace_t
-    kspace_t kspace(kx_pts, kx_bounds, ky_pts, ky_bounds, bands_num);
-    
-    // Declare an array to hold the Hamiltonian
-    std::complex<double>*const*const ham_array = Alloc2D_z(ham_array_rows, ham_array_cols);
-    ValInitArray(ham_array_rows*ham_array_cols, &(ham_array[0][0])); // Initialize to zero
-    
-    // Declare an array to hold its evecs
-    std::complex<double>*const*const evecs = Alloc2D_z(bands_num, bands_num);
-    ValInitArray(bands_num*bands_num, &(evecs[0][0])); // Initialize to zero
-    
     // Declare object of type pspace (parameter space)
     pspace_t pspace(t2_pts, t2_bounds, U_pts, U_bounds);
     // Initialize to the starting value
@@ -191,6 +180,25 @@ int main(int argc, char* argv[])
     std::cout << "\ntol = " << std::scientific << tol << std::endl << std::endl;
     
     // Loop over values of the parameter space
+    /* PARALLELIZATION:, note that different threads do not write to the same parts of 
+    pspace. For some reason, kx_bounds and ky_bounds need to be declared as shared even 
+    though they are const. In any event, they are only read and cannot be written to. */
+    #pragma omp parallel default(none) shared(pspace,kx_bounds,ky_bounds)
+    {
+    
+    /* Declare (and construct) and instance of kspace_t. This variable is local to each 
+    thread of execution. */
+    kspace_t kspace(kx_pts, kx_bounds, ky_pts, ky_bounds, bands_num);
+    /* Declare an array to hold the Hamiltonian. This variable is local to each thread of 
+    execution. */
+    std::complex<double>*const*const ham_array = Alloc2D_z(ham_array_rows, ham_array_cols);
+    ValInitArray(ham_array_rows*ham_array_cols, &(ham_array[0][0])); // Initialize to zero
+    /* Declare an array to hold its evecs. This variable is local to each thread of 
+    execution. */
+    std::complex<double>*const*const evecs = Alloc2D_z(bands_num, bands_num);
+    ValInitArray(bands_num*bands_num, &(evecs[0][0])); // Initialize to zero
+    
+    #pragma omp for
     for (int g=0; g<t2_pts; ++g)
     for (int h=0; h<U_pts;  ++h)
     {
@@ -245,6 +253,10 @@ int main(int argc, char* argv[])
         pspace.M_grid[g][h] = Mprime;
         std::cout << std::endl;
     }
+    // Deallocate the memory
+    Dealloc2D(ham_array);
+    Dealloc2D(evecs);
+    }
     
     
     // Print out M array
@@ -273,9 +285,5 @@ int main(int argc, char* argv[])
     
     pspace.SaveData(GlobalAttr, path); // Call saving method
     
-    
-    // Deallocate memory
-    Dealloc2D(ham_array);
-    Dealloc2D(evecs);
     return 0;
 }

@@ -2,13 +2,13 @@
 # Automates the compilation and building of the MFT solver
 
 # Compiler name
-CXX=clang++#g++-7
+CXX=g++-7
 # Flags for including in path search
 INC_FLAGS=-I${LAPACKE_INC} -I${NETCDF_INC}
 # Compiler flags (add -fopenmp to compilation and linking for OpenMP)
-CXXFLAGS=-std=c++11 -O2
+CXXFLAGS=-std=c++11 -O2 -fopenmp
 # Linker flags (add -fopenmp to compilation and linking for OpenMP)
-LD_FLAGS=-L${LAPACKE_LIB} -L${NETCDF_LIB}
+LD_FLAGS=-L${LAPACKE_LIB} -L${NETCDF_LIB} -fopenmp
 # Flags for linking with libraries
 LD_LIBS=-llapacke -lnetcdf
 # List of object files and header files belonging to modules
