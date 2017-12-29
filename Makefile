@@ -1,15 +1,15 @@
 # Makefile
 # Automates the compilation and building of the MFT solver
 
-# Compiler name
-CXX=clang++#g++-7
+# Compiler name: use environment variable CXX
+#CXX=clang++#g++-7
 # Flags for including in path search
 INC_FLAGS=-I${LAPACKE_INC} -I${NETCDF_INC}
 # Compiler flags (add -fopenmp to compilation and linking for OpenMP)
 CXXFLAGS=-std=c++11 -O2
 # Linker flags (add -fopenmp to compilation and linking for OpenMP)
 LD_FLAGS=-L${LAPACKE_LIB} -L${NETCDF_LIB}
-# Flags for linking with libraries
+# Flags for linking with libraries (place after all object files)
 LD_LIBS=-llapacke -lnetcdf
 # List of object files and header files belonging to modules
 OBJECTS=alloc_dealloc.o init_routines.o math_routines.o diag_routines.o kspace.o nc_IO.o
@@ -26,7 +26,7 @@ all: help
 ## driver_ham1: Builds the final executable for driver_ham1
 # Linking of the object files into the final executable. Depends on all .o files.
 driver_ham1: driver_ham1.o $(OBJECTS)
-	$(CXX) $(LD_FLAGS) $(LD_LIBS) driver_ham1.o $(OBJECTS) -o driver_ham1
+	$(CXX) $(LD_FLAGS) driver_ham1.o $(OBJECTS) $(LD_LIBS) -o driver_ham1
 
 # Creation of the driver_ham1.o object file, which depends on the module's header file 
 # and the other headers
@@ -44,7 +44,7 @@ driver_ham1_clean:
 ## driver_ham2: Builds the final executable for driver_ham2
 # Linking of the object files into the final executable. Depends on all .o files.
 driver_ham2: driver_ham2.o $(OBJECTS)
-	$(CXX) $(LD_FLAGS) $(LD_LIBS) driver_ham2.o $(OBJECTS) -o driver_ham2
+	$(CXX) $(LD_FLAGS) driver_ham2.o $(OBJECTS) $(LD_LIBS) -o driver_ham2
 
 # Creation of the driver_ham2.o object file, which depends on the header files
 driver_ham2.o: driver_ham2.cc $(HEADERS)
@@ -156,7 +156,7 @@ ut_diag_routines: diag_routines_test # Runs the testing suite's executable
 # Testing suite executable depends on diag_routines_test.o diag_routines.o
 # Must include LAPACKE_LIB in path search and lapacke library
 diag_routines_test: diag_routines_test.o diag_routines.o
-	$(CXX) -L${LAPACKE_LIB} -llapacke diag_routines_test.o diag_routines.o \
+	$(CXX) -L${LAPACKE_LIB} diag_routines_test.o diag_routines.o -llapacke \
 	-o diag_routines_test
 
 # diag_routines_test.o object file depends on source file and diag_routines.h header file
@@ -208,7 +208,7 @@ ut_nc_IO: nc_IO_test # Runs the testing suite's executable
 # Testing suite executable depends on nc_IO_test.o, Z.o, and the other modules used 
 # in the source code.
 nc_IO_test: nc_IO_test.o nc_IO.o
-	$(CXX) -L${NETCDF_LIB} -lnetcdf nc_IO_test.o nc_IO.o -o nc_IO_test
+	$(CXX) -L${NETCDF_LIB} nc_IO_test.o nc_IO.o -lnetcdf -o nc_IO_test
 
 # nc_IO_test.o object file depends on source file and nc_IO.h header
 nc_IO_test.o: nc_IO_test.cc nc_IO.h
