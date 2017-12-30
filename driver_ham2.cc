@@ -183,7 +183,7 @@ int main(int argc, char* argv[])
     /* PARALLELIZATION:, note that different threads do not write to the same parts of 
     pspace. For some reason, kx_bounds and ky_bounds need to be declared as shared even 
     though they are const. In any event, they are only read and cannot be written to. */
-    #pragma omp parallel default(none) shared(pspace,kx_bounds,ky_bounds)
+    #pragma omp parallel default(none) shared(pspace,kx_bounds,ky_bounds, std::cout)
     {
     
     /* Declare (and construct) and instance of kspace_t. This variable is local to each 
