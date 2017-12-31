@@ -39,7 +39,7 @@ float nF(const float beta, const float energy)
 }
 
 double FermiEnerg(const int num_states, const int filled_states, 
-                  double const *const energies)
+                  double const *const energies, const bool print_bounds)
 {
     /* Routine that finds the Fermi energy given the set of energy eigenvalues (of which 
     there are num_states) and the number of filled sates. Remember to properly round 
@@ -55,8 +55,11 @@ double FermiEnerg(const int num_states, const int filled_states,
     values in the array energies_copy in ascending order. */
     std::sort(energies_copy, energies_copy+num_states);
     
+    if (print_bounds)
+    {
     std::cout << "Max energy, Min energy: " << energies_copy[0] << " " 
-                << energies_copy[num_states-1] << "\t";
+              << energies_copy[num_states-1] << "\t";
+    }
     
     double FermiEnerg=-666; // To hold the Fermi energy
     

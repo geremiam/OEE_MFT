@@ -3,6 +3,7 @@
 defines model-specific parameters and functions, and performs the iteration until self-
 consistency is achieved. The data is saved as a NetCDF dataset. */
 #include <iostream>
+#include <ostream> // For string streams
 #include <complex> // For complex numbers
 #include <cmath> // For many math functions
 #include <string>
@@ -198,7 +199,10 @@ int main(int argc, char* argv[])
     std::complex<double>*const*const evecs = Alloc2D_z(bands_num, bands_num);
     ValInitArray(bands_num*bands_num, &(evecs[0][0])); // Initialize to zero
     
-    #pragma omp for
+    /* Declare a stringstream for outputing to. */
+    std::stringstream stream;
+    
+    #pragma omp for schedule(dynamic,1)
     for (int g=0; g<t2_pts; ++g)
     for (int h=0; h<U_pts;  ++h)
     {
@@ -206,13 +210,13 @@ int main(int argc, char* argv[])
         double M =      M_startval;
         double Mprime = M_startval;
         
-        std::cout << "t2 = " << pspace.t2_grid[g] << ", "
-                  << "U = "  << pspace.U_grid[h] << std::endl; // Print current params
+        stream << "t2 = " << pspace.t2_grid[g] << ", "
+               << "U = "  << pspace.U_grid[h] << std::endl; // Print current params
         
         do // Iterate until self-consistency is achieved
         {
             M = Mprime;
-            std::cout << "M = " << M << "\t";
+            stream << "M = " << M << "\t";
             
             // Given the parameters, diagonalize the Hamiltonian at each grid point
             for (int i=0; i<kx_pts; ++i)
@@ -228,7 +232,7 @@ int main(int argc, char* argv[])
             const int num_states = kx_pts*ky_pts*bands_num;
             const int filled_states = int( 2. * double(kx_pts*ky_pts) * rho );
             double mu = FermiEnerg(num_states, filled_states, &(kspace.energies[0][0][0]));
-            std::cout << "mu = " << mu << "\t";
+            stream << "mu = " << mu << "\t";
             
             // Use all the occupation numbers and the eigenvectors to find the order parameter
             // It is probably best to diagonalize a second time to avoid storing the evecs
@@ -245,14 +249,16 @@ int main(int argc, char* argv[])
             }
             Mprime = accumulator;
             // Print out final M value
-            std::cout << "Mprime = " << Mprime << "\t";
-            std::cout << "abs(Mprime-M) = " << std::abs(Mprime-M) << std::endl;
+            stream << "Mprime = " << Mprime << "\t";
+            stream << "abs(Mprime-M) = " << std::abs(Mprime-M) << std::endl;
         } while (std::abs(Mprime-M) > tol);
         
         // We save the converged M value to the array pspace.M_grid.
         pspace.M_grid[g][h] = Mprime;
-        std::cout << std::endl;
+        stream << std::endl;
     }
+    // Each thread outputs stream to the cout
+    std::cout << stream.str();
     // Deallocate the memory
     Dealloc2D(ham_array);
     Dealloc2D(evecs);
