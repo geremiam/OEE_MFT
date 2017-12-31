@@ -25,7 +25,7 @@ def ColorPlot1(row, col, z, AxLabels=["", ""], clim=[]):
     if (clim != []): # Sets colorbar limits
         cs.set_clim(clim)
     cbar = fig.colorbar(cs, ax=axes)
-    #cbar.ax.tick_params(labelsize=FontSize)
+    cbar.set_label(AxLabels[2])
     
     plt.show()
 
