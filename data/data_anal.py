@@ -16,5 +16,5 @@ Filename = argv[1]
 dim_names, dim_lengths, coord_vars, var_names, vars = nc_IO.nc_read(Filename)
 
 
-AxLabels = [dim_names[0], dim_names[1]]
+AxLabels = [dim_names[0], dim_names[1], var_names[0]]
 plot_routines.ColorPlot1(coord_vars[0], coord_vars[1], vars[0], AxLabels=AxLabels)
