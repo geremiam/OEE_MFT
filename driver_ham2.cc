@@ -3,7 +3,6 @@
 defines model-specific parameters and functions, and performs the iteration until self-
 consistency is achieved. The data is saved as a NetCDF dataset. */
 #include <iostream>
-#include <ostream> // For string streams
 #include <complex> // For complex numbers
 #include <cmath> // For many math functions
 #include <string>
@@ -171,6 +170,8 @@ double Evaluate_M_term(const double mu, const double*const evals,
 // ######################################################################################
 int main(int argc, char* argv[])
 {
+    const bool with_output = false; // Show output for diagnostics
+    
     // Declare object of type pspace (parameter space)
     pspace_t pspace(t2_pts, t2_bounds, U_pts, U_bounds);
     // Initialize to the starting value
@@ -184,7 +185,7 @@ int main(int argc, char* argv[])
     /* PARALLELIZATION:, note that different threads do not write to the same parts of 
     pspace. For some reason, kx_bounds and ky_bounds need to be declared as shared even 
     though they are const. In any event, they are only read and cannot be written to. */
-    #pragma omp parallel default(none) shared(pspace,kx_bounds,ky_bounds, std::cout)
+    #pragma omp parallel default(none) shared(pspace,kx_bounds,ky_bounds,std::cout)
     {
     
     /* Declare (and construct) and instance of kspace_t. This variable is local to each 
@@ -199,8 +200,6 @@ int main(int argc, char* argv[])
     std::complex<double>*const*const evecs = Alloc2D_z(bands_num, bands_num);
     ValInitArray(bands_num*bands_num, &(evecs[0][0])); // Initialize to zero
     
-    /* Declare a stringstream for outputing to. */
-    std::stringstream stream;
     
     #pragma omp for schedule(dynamic,1)
     for (int g=0; g<t2_pts; ++g)
@@ -210,13 +209,14 @@ int main(int argc, char* argv[])
         double M =      M_startval;
         double Mprime = M_startval;
         
-        stream << "t2 = " << pspace.t2_grid[g] << ", "
-               << "U = "  << pspace.U_grid[h] << std::endl; // Print current params
+        if (with_output)
+            std::cout << "t2 = " << pspace.t2_grid[g] << ", "
+                      << "U = "  << pspace.U_grid[h] << std::endl; //Print current params
         
         do // Iterate until self-consistency is achieved
         {
             M = Mprime;
-            stream << "M = " << M << "\t";
+            if (with_output) std::cout << "M = " << M << "\t";
             
             // Given the parameters, diagonalize the Hamiltonian at each grid point
             for (int i=0; i<kx_pts; ++i)
@@ -232,7 +232,7 @@ int main(int argc, char* argv[])
             const int num_states = kx_pts*ky_pts*bands_num;
             const int filled_states = int( 2. * double(kx_pts*ky_pts) * rho );
             double mu = FermiEnerg(num_states, filled_states, &(kspace.energies[0][0][0]));
-            stream << "mu = " << mu << "\t";
+            if (with_output) std::cout << "mu = " << mu << "\t";
             
             // Use all the occupation numbers and the eigenvectors to find the order parameter
             // It is probably best to diagonalize a second time to avoid storing the evecs
@@ -249,16 +249,16 @@ int main(int argc, char* argv[])
             }
             Mprime = accumulator;
             // Print out final M value
-            stream << "Mprime = " << Mprime << "\t";
-            stream << "abs(Mprime-M) = " << std::abs(Mprime-M) << std::endl;
+            if (with_output)
+                std::cout << "Mprime = " << Mprime << "\t"
+                          << "abs(Mprime-M) = " << std::abs(Mprime-M) << std::endl;
         } while (std::abs(Mprime-M) > tol);
         
         // We save the converged M value to the array pspace.M_grid.
         pspace.M_grid[g][h] = Mprime;
-        stream << std::endl;
+        if (with_output) std::cout << std::endl;
     }
-    // Each thread outputs stream to the cout
-    std::cout << stream.str();
+    
     // Deallocate the memory
     Dealloc2D(ham_array);
     Dealloc2D(evecs);
@@ -266,15 +266,17 @@ int main(int argc, char* argv[])
     
     
     // Print out M array
-    std::cout << std::endl;
-    std::cout << "pspace.M_grid = " << std::endl;
-    for (int g=0; g<t2_pts; ++g)
+    if (with_output)
     {
-        for (int h=0; h<U_pts;  ++h)
-            std::cout << pspace.M_grid[g][h] << " ";
+        std::cout << std::endl << "pspace.M_grid = " << std::endl;
+        for (int g=0; g<t2_pts; ++g)
+        {
+            for (int h=0; h<U_pts;  ++h)
+                std::cout << pspace.M_grid[g][h] << " ";
+            std::cout << std::endl;
+        }
         std::cout << std::endl;
     }
-    std::cout << std::endl;
     
     
     // We save to a NetCDF dataset using the class defined in nc_IO
