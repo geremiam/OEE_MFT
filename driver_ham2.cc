@@ -260,6 +260,7 @@ int main(int argc, char* argv[])
     
     
     // We save to a NetCDF dataset using the class defined in nc_IO
+    // Define a string of metadata
     const std::string GlobalAttr = "Haldane Hubbard model (ham2)"
         ": NN distance a = "+to_string(a)+"; kx_pts = "+to_string(kx_pts)+
         "; kx_bounds = "+to_string(kx_bounds[0])+", "+to_string(kx_bounds[1])+
@@ -267,7 +268,7 @@ int main(int argc, char* argv[])
         "; ky_bounds = "+to_string(ky_bounds[0])+", "+to_string(ky_bounds[1])+
         "; bands_num = "+to_string(bands_num)+"; t1 = "+to_string(t1)+
         "; phi = "+to_string(phi)+"; eps = "+to_string(eps)+"; rho = "+to_string(rho)+
-        "; M_startval = "+to_string(M_startval); // Define a string of metadata
+        "; M_startval = "+to_string(M_startval)+"; tol = "+to_string(tol);
         
     const std::string path="data/ham2/"; //Choose the path for saving (include final '/')
     
