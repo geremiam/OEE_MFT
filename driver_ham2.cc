@@ -36,8 +36,8 @@ const double t1 = 1.; // t1 is set to 1, so we measure all other energies in uni
 const double phi = pi/2.; // Flux phase in the Haldane model
 const double eps = 0.; // Potential difference between A and B sublattices
 const double rho = 1.; // Average electron density (FIXED)
-const int U_pts = 16; const double U_bounds [2] = {0., 15.}; // Hubbard interaction
 const int t2_pts = 11; const double t2_bounds [2] = {0., 2.}; // NNN hopping amplitude
+const int U_pts = 16; const double U_bounds [2] = {0., 15.}; // Hubbard interaction
 const double M_startval = 0.1; // Choose a starting value
 
 // Class that defines the parameter space for this Hamiltonian
@@ -203,9 +203,9 @@ int main(int argc, char* argv[])
     
     #pragma omp for schedule(dynamic,1)
     for (int g=0; g<t2_pts; ++g)
-    for (int h=0; h<U_pts;  ++h)
-    {
-    
+      for (int h=0; h<U_pts;  ++h)
+      {
+        
         double M =      M_startval;
         double Mprime = M_startval;
         
@@ -220,12 +220,12 @@ int main(int argc, char* argv[])
             
             // Given the parameters, diagonalize the Hamiltonian at each grid point
             for (int i=0; i<kx_pts; ++i)
-            for (int j=0; j<ky_pts; ++j)
-            {
+              for (int j=0; j<ky_pts; ++j)
+              {
                 Evaluate_ham(kspace.kx_grid[i], kspace.ky_grid[j], pspace.t2_grid[g], 
                              rho, pspace.U_grid[h], M, ham_array);
                 simple_zheev(bands_num, &(ham_array[0][0]), &(kspace.energies[i][j][0]));
-            }
+              }
             
             // Use all the energies to compute the chemical potential
             // Be careful about lattice basis
@@ -239,14 +239,14 @@ int main(int argc, char* argv[])
             double accumulator = 0;
             
             for (int i=0; i<kx_pts; ++i)
-            for (int j=0; j<ky_pts; ++j)
-            {
+              for (int j=0; j<ky_pts; ++j)
+              {
                 Evaluate_ham(kspace.kx_grid[i], kspace.ky_grid[j], pspace.t2_grid[g], 
                              rho, pspace.U_grid[h], M, ham_array);
                 simple_zheev(bands_num, &(ham_array[0][0]), &(kspace.energies[i][j][0]), 
                              true, &(evecs[0][0]));
                 accumulator += Evaluate_M_term(mu, &(kspace.energies[i][j][0]), evecs);
-            }
+              }
             Mprime = accumulator;
             // Print out final M value
             if (with_output)
@@ -257,7 +257,7 @@ int main(int argc, char* argv[])
         // We save the converged M value to the array pspace.M_grid.
         pspace.M_grid[g][h] = Mprime;
         if (with_output) std::cout << std::endl;
-    }
+      }
     
     // Deallocate the memory
     Dealloc2D(ham_array);

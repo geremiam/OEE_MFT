@@ -31,7 +31,7 @@ newDS_t::newDS_t(const std::string GlobalAttr,
     ErrorHandler( nc_create(Filename.c_str(), NC_CLOBBER, &ncid) );
     
     // The string GlobalAttr is set as a global attribute of the dataset.
-    const size_t len = GlobalAttr.length() + 2; // Length of string (with safety buffer)
+    const size_t len = GlobalAttr.length() + 1; // Length of char array (with terminator)
     ErrorHandler( nc_put_att_text(ncid, NC_GLOBAL, "GlobalAttributes", len, 
                                   GlobalAttr.c_str()) );
     
