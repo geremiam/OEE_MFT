@@ -26,20 +26,35 @@ const double kx_bounds [2] = {-(2.*pi)/(3.*sqrt(3.)*a), (4.*pi)/(3.*sqrt(3.)*a)}
 const int ky_pts = 200;
 const double ky_bounds [2] = {-(2.*pi)/(3.*a), (2.*pi)/(3.*a)};
 
-// Fixed parameters that depend on the Hamiltonian
-const int bands_num = 4; // The number of bands, i.e. the order of the matrix for each k
+/* Size of the Hamiltonian, or equivalently number of bands (constant) */
+const int bands_num = 8; // The number of bands, i.e. the order of the matrix for each k
 const int ham_array_rows = bands_num; // Same as matrix order for full storage
 const int ham_array_cols = bands_num; // Same as matrix order for full storage
 
-/* We define the parameter space for the Hamiltonian, which will be scanned for the 
-parameter study. */
-const double t1 = 1.; // t1 is set to 1, so we measure all other energies in units of t1
-const double phi = pi/2.; // Flux phase in the Haldane model
-const double eps = 0.; // Potential difference between A and B sublattices
-const double rho = 1.; // Average electron density (FIXED)
-const int t2_pts = 11; const double t2_bounds [2] = {0., 2.}; // NNN hopping amplitude
-const int U_pts = 16; const double U_bounds [2] = {0., 15.}; // Hubbard interaction
+/* Constants entering the definition of the Hamiltonian */
+class pars_t {
+  private:
+  public:
+    // Default values of the parameters
+    double t1 = 1.; // NN hopping
+    double t2 = 0.25; // NNN hopping
+    double eps = 0.1; // Potential difference between A and B sublattices
+    double phi = pi/2.; // Flux phase in the Haldane model
+    pars_t(const double alpha_=1.) { // The energy parameters get scaled by alpha_.
+        t1 *= alpha_;
+        t2 *= alpha_;
+        eps *= alpha_;
+    }
+};// Class for holding the parameters proper to each layer
+const double tperp = 0.3; // Base value of tperp (gets scaled)
+const double L = 0.; // bias voltage between layers I and II
+const double rho = 1.; // Average (global) electron density, between 0 and 2
+/* Range and resolution of the parameter study */
+const int alpha_pts = 6; const double alpha_bounds [2] = {0., 2.}; // scaling factor
+const int U_pts = 6; const double U_bounds [2] = {0., 10.};//Hubbard interaction strength
+/* Starting values for the order parameters */
 const double M_startval = 0.1; // Choose a starting value
+const double rhoI_startval = 1. // Choose starting value
 
 // Class that defines the parameter space for this Hamiltonian
 class pspace_t
@@ -50,44 +65,49 @@ private:
     // Private assignment operator (prohibits assignment)
     const pspace_t& operator=(const pspace_t&);
     
-    // NNN hopping amplitude
-    const int t2_pts;
-    const double*const t2_bounds; // Two-component array
+    // scaling factor
+    const int alpha_pts;
+    const double*const alpha_bounds; // Two-component array
     // Hubbard interaction
     const int U_pts;
     const double*const U_bounds; // Two-component array
 public:
-    double*const t2_grid; // t2 coordinate variable
+    double*const alpha_grid; // alpha coordinate variable
     double*const U_grid; // U coordinate variable
     
     double*const*const M_grid; // M variable
+    double*const*const rhoI_grid; // rhoI variable
     
     // Constructor declaration
-    pspace_t(const int t2_pts_, const double*const t2_bounds_, 
+    pspace_t(const int alpha_pts_, const double*const alpha_bounds_, 
              const int U_pts_,  const double*const U_bounds_)
-        :t2_pts(t2_pts_), t2_bounds(t2_bounds_), t2_grid(new double [t2_pts_]),
+        :alpha_pts(alpha_pts_), alpha_bounds(alpha_bounds_), alpha_grid(new double [alpha_pts_]),
          U_pts(U_pts_),   U_bounds(U_bounds_),   U_grid(new double [U_pts_]),
-         M_grid(Alloc2D_d(t2_pts, U_pts)) // Important -- Note order: t2, U
+         M_grid(Alloc2D_d(alpha_pts_, U_pts_)), 
+         rhoI_grid(Alloc2D_d(alpha_pts_, U_pts_)) // Important -- Note order: alpha, U
     {
-        /* The initialization list initialized the parameters and allocates memory for 
+        /* The initialization list initializes the parameters and allocates memory for 
         the arrays. */
         
         // Coordinate variables are initialized
         const bool endpoint = true; // Include endpoint (not an important choice)
-        LinInitArray(t2_bounds[0], t2_bounds[1], t2_pts, t2_grid, endpoint);
+        LinInitArray(alpha_bounds[0], alpha_bounds[1], alpha_pts, alpha_grid, endpoint);
         LinInitArray(U_bounds[0],  U_bounds[1],  U_pts,  U_grid,  endpoint);
         
         // The other variables (the order parameters) span the coordinate space
-        ValInitArray(t2_pts*U_pts, &(M_grid[0][0])); // Initialize to zero (for now)
+        ValInitArray(alpha_pts*U_pts, &(M_grid[0][0]), -99.); // Init to unlikely value
+        ValInitArray(alpha_pts*U_pts, &(rhoI_grid[0][0]), -99.); // Likewise
+        
         
         std::cout << "Instance of pspace_t created." << std::endl;
     }
     // Destructor declaration
     ~pspace_t()
     {
-        delete [] t2_grid;
+        delete [] alpha_grid;
         delete [] U_grid;
         Dealloc2D(M_grid);
+        Dealloc2D(rhoI_grid);
         std::cout << "Instance of pspace_t deleted." << std::endl;
     }
     
@@ -99,31 +119,33 @@ public:
         these depending on the parameter space defined above. 
         Important: Note that the order of the variables must be kept consistent. */
         const int dims_num = 2;
-        const std::string dim_names [dims_num] = {"t2", "U"};
-        const int dim_lengths [dims_num] = {t2_pts, U_pts};
-        const int vars_num = 1; // Variables other than coord variables
-        const std::string var_names [vars_num] = {"M"};
+        const std::string dim_names [dims_num] = {"alpha", "U"};
+        const int dim_lengths [dims_num] = {alpha_pts, U_pts};
+        const int vars_num = 2; // Variables other than coord variables
+        const std::string var_names [vars_num] = {"M", "rhoI"}; // Use same order below
         
         // Constructor for the dataset class creates a dataset
         newDS_t newDS(GlobalAttr_, dims_num, dim_names, dim_lengths,
                       vars_num, var_names, path_);
         
-        const double*const coord_vars [dims_num] = {t2_grid, U_grid};
+        const double*const coord_vars [dims_num] = {alpha_grid, U_grid};
         newDS.WriteCoordVars(coord_vars); // Write the coordinate variables
         
-        const double*const vars [vars_num] = {&(M_grid[0][0])};
+        const double*const vars [vars_num] = {&(M_grid[0][0]), &(rhoI_grid[0][0])};
         newDS.WriteVars(vars); // Write the variables
     }
 };
 
-void Dispersion(const double kx, const double ky, const double t2_, 
+void Dispersion(const double kx, const double ky, const pars_t pars,
                 std::complex<double>*const h)
 {
+    double t1 = pars.t1; double t2 = pars.t2; // Define local variables for convenience
+    double eps = pars.eps; double phi = pars.phi;
     /* Assigns to h the values of the momentum-dependant 2*2 Haldane Hamiltonian. */
-    h[0] = +eps - 2.*t2_*( 2.*cos(sqrt(3.)/2.*a*kx-phi)*cos(3./2.*a*ky) + cos(sqrt(3.)*a*kx+phi) );
-    h[1] = -t1*( polar(1.0,a*ky) + polar(1.0,-a*ky/2.)*2.*cos(sqrt(3.)/2.*a*kx) );
+    h[0] = +eps - 2.*t2*( 2.*cos(sqrt(3.)/2.*a*kx-phi)*cos(3./2.*a*ky) + cos(sqrt(3.)*a*kx+phi) );
+    h[1] = -t1*( polar(1.,a*ky) + polar(1.,-a*ky/2.)*2.*cos(sqrt(3.)/2.*a*kx) );
     h[2] = conj(h[1]);
-    h[3] = -eps - 2.*t2_*( 2.*cos(sqrt(3.)/2.*a*kx+phi)*cos(3./2.*a*ky) + cos(sqrt(3.)*a*kx-phi) );
+    h[3] = -eps - 2.*t2*( 2.*cos(sqrt(3.)/2.*a*kx+phi)*cos(3./2.*a*ky) + cos(sqrt(3.)*a*kx-phi) );
 }
 
 void Evaluate_ham(const double kx, const double ky, const double t2_, 
