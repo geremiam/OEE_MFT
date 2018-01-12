@@ -54,12 +54,11 @@ const int alpha_pts = 6; const double alpha_bounds [2] = {0., 2.}; // scaling fa
 const int U_pts = 6; const double U_bounds [2] = {0., 10.};//Hubbard interaction strength
 /* Starting values for the order parameters */
 const double M_startval = 0.1; // Choose a starting value
-const double rhoI_startval = 1. // Choose starting value
+const double rhoI_startval = 1.; // Choose starting value
 
 // Class that defines the parameter space for this Hamiltonian
-class pspace_t
-{
-private:
+class pspace_t {
+  private:
     // Private copy constructor (prohibits copy creation)
     pspace_t(const pspace_t&);
     // Private assignment operator (prohibits assignment)
@@ -71,7 +70,7 @@ private:
     // Hubbard interaction
     const int U_pts;
     const double*const U_bounds; // Two-component array
-public:
+  public:
     double*const alpha_grid; // alpha coordinate variable
     double*const U_grid; // U coordinate variable
     
@@ -102,8 +101,7 @@ public:
         std::cout << "Instance of pspace_t created." << std::endl;
     }
     // Destructor declaration
-    ~pspace_t()
-    {
+    ~pspace_t() {
         delete [] alpha_grid;
         delete [] U_grid;
         Dealloc2D(M_grid);
@@ -111,8 +109,7 @@ public:
         std::cout << "Instance of pspace_t deleted." << std::endl;
     }
     
-    void SaveData(const std::string GlobalAttr_, const std::string path_)
-    {
+    void SaveData(const std::string GlobalAttr_, const std::string path_) {
         /* Method for saving the data of this class. This method uses the class from the 
         module nc_IO that creates a simple NetCDF class and allows writing of variables.*/
         /* We define parameters required to create the dataset. Don't forget to adjust 
@@ -136,50 +133,64 @@ public:
     }
 };
 
-void Dispersion(const double kx, const double ky, const pars_t pars,
+void Assign_h(const double kx, const double ky, const pars_t pars,
                 std::complex<double>*const h)
 {
     double t1 = pars.t1; double t2 = pars.t2; // Define local variables for convenience
     double eps = pars.eps; double phi = pars.phi;
-    /* Assigns to h the values of the momentum-dependant 2*2 Haldane Hamiltonian. */
+    /* Assigns to h (a 1D array in row-major layout) the values of the momentum-dependant 
+    2*2 Haldane Hamiltonian. */
     h[0] = +eps - 2.*t2*( 2.*cos(sqrt(3.)/2.*a*kx-phi)*cos(3./2.*a*ky) + cos(sqrt(3.)*a*kx+phi) );
     h[1] = -t1*( polar(1.,a*ky) + polar(1.,-a*ky/2.)*2.*cos(sqrt(3.)/2.*a*kx) );
     h[2] = conj(h[1]);
     h[3] = -eps - 2.*t2*( 2.*cos(sqrt(3.)/2.*a*kx+phi)*cos(3./2.*a*ky) + cos(sqrt(3.)*a*kx-phi) );
 }
 
-void Evaluate_ham(const double kx, const double ky, const double t2_, 
-                  const double rho_, const double U_, 
-                  const double M_, std::complex<double>*const*const H)
+void Assign_ham(const double kx, const double ky, const pars_t parsI, const pars_t parsII, 
+                const double tperp_, const double L_,  const double U_, 
+                const double rhoI_, const double M_, std::complex<double>*const*const H)
 {
-    /* Given the parameters kx, ky, and M, calculate the 4*4 k-space Hamiltonian and 
-    assign it to ham_array in full storage layout. */
-    // We calculate the kinetic energy part of the Hamiltonian
-    std::complex<double> h [4] = {0.,0.};
-    Dispersion(kx, ky, t2_, h);
+    /* Given the parameters kx, ky, and M_, calculate the 8*8 k-space Hamiltonian and 
+    assign it to H in full storage layout. The diag routine only uses the lower triangle, 
+    so we only assign that part. */
     
-    H[0][0] = h[0]+U_*rho_/2.; H[0][1] = h[1];        H[0][2] = -U_*M_; H[0][3] = 0.;
-    H[1][0] = h[2]; H[1][1] = h[3]+U_*rho_/2.;        H[1][2] = 0.;     H[1][3] = +U_*M_;
+    // We calculate the kinetic energy parts of the Hamiltonian
+    std::complex<double> hI [4] = {0.,0.};
+    Assign_h(kx, ky, parsI, hI);
+    std::complex<double> hII [4] = {0.,0.};
+    Assign_h(kx, ky, parsII, hII);
     
-    H[2][0] = -U_*M_; H[2][1] = 0.;            H[2][2] = h[0]+U_*rho_/2.; H[2][3] = h[1];
-    H[3][0] = 0.;     H[3][1] = +U_*M_;        H[3][2] = h[2]; H[3][3] = h[3]+U_*rho_/2.;
+    H[0][0]=0.; 
+    H[1][0]=0.; H[1][1]=0.; 
+    H[2][0]=0.; H[2][1]=0.; H[2][2]=0.; 
+    H[3][0]=0.; H[3][1]=0.; H[3][2]=0.; H[3][3]=0.; 
+    H[4][0]=0.; H[4][1]=0.; H[4][2]=0.; H[4][3]=0.; H[4][4]=0.; 
+    H[5][0]=0.; H[5][1]=0.; H[5][2]=0.; H[5][3]=0.; H[5][4]=0.; H[5][5]=0.; 
+    H[6][0]=0.; H[6][1]=0.; H[6][2]=0.; H[6][3]=0.; H[6][4]=0.; H[6][5]=0.; H[6][6]=0.; 
+    H[7][0]=0.; H[7][1]=0.; H[7][2]=0.; H[7][3]=0.; H[7][4]=0.; H[7][5]=0.; H[7][6]=0.; H[7][7]=0.;
+    
 }
 
-double Evaluate_M_term(const double mu, const double*const evals, 
-                       const std::complex<double>*const*const evecs)
+double Compute_M_term(const double mu, const double*const evals, 
+                      const std::complex<double>*const*const evecs)
 {
-    // Evaluates the contribution to the OP from a single k (see notes)
+    // Evaluates the contribution to M from a single k (see notes)
     // Not good to implement matrix mult. by hand... but we will for simplicity
-    const double A [bands_num][bands_num] = {{0., 0., +1., 0.}, 
-                                             {0., 0., 0., -1.},
-                                             {+1., 0., 0., 0.},
-                                             {0., -1., 0., 0.}};
+    const double C [bands_num][bands_num] = {{0., 0., +1., 0.,   0., 0., 0., 0.}, 
+                                             {0., 0., 0., -1.,   0., 0., 0., 0.},
+                                             {+1., 0., 0., 0.,   0., 0., 0., 0.},
+                                             {0., -1., 0., 0.,   0., 0., 0., 0.},
+                                             
+                                             {0., 0., 0., 0.,    0., 0., 0., 0.},
+                                             {0., 0., 0., 0.,    0., 0., 0., 0.},
+                                             {0., 0., 0., 0.,    0., 0., 0., 0.},
+                                             {0., 0., 0., 0.,    0., 0., 0., 0.}};
     // Calculate the trace (see notes)
     std::complex<double> accumulator = {0.,0.};
     for (int b=0; b<bands_num; ++b)
         for (int c=0; c<bands_num; ++c)
             for (int d=0; d<bands_num; ++d)
-                accumulator += conj(evecs[c][b])*A[c][d]*evecs[d][b]*nF0(evals[b]-mu);
+                accumulator += conj(evecs[c][b])*C[c][d]*evecs[d][b]*nF0(evals[b]-mu);
     
     // Test for zero imaginary part
     const double imag_part = std::imag(accumulator/(4.*kx_pts*ky_pts));
@@ -189,6 +200,34 @@ double Evaluate_M_term(const double mu, const double*const evals,
     return std::real(accumulator/(4.*kx_pts*ky_pts));
 }
 
+double Compute_rhoI_term(const double mu, const double*const evals, 
+                         const std::complex<double>*const*const evecs)
+{
+    // Evaluates the contribution to rhoI from a single k (see notes)
+    // Not good to implement matrix mult. by hand... but we will for simplicity
+    const double B [bands_num][bands_num] = {{1., 0., 0., 0.,    0., 0., 0., 0.}, 
+                                             {0., 1., 0., 0.,    0., 0., 0., 0.},
+                                             {0., 0., 1., 0.,    0., 0., 0., 0.},
+                                             {0., 0., 0., 1.,    0., 0., 0., 0.},
+                                             
+                                             {0., 0., 0., 0.,    0., 0., 0., 0.},
+                                             {0., 0., 0., 0.,    0., 0., 0., 0.},
+                                             {0., 0., 0., 0.,    0., 0., 0., 0.},
+                                             {0., 0., 0., 0.,    0., 0., 0., 0.}};
+    // Calculate the trace (see notes)
+    std::complex<double> accumulator = {0.,0.};
+    for (int b=0; b<bands_num; ++b)
+        for (int c=0; c<bands_num; ++c)
+            for (int d=0; d<bands_num; ++d)
+                accumulator += conj(evecs[c][b])*B[c][d]*evecs[d][b]*nF0(evals[b]-mu);
+    
+    // Test for zero imaginary part
+    const double imag_part = std::imag(accumulator/(2.*kx_pts*ky_pts));
+    if (imag_part>1.e-15)
+        std::cerr << "WARNING: rhoI has nonzero imaginary part: " << imag_part << std::endl;
+    
+    return std::real(accumulator/(2.*kx_pts*ky_pts));
+}
 
 // ######################################################################################
 int main(int argc, char* argv[])
@@ -196,9 +235,7 @@ int main(int argc, char* argv[])
     const bool with_output = false; // Show output for diagnostics
     
     // Declare object of type pspace (parameter space)
-    pspace_t pspace(t2_pts, t2_bounds, U_pts, U_bounds);
-    // Initialize to the starting value
-    ValInitArray(t2_pts*U_pts, &(pspace.M_grid[0][0]), M_startval);
+    pspace_t pspace(alpha_pts, alpha_bounds, U_pts, U_bounds);
     
     // Choose a tolerance for the equality of M and Mprime and print it.
     const double tol = 1.e-6;
@@ -225,28 +262,34 @@ int main(int argc, char* argv[])
     
     
     #pragma omp for schedule(dynamic,1)
-    for (int g=0; g<t2_pts; ++g)
+    for (int g=0; g<alpha_pts; ++g)
       for (int h=0; h<U_pts;  ++h)
       {
-        
+        // Set the OPs to their startvals
         double M =      M_startval;
         double Mprime = M_startval;
+        double rhoI =      rhoI_startval;
+        double rhoIprime = rhoI_startval;
+        
+        // Define pars_t objects
+        pars_t parsI; // parsI is not scaled
+        pars_t parsII(pspace.alpha_grid[g]); // parsII is scaled by alpha
         
         if (with_output)
-            std::cout << "t2 = " << pspace.t2_grid[g] << ", "
+            std::cout << "alpha = " << pspace.alpha_grid[g] << ", "
                       << "U = "  << pspace.U_grid[h] << std::endl; //Print current params
         
         do // Iterate until self-consistency is achieved
         {
             M = Mprime;
-            if (with_output) std::cout << "M = " << M << "\t";
+            if (with_output) std::cout << "M = " << M << ", rhoI = " << rhoI << "\t";
             
             // Given the parameters, diagonalize the Hamiltonian at each grid point
             for (int i=0; i<kx_pts; ++i)
               for (int j=0; j<ky_pts; ++j)
               {
-                Evaluate_ham(kspace.kx_grid[i], kspace.ky_grid[j], pspace.t2_grid[g], 
-                             rho, pspace.U_grid[h], M, ham_array);
+                Assign_ham(kspace.kx_grid[i], kspace.ky_grid[j], pspace.t2_grid[g], 
+                           rho, pspace.U_grid[h], M, ham_array);
                 simple_zheev(bands_num, &(ham_array[0][0]), &(kspace.energies[i][j][0]));
               }
             
@@ -264,11 +307,11 @@ int main(int argc, char* argv[])
             for (int i=0; i<kx_pts; ++i)
               for (int j=0; j<ky_pts; ++j)
               {
-                Evaluate_ham(kspace.kx_grid[i], kspace.ky_grid[j], pspace.t2_grid[g], 
-                             rho, pspace.U_grid[h], M, ham_array);
+                Assign_ham(kspace.kx_grid[i], kspace.ky_grid[j], pspace.t2_grid[g], 
+                           rho, pspace.U_grid[h], M, ham_array);
                 simple_zheev(bands_num, &(ham_array[0][0]), &(kspace.energies[i][j][0]), 
                              true, &(evecs[0][0]));
-                accumulator += Evaluate_M_term(mu, &(kspace.energies[i][j][0]), evecs);
+                accumulator += Compute_M_term(mu, &(kspace.energies[i][j][0]), evecs);
               }
             Mprime = accumulator;
             // Print out final M value
