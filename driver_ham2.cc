@@ -36,8 +36,8 @@ const double t1 = 1.; // t1 is set to 1, so we measure all other energies in uni
 const double phi = pi/2.; // Flux phase in the Haldane model
 const double eps = 0.; // Potential difference between A and B sublattices
 const double rho = 1.; // Average electron density (FIXED)
-const int t2_pts = 11; const double t2_bounds [2] = {0., 2.}; // NNN hopping amplitude
-const int U_pts = 16; const double U_bounds [2] = {0., 15.}; // Hubbard interaction
+const int t2_pts = 6; const double t2_bounds [2] = {0., 2.}; // NNN hopping amplitude
+const int U_pts = 6; const double U_bounds [2] = {0., 15.}; // Hubbard interaction
 const double M_startval = 0.1; // Choose a starting value
 
 // Class that defines the parameter space for this Hamiltonian
@@ -115,7 +115,7 @@ public:
     }
 };
 
-void Dispersion(const double kx, const double ky, const double t2_, 
+void Assign_h(const double kx, const double ky, const double t2_, 
                 std::complex<double>*const h)
 {
     /* Assigns to h the values of the momentum-dependant 2*2 Haldane Hamiltonian. */
@@ -125,7 +125,7 @@ void Dispersion(const double kx, const double ky, const double t2_,
     h[3] = -eps - 2.*t2_*( 2.*cos(sqrt(3.)/2.*a*kx+phi)*cos(3./2.*a*ky) + cos(sqrt(3.)*a*kx-phi) );
 }
 
-void Evaluate_ham(const double kx, const double ky, const double t2_, 
+void Assign_ham(const double kx, const double ky, const double t2_, 
                   const double rho_, const double U_, 
                   const double M_, std::complex<double>*const*const H)
 {
@@ -133,7 +133,7 @@ void Evaluate_ham(const double kx, const double ky, const double t2_,
     assign it to ham_array in full storage layout. */
     // We calculate the kinetic energy part of the Hamiltonian
     std::complex<double> h [4] = {0.,0.};
-    Dispersion(kx, ky, t2_, h);
+    Assign_h(kx, ky, t2_, h);
     
     H[0][0] = h[0]+U_*rho_/2.; H[0][1] = h[1];        H[0][2] = -U_*M_; H[0][3] = 0.;
     H[1][0] = h[2]; H[1][1] = h[3]+U_*rho_/2.;        H[1][2] = 0.;     H[1][3] = +U_*M_;
@@ -142,7 +142,7 @@ void Evaluate_ham(const double kx, const double ky, const double t2_,
     H[3][0] = 0.;     H[3][1] = +U_*M_;        H[3][2] = h[2]; H[3][3] = h[3]+U_*rho_/2.;
 }
 
-double Evaluate_M_term(const double mu, const double*const evals, 
+double Compute_M_term(const double mu, const double*const evals, 
                        const std::complex<double>*const*const evecs)
 {
     // Evaluates the contribution to the OP from a single k (see notes)
@@ -222,7 +222,7 @@ int main(int argc, char* argv[])
             for (int i=0; i<kx_pts; ++i)
               for (int j=0; j<ky_pts; ++j)
               {
-                Evaluate_ham(kspace.kx_grid[i], kspace.ky_grid[j], pspace.t2_grid[g], 
+                Assign_ham(kspace.kx_grid[i], kspace.ky_grid[j], pspace.t2_grid[g], 
                              rho, pspace.U_grid[h], M, ham_array);
                 simple_zheev(bands_num, &(ham_array[0][0]), &(kspace.energies[i][j][0]));
               }
@@ -241,11 +241,11 @@ int main(int argc, char* argv[])
             for (int i=0; i<kx_pts; ++i)
               for (int j=0; j<ky_pts; ++j)
               {
-                Evaluate_ham(kspace.kx_grid[i], kspace.ky_grid[j], pspace.t2_grid[g], 
+                Assign_ham(kspace.kx_grid[i], kspace.ky_grid[j], pspace.t2_grid[g], 
                              rho, pspace.U_grid[h], M, ham_array);
                 simple_zheev(bands_num, &(ham_array[0][0]), &(kspace.energies[i][j][0]), 
                              true, &(evecs[0][0]));
-                accumulator += Evaluate_M_term(mu, &(kspace.energies[i][j][0]), evecs);
+                accumulator += Compute_M_term(mu, &(kspace.energies[i][j][0]), evecs);
               }
             Mprime = accumulator;
             // Print out final M value
