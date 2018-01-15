@@ -12,8 +12,8 @@ LD_FLAGS=-L${LAPACKE_LIB} -L${NETCDF_LIB} -fopenmp
 # Flags for linking with libraries (place after all object files)
 LD_LIBS=-llapacke -lnetcdf
 # List of object files and header files belonging to modules
-OBJECTS=alloc_dealloc.o init_routines.o math_routines.o diag_routines.o kspace.o nc_IO.o
-HEADERS=alloc_dealloc.h init_routines.h math_routines.h diag_routines.h kspace.h nc_IO.h
+OBJECTS=alloc_dealloc.o init_routines.o math_routines.o diag_routines.o kspace.o nc_IO.o IO.o
+HEADERS=alloc_dealloc.h init_routines.h math_routines.h diag_routines.h kspace.h nc_IO.h IO.h
 
 
 ## all: Default target; empty
@@ -128,7 +128,6 @@ init_routines_test.o: init_routines_test.cc init_routines.h
 ut_init_routines_clean:
 	rm -f init_routines_test.o init_routines.o init_routines_test
 
-
 # #######################################################################################
 # MODULE MATH_ROUTINES
 
@@ -210,6 +209,7 @@ kspace_test.o: kspace_test.cc kspace.h
 .PHONY: ut_kspace_clean
 ut_kspace_clean:
 	rm -f alloc_dealloc.o init_routines.o kspace_test.o kspace.o kspace_test
+
 # #######################################################################################
 # MODULE NC_IO
 
@@ -235,7 +235,33 @@ nc_IO_test.o: nc_IO_test.cc nc_IO.h
 .PHONY: ut_nc_IO_clean
 ut_nc_IO_clean:
 	rm -f nc_IO_test.o nc_IO.o nc_IO_test
+
 # #######################################################################################
+# MODULE IO
+
+# IO.o object file depends on header file, source file, and all included header files
+IO.o: IO.cc IO.h
+	$(CXX) $(CXXFLAGS) -c IO.cc -o IO.o
+
+## ut_IO: Runs the testing suite for the module IO
+.PHONY: ut_IO
+ut_IO: IO_test # Runs the testing suite's executable
+	./IO_test
+
+# Testing suite executable depends on IO_test.o and IO.o
+IO_test: IO_test.o IO.o alloc_dealloc.o
+	$(CXX) IO_test.o IO.o alloc_dealloc.o -o IO_test
+
+# IO_test.o object file depends on source file and IO.h header
+IO_test.o: IO_test.cc IO.h alloc_dealloc.h
+	$(CXX) $(CXXFLAGS) -c IO_test.cc -o IO_test.o
+
+# Deletion of the object files and executable files pertaining to this unit test.
+.PHONY: IO_clean
+IO_clean:
+	rm -f IO_test.o IO.o alloc_dealloc.o IO_test
+# #######################################################################################
+
 
 ## clean: Removes module object files as well as driver object files and executables
 .PHONY: clean
@@ -249,7 +275,8 @@ ut_clean: ut_alloc_dealloc_clean \
           ut_math_routines_clean \
           ut_diag_routines_clean \
           ut_kspace_clean \
-          ut_nc_IO_clean
+          ut_nc_IO_clean \
+          IO_clean
 
 ## help: Shows targets and their descriptions
 .PHONY: help
