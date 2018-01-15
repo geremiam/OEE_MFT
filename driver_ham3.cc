@@ -46,11 +46,11 @@ class pars_t {
         eps *= alpha_;
     }
 };// Class for holding the parameters proper to each layer
-const double tperp = 0.3; // Base value of tperp (gets scaled)
+const double tperp_0 = 0.3; // Base value of tperp (gets scaled)
 const double L = 0.; // bias voltage between layers I and II
 const double rho = 1.; // Average (global) electron density, between 0 and 2
 /* Range and resolution of the parameter study */
-const int alpha_pts = 6; const double alpha_bounds [2] = {0., 2.}; // scaling factor
+const int alpha_pts = 6; const double alpha_bounds [2] = {1., 2.}; // scaling factor
 const int U_pts = 6; const double U_bounds [2] = {0., 10.};//Hubbard interaction strength
 /* Starting values for the order parameters */
 const double M_startval = 0.1; // Choose a starting value
@@ -160,14 +160,17 @@ void Assign_ham(const double kx, const double ky, const pars_t parsI, const pars
     std::complex<double> hII [4] = {0.,0.};
     Assign_h(kx, ky, parsII, hII);
     
-    H[0][0]=0.; 
-    H[1][0]=0.; H[1][1]=0.; 
-    H[2][0]=0.; H[2][1]=0.; H[2][2]=0.; 
-    H[3][0]=0.; H[3][1]=0.; H[3][2]=0.; H[3][3]=0.; 
-    H[4][0]=0.; H[4][1]=0.; H[4][2]=0.; H[4][3]=0.; H[4][4]=0.; 
-    H[5][0]=0.; H[5][1]=0.; H[5][2]=0.; H[5][3]=0.; H[5][4]=0.; H[5][5]=0.; 
-    H[6][0]=0.; H[6][1]=0.; H[6][2]=0.; H[6][3]=0.; H[6][4]=0.; H[6][5]=0.; H[6][6]=0.; 
-    H[7][0]=0.; H[7][1]=0.; H[7][2]=0.; H[7][3]=0.; H[7][4]=0.; H[7][5]=0.; H[7][6]=0.; H[7][7]=0.;
+    H[0][0]=hI[0]+U_*rhoI_/2.+L_/2.; 
+    H[1][0]=hI[2]; H[1][1]=hI[3]+U_*rhoI_/2.+L_/2.; 
+    
+    H[2][0]=-U_*M_; H[2][1]=0.;    H[2][2]=hI[0]+U_*rhoI_/2.+L_/2.; 
+    H[3][0]=0.; H[3][1]=+U_*M_;    H[3][2]=hI[2]; H[3][3]=hI[3]+U_*rhoI_/2.+L_/2.; 
+    
+    H[4][0]=tperp_; H[4][1]=0.;    H[4][2]=0.; H[4][3]=0.;    H[4][4]=hII[0]-L_/2.; 
+    H[5][0]=0.; H[5][1]=tperp_;    H[5][2]=0.; H[5][3]=0.;    H[5][4]=hII[2]; H[5][5]=hII[3]-L_/2.; 
+    
+    H[6][0]=0.; H[6][1]=0.;    H[6][2]=tperp_; H[6][3]=0.;    H[6][4]=0.; H[6][5]=0.;    H[6][6]=hII[0]-L_/2.; 
+    H[7][0]=0.; H[7][1]=0.;    H[7][2]=0.; H[7][3]=tperp_;    H[7][4]=0.; H[7][5]=0.;    H[7][6]=hII[2]; H[7][7]=hII[3]-L_/2.;
     
 }
 
@@ -193,11 +196,11 @@ double Compute_M_term(const double mu, const double*const evals,
                 accumulator += conj(evecs[c][b])*C[c][d]*evecs[d][b]*nF0(evals[b]-mu);
     
     // Test for zero imaginary part
-    const double imag_part = std::imag(accumulator/(4.*kx_pts*ky_pts));
+    const double imag_part = std::imag(accumulator/(double)(4*kx_pts*ky_pts));
     if (imag_part>1.e-15)
         std::cerr << "WARNING: M has nonzero imaginary part: " << imag_part << std::endl;
     
-    return std::real(accumulator/(4.*kx_pts*ky_pts));
+    return std::real(accumulator/(double)(4*kx_pts*ky_pts));
 }
 
 double Compute_rhoI_term(const double mu, const double*const evals, 
@@ -222,24 +225,24 @@ double Compute_rhoI_term(const double mu, const double*const evals,
                 accumulator += conj(evecs[c][b])*B[c][d]*evecs[d][b]*nF0(evals[b]-mu);
     
     // Test for zero imaginary part
-    const double imag_part = std::imag(accumulator/(2.*kx_pts*ky_pts));
+    const double imag_part = std::imag(accumulator/(double)(2*kx_pts*ky_pts));
     if (imag_part>1.e-15)
         std::cerr << "WARNING: rhoI has nonzero imaginary part: " << imag_part << std::endl;
     
-    return std::real(accumulator/(2.*kx_pts*ky_pts));
+    return std::real(accumulator/(double)(2*kx_pts*ky_pts));
 }
 
 // ######################################################################################
 int main(int argc, char* argv[])
 {
-    const bool with_output = false; // Show output for diagnostics
+    const bool with_output = true; // Show output for diagnostics
+    
+    // Choose a tolerance for the equality of the mean fields and print it.
+    const double tol = 1.e-6;
+    std::cout << "\ntol = " << std::scientific << tol << std::endl << std::endl;
     
     // Declare object of type pspace (parameter space)
     pspace_t pspace(alpha_pts, alpha_bounds, U_pts, U_bounds);
-    
-    // Choose a tolerance for the equality of M and Mprime and print it.
-    const double tol = 1.e-6;
-    std::cout << "\ntol = " << std::scientific << tol << std::endl << std::endl;
     
     // Loop over values of the parameter space
     /* PARALLELIZATION:, note that different threads do not write to the same parts of 
@@ -248,15 +251,12 @@ int main(int argc, char* argv[])
     #pragma omp parallel default(none) shared(pspace,kx_bounds,ky_bounds,std::cout)
     {
     
-    /* Declare (and construct) and instance of kspace_t. This variable is local to each 
-    thread of execution. */
+    /* Declare (and construct) an instance of kspace_t (local to each thread). */
     kspace_t kspace(kx_pts, kx_bounds, ky_pts, ky_bounds, bands_num);
-    /* Declare an array to hold the Hamiltonian. This variable is local to each thread of 
-    execution. */
+    /* Declare an array to hold the Hamiltonian (local to each thread). */
     std::complex<double>*const*const ham_array = Alloc2D_z(ham_array_rows, ham_array_cols);
-    ValInitArray(ham_array_rows*ham_array_cols, &(ham_array[0][0])); // Initialize to zero
-    /* Declare an array to hold its evecs. This variable is local to each thread of 
-    execution. */
+    ValInitArray(ham_array_rows*ham_array_cols, &(ham_array[0][0])); //Initialize to zero
+    /* Declare an array to hold its evecs (local to each thread). */
     std::complex<double>*const*const evecs = Alloc2D_z(bands_num, bands_num);
     ValInitArray(bands_num*bands_num, &(evecs[0][0])); // Initialize to zero
     
@@ -275,6 +275,8 @@ int main(int argc, char* argv[])
         pars_t parsI; // parsI is not scaled
         pars_t parsII(pspace.alpha_grid[g]); // parsII is scaled by alpha
         
+        double tperp = tperp_0 * pspace.alpha_grid[g]; // tperp is also scaled by alpha
+        
         if (with_output)
             std::cout << "alpha = " << pspace.alpha_grid[g] << ", "
                       << "U = "  << pspace.U_grid[h] << std::endl; //Print current params
@@ -282,46 +284,51 @@ int main(int argc, char* argv[])
         do // Iterate until self-consistency is achieved
         {
             M = Mprime;
-            if (with_output) std::cout << "M = " << M << ", rhoI = " << rhoI << "\t";
+            rhoI = rhoIprime; // Update mean-field values
+            if (with_output) std::cout << "M=" << M << ", rhoI=" << rhoI << "\t";
             
             // Given the parameters, diagonalize the Hamiltonian at each grid point
             for (int i=0; i<kx_pts; ++i)
               for (int j=0; j<ky_pts; ++j)
               {
-                Assign_ham(kspace.kx_grid[i], kspace.ky_grid[j], pspace.t2_grid[g], 
-                           rho, pspace.U_grid[h], M, ham_array);
+                Assign_ham(kspace.kx_grid[i], kspace.ky_grid[j], parsI, parsII, tperp, L, pspace.U_grid[h], rhoI, M, ham_array);
                 simple_zheev(bands_num, &(ham_array[0][0]), &(kspace.energies[i][j][0]));
               }
             
             // Use all the energies to compute the chemical potential
             // Be careful about lattice basis
             const int num_states = kx_pts*ky_pts*bands_num;
-            const int filled_states = int( 2. * double(kx_pts*ky_pts) * rho );
-            double mu = FermiEnerg(num_states, filled_states, &(kspace.energies[0][0][0]));
-            if (with_output) std::cout << "mu = " << mu << "\t";
+            const int filled_states = int( rho * double(4*kx_pts*ky_pts) );
+            double mu = FermiEnerg(num_states, filled_states, &(kspace.energies[0][0][0]), true);
+            if (with_output) std::cout << "mu=" << mu << "\t";
             
-            // Use all the occupation numbers and the eigenvectors to find the order parameter
-            // It is probably best to diagonalize a second time to avoid storing the evecs
-            double accumulator = 0;
+            // Use all the occupation numbers and the evecs to find the order parameter
+            // Probably best to diagonalize a second time to avoid storing the evecs
+            double M_accumulator = 0.;
+            double rhoI_accumulator = 0.;
             
             for (int i=0; i<kx_pts; ++i)
               for (int j=0; j<ky_pts; ++j)
               {
-                Assign_ham(kspace.kx_grid[i], kspace.ky_grid[j], pspace.t2_grid[g], 
-                           rho, pspace.U_grid[h], M, ham_array);
-                simple_zheev(bands_num, &(ham_array[0][0]), &(kspace.energies[i][j][0]), 
-                             true, &(evecs[0][0]));
-                accumulator += Compute_M_term(mu, &(kspace.energies[i][j][0]), evecs);
+                Assign_ham(kspace.kx_grid[i], kspace.ky_grid[j], parsI, parsII, tperp, L, pspace.U_grid[h], rhoI, M, ham_array);
+                simple_zheev(bands_num, &(ham_array[0][0]), &(kspace.energies[i][j][0]), true, &(evecs[0][0]));
+                M_accumulator +=       Compute_M_term(mu, &(kspace.energies[i][j][0]), evecs);
+                rhoI_accumulator += Compute_rhoI_term(mu, &(kspace.energies[i][j][0]), evecs);
               }
-            Mprime = accumulator;
-            // Print out final M value
+            Mprime = M_accumulator;
+            rhoIprime = rhoI_accumulator;
+            // Print out final OP values
             if (with_output)
-                std::cout << "Mprime = " << Mprime << "\t"
-                          << "abs(Mprime-M) = " << std::abs(Mprime-M) << std::endl;
-        } while (std::abs(Mprime-M) > tol);
+                std::cout << "Mprime=" << Mprime << ", rhoIprime=" << rhoIprime 
+                          << "\tabs(Mprime-M)=" << std::abs(Mprime-M) 
+                          << ", abs(rhoIprime-rhoI)=" << std::abs(rhoIprime-rhoI) 
+                          << std::endl;
+        } while ( (std::abs(Mprime-M)>tol) || (std::abs(rhoIprime-rhoI)>tol) );
         
-        // We save the converged M value to the array pspace.M_grid.
+        // We save the converged OP values to the pspace arrays.
         pspace.M_grid[g][h] = Mprime;
+        pspace.rhoI_grid[g][h] = rhoIprime;
+        
         if (with_output) std::cout << std::endl;
       }
     
@@ -335,10 +342,22 @@ int main(int argc, char* argv[])
     if (with_output)
     {
         std::cout << std::endl << "pspace.M_grid = " << std::endl;
-        for (int g=0; g<t2_pts; ++g)
+        for (int g=0; g<alpha_pts; ++g)
         {
             for (int h=0; h<U_pts;  ++h)
                 std::cout << pspace.M_grid[g][h] << " ";
+            std::cout << std::endl;
+        }
+        std::cout << std::endl;
+    }
+    // Print out rhoI array
+    if (with_output)
+    {
+        std::cout << std::endl << "pspace.rhoI_grid = " << std::endl;
+        for (int g=0; g<alpha_pts; ++g)
+        {
+            for (int h=0; h<U_pts;  ++h)
+                std::cout << pspace.rhoI_grid[g][h] << " ";
             std::cout << std::endl;
         }
         std::cout << std::endl;
@@ -347,16 +366,16 @@ int main(int argc, char* argv[])
     
     // We save to a NetCDF dataset using the class defined in nc_IO
     // Define a string of metadata
-    const std::string GlobalAttr = "Haldane Hubbard model (ham2)"
+    const std::string GlobalAttr = "Haldane Hubbard bilayer (ham3)"
         ": NN distance a = "+to_string(a)+"; kx_pts = "+to_string(kx_pts)+
         "; kx_bounds = "+to_string(kx_bounds[0])+", "+to_string(kx_bounds[1])+
         "; ky_pts = " + to_string(ky_pts)+
         "; ky_bounds = "+to_string(ky_bounds[0])+", "+to_string(ky_bounds[1])+
-        "; bands_num = "+to_string(bands_num)+"; t1 = "+to_string(t1)+
+        "; bands_num = "+to_string(bands_num)/*+"; t1 = "+to_string(t1)+
         "; phi = "+to_string(phi)+"; eps = "+to_string(eps)+"; rho = "+to_string(rho)+
-        "; M_startval = "+to_string(M_startval)+"; tol = "+to_string(tol);
+        "; M_startval = "+to_string(M_startval)*/+"; tol = "+to_string(tol);
         
-    const std::string path="data/ham2/"; //Choose the path for saving (include final '/')
+    const std::string path="data/ham3/"; //Choose the path for saving (include final '/')
     
     pspace.SaveData(GlobalAttr, path); // Call saving method
     
