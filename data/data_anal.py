@@ -15,6 +15,7 @@ import nc_IO # Routine for reading data from a NetCDF file
 Filename = argv[1]
 dim_names, dim_lengths, coord_vars, var_names, vars = nc_IO.nc_read(Filename)
 
-
-AxLabels = [dim_names[0], dim_names[1], var_names[0]]
-plot_routines.ColorPlot1(coord_vars[0], coord_vars[1], vars[0], AxLabels=AxLabels)
+# We plot every var in the dataset against the first two dimensions
+for index in range(len(vars)):
+    Labels = [dim_names[0], dim_names[1], var_names[index]] # Axis labels
+    plot_routines.ColorPlot1(coord_vars[0], coord_vars[1], vars[index], Labels=Labels)
