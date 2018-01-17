@@ -13,6 +13,7 @@ NetCDF dataset. */
 #include "diag_routines.h" // Routines for finding evals and evecs
 #include "kspace.h" // Defines a class for holding a band structure
 #include "nc_IO.h" // Class for creating simple NetCDF datasets
+#include "IO.h" // For PrintMatrix()
 using std::to_string;
 //using std::cos; using std::sin; using std::conj; // Not sure if these are necessary
 using std::polar;
@@ -50,11 +51,11 @@ const double tperp_0 = 0.3; // Base value of tperp (gets scaled)
 const double L = 0.; // bias voltage between layers I and II
 const double rho = 1.; // Average (global) electron density, between 0 and 2
 /* Range and resolution of the parameter study */
-const int alpha_pts = 6; const double alpha_bounds [2] = {1., 2.}; // scaling factor
+const int alpha_pts = 6; const double alpha_bounds [2] = {1., 3.}; // scaling factor
 const int U_pts = 6; const double U_bounds [2] = {0., 10.};//Hubbard interaction strength
 /* Starting values for the order parameters */
 const double M_startval = 0.1; // Choose a starting value
-const double rhoI_startval = 1.; // Choose starting value
+const double rhoI_startval = 0.5; // Choose starting value
 
 // Class that defines the parameter space for this Hamiltonian
 class pspace_t {
@@ -235,7 +236,7 @@ double Compute_rhoI_term(const double mu, const double*const evals,
 // ######################################################################################
 int main(int argc, char* argv[])
 {
-    const bool with_output = true; // Show output for diagnostics
+    const bool with_output = false; // Show output for diagnostics
     
     // Choose a tolerance for the equality of the mean fields and print it.
     const double tol = 1.e-6;
@@ -295,12 +296,11 @@ int main(int argc, char* argv[])
                 simple_zheev(bands_num, &(ham_array[0][0]), &(kspace.energies[i][j][0]));
               }
             
-            // Use all the energies to compute the chemical potential
+            // Use all energies to compute chemical potential (elements get reordered)
             // Be careful about lattice basis
             const int num_states = kx_pts*ky_pts*bands_num;
             const int filled_states = int( rho * double(4*kx_pts*ky_pts) );
-            double mu = FermiEnerg(num_states, filled_states, &(kspace.energies[0][0][0]), true);
-            if (with_output) std::cout << "mu=" << mu << "\t";
+            double mu = FermiEnerg(num_states, filled_states, &(kspace.energies[0][0][0]));
             
             // Use all the occupation numbers and the evecs to find the order parameter
             // Probably best to diagonalize a second time to avoid storing the evecs
@@ -338,28 +338,13 @@ int main(int argc, char* argv[])
     }
     
     
-    // Print out M array
+    // Print out M and rhoI arrays
     if (with_output)
     {
         std::cout << std::endl << "pspace.M_grid = " << std::endl;
-        for (int g=0; g<alpha_pts; ++g)
-        {
-            for (int h=0; h<U_pts;  ++h)
-                std::cout << pspace.M_grid[g][h] << " ";
-            std::cout << std::endl;
-        }
-        std::cout << std::endl;
-    }
-    // Print out rhoI array
-    if (with_output)
-    {
+        PrintMatrix(alpha_pts, U_pts, pspace.M_grid, std::cout);
         std::cout << std::endl << "pspace.rhoI_grid = " << std::endl;
-        for (int g=0; g<alpha_pts; ++g)
-        {
-            for (int h=0; h<U_pts;  ++h)
-                std::cout << pspace.rhoI_grid[g][h] << " ";
-            std::cout << std::endl;
-        }
+        PrintMatrix(alpha_pts, U_pts, pspace.rhoI_grid, std::cout);
         std::cout << std::endl;
     }
     

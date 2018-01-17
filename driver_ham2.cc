@@ -12,6 +12,7 @@ consistency is achieved. The data is saved as a NetCDF dataset. */
 #include "diag_routines.h" // Routines for finding evals and evecs
 #include "kspace.h" // Defines a class for holding a band structure
 #include "nc_IO.h" // Class for creating simple NetCDF datasets
+#include "IO.h" // Printing matrices
 using std::to_string;
 //using std::cos; using std::sin; using std::conj; // Not sure if these are necessary
 using std::polar;
@@ -227,7 +228,7 @@ int main(int argc, char* argv[])
                 simple_zheev(bands_num, &(ham_array[0][0]), &(kspace.energies[i][j][0]));
               }
             
-            // Use all the energies to compute the chemical potential
+            // Use all energies to compute chemical potential (elements get reordered)
             // Be careful about lattice basis
             const int num_states = kx_pts*ky_pts*bands_num;
             const int filled_states = int( 2. * double(kx_pts*ky_pts) * rho );
@@ -269,12 +270,7 @@ int main(int argc, char* argv[])
     if (with_output)
     {
         std::cout << std::endl << "pspace.M_grid = " << std::endl;
-        for (int g=0; g<t2_pts; ++g)
-        {
-            for (int h=0; h<U_pts;  ++h)
-                std::cout << pspace.M_grid[g][h] << " ";
-            std::cout << std::endl;
-        }
+        PrintMatrix(t2_pts, U_pts, pspace.M_grid, std::cout);
         std::cout << std::endl;
     }
     
