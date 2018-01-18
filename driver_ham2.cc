@@ -160,11 +160,11 @@ double Compute_M_term(const double mu, const double*const evals,
                 accumulator += conj(evecs[c][b])*A[c][d]*evecs[d][b]*nF0(evals[b]-mu);
     
     // Test for zero imaginary part
-    const double imag_part = std::imag(accumulator/(4.*kx_pts*ky_pts));
+    const double imag_part = std::imag(accumulator/(double)(4*kx_pts*ky_pts));
     if (imag_part>1.e-15)
         std::cerr << "WARNING: M has nonzero imaginary part: " << imag_part << std::endl;
     
-    return std::real(accumulator/(4.*kx_pts*ky_pts));
+    return std::real(accumulator/(double)(4*kx_pts*ky_pts));
 }
 
 
@@ -231,7 +231,7 @@ int main(int argc, char* argv[])
             // Use all energies to compute chemical potential (elements get reordered)
             // Be careful about lattice basis
             const int num_states = kx_pts*ky_pts*bands_num;
-            const int filled_states = int( 2. * double(kx_pts*ky_pts) * rho );
+            const int filled_states = int( rho * double(2*kx_pts*ky_pts) );
             double mu = FermiEnerg(num_states, filled_states, &(kspace.energies[0][0][0]));
             if (with_output) std::cout << "mu = " << mu << "\t";
             
