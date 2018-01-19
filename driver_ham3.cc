@@ -56,6 +56,7 @@ const int U_pts = 6; const double U_bounds [2] = {0., 10.};//Hubbard interaction
 /* Starting values for the order parameters */
 const double M_startval = 0.1; // Choose a starting value
 const double rhoI_startval = 0.5; // Choose starting value
+const int loops_lim = 1000;
 
 // Class that defines the parameter space for this Hamiltonian
 class pspace_t {
@@ -282,8 +283,12 @@ int main(int argc, char* argv[])
             std::cout << "alpha = " << pspace.alpha_grid[g] << ", "
                       << "U = "  << pspace.U_grid[h] << std::endl; //Print current params
         
+        int counter = 0; // Define counter for number of loops
+        bool converged=false, fail=false; // Used to stop the while looping
         do // Iterate until self-consistency is achieved
         {
+            ++counter; // Increment counter
+            
             M = Mprime;
             rhoI = rhoIprime; // Update mean-field values
             if (with_output) std::cout << "M=" << M << ", rhoI=" << rhoI << "\t";
@@ -320,14 +325,26 @@ int main(int argc, char* argv[])
             // Print out final OP values
             if (with_output)
                 std::cout << "Mprime=" << Mprime << ", rhoIprime=" << rhoIprime 
-                          << "\tabs(Mprime-M)=" << std::abs(Mprime-M) 
-                          << ", abs(rhoIprime-rhoI)=" << std::abs(rhoIprime-rhoI) 
+                          << "\t|Mprime-M|=" << std::abs(Mprime-M) 
+                          << ", |rhoIprime-rhoI|=" << std::abs(rhoIprime-rhoI) 
                           << std::endl;
-        } while ( (std::abs(Mprime-M)>tol) || (std::abs(rhoIprime-rhoI)>tol) );
+            
+            // Test for convergence
+            converged = (std::abs(Mprime-M)<tol) && (std::abs(rhoIprime-rhoI)<tol);
+            fail = (!converged) && (counter>loops_lim); // Must come after converged line
+        } while (!converged && !fail);
         
-        // We save the converged OP values to the pspace arrays.
-        pspace.M_grid[g][h] = Mprime;
-        pspace.rhoI_grid[g][h] = rhoIprime;
+        if (converged)
+        {
+            // We save the converged OP values to the pspace arrays.
+            pspace.M_grid[g][h] = Mprime;
+            pspace.rhoI_grid[g][h] = rhoIprime;
+            if (fail)
+                std::cout << "OUPS 1: This option shouldn't have occurred!" << std::endl;
+        }
+        else if (fail)
+            std::cout << "WARNING: failure to converge after limit reached" << std::endl;
+        else std::cout << "OUPS 2: This option shouldn't have occurred!" << std::endl;
         
         if (with_output) std::cout << std::endl;
       }
@@ -348,7 +365,7 @@ int main(int argc, char* argv[])
         std::cout << std::endl;
     }
     
-    
+    pars_t pars; // Use to get default param values
     // We save to a NetCDF dataset using the class defined in nc_IO
     // Define a string of metadata
     const std::string GlobalAttr = "Haldane Hubbard bilayer (ham3)"
@@ -356,9 +373,12 @@ int main(int argc, char* argv[])
         "; kx_bounds = "+to_string(kx_bounds[0])+", "+to_string(kx_bounds[1])+
         "; ky_pts = " + to_string(ky_pts)+
         "; ky_bounds = "+to_string(ky_bounds[0])+", "+to_string(ky_bounds[1])+
-        "; bands_num = "+to_string(bands_num)/*+"; t1 = "+to_string(t1)+
-        "; phi = "+to_string(phi)+"; eps = "+to_string(eps)+"; rho = "+to_string(rho)+
-        "; M_startval = "+to_string(M_startval)*/+"; tol = "+to_string(tol);
+        "; bands_num = "+to_string(bands_num)+"; t1 = "+to_string(pars.t1)+
+        "; t2 = "+to_string(pars.t2)+"; eps = "+to_string(pars.eps)+
+        "; phi = "+to_string(pars.phi)+"; tperp_0"+to_string(tperp_0)+
+        "; L"+to_string(L)+"; rho = "+to_string(rho)+
+        "; M_startval = "+to_string(M_startval)+
+        "; rhoI_startval = "+to_string(rhoI_startval)+"; tol = "+to_string(tol);
         
     const std::string path="data/ham3/"; //Choose the path for saving (include final '/')
     
