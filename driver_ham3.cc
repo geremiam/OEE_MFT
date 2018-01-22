@@ -56,7 +56,7 @@ const int U_pts = 6; const double U_bounds [2] = {0., 10.};//Hubbard interaction
 /* Starting values for the order parameters */
 const double M_startval = 0.1; // Choose a starting value
 const double rhoI_startval = 0.5; // Choose starting value
-const int loops_lim = 1000;
+const int loops_lim = 3000;
 
 // Class that defines the parameter space for this Hamiltonian
 class pspace_t {
@@ -100,7 +100,7 @@ class pspace_t {
         ValInitArray(alpha_pts*U_pts, &(rhoI_grid[0][0]), -99.); // Likewise
         
         
-        std::cout << "Instance of pspace_t created." << std::endl;
+        std::cout << "pspace_t instance created.\n";
     }
     // Destructor declaration
     ~pspace_t() {
@@ -108,7 +108,7 @@ class pspace_t {
         delete [] U_grid;
         Dealloc2D(M_grid);
         Dealloc2D(rhoI_grid);
-        std::cout << "Instance of pspace_t deleted." << std::endl;
+        std::cout << "pspace_t instance deleted.\n";
     }
     
     void SaveData(const std::string GlobalAttr_, const std::string path_) {
@@ -243,6 +243,8 @@ int main(int argc, char* argv[])
     const double tol = 1.e-6;
     std::cout << "\ntol = " << std::scientific << tol << std::endl << std::endl;
     
+    int numfails = 0; // Tracks number of points which failed to converge after loops_lim
+    
     // Declare object of type pspace (parameter space)
     pspace_t pspace(alpha_pts, alpha_bounds, U_pts, U_bounds);
     
@@ -250,7 +252,7 @@ int main(int argc, char* argv[])
     /* PARALLELIZATION:, note that different threads do not write to the same parts of 
     pspace. For some reason, kx_bounds and ky_bounds need to be declared as shared even 
     though they are const. In any event, they are only read and cannot be written to. */
-    #pragma omp parallel default(none) shared(pspace,kx_bounds,ky_bounds,std::cout)
+    #pragma omp parallel default(none) shared(pspace,kx_bounds,ky_bounds,std::cout) reduction(+:numfails)
     {
     
     /* Declare (and construct) an instance of kspace_t (local to each thread). */
@@ -304,7 +306,7 @@ int main(int argc, char* argv[])
             // Use all energies to compute chemical potential (elements get reordered)
             // Be careful about lattice basis
             const int num_states = kx_pts*ky_pts*bands_num;
-            const int filled_states = int( rho * double(4*kx_pts*ky_pts) );
+            const int filled_states = int( rho * (double)(4*kx_pts*ky_pts) );
             double mu = FermiEnerg(num_states, filled_states, &(kspace.energies[0][0][0]));
             
             // Use all the occupation numbers and the evecs to find the order parameter
@@ -343,7 +345,10 @@ int main(int argc, char* argv[])
                 std::cout << "OUPS 1: This option shouldn't have occurred!" << std::endl;
         }
         else if (fail)
-            std::cout << "WARNING: failure to converge after limit reached" << std::endl;
+        {
+            std::cout << "\tWARNING: failure to converge after limit reached\n";
+            ++numfails;
+        }
         else std::cout << "OUPS 2: This option shouldn't have occurred!" << std::endl;
         
         if (with_output) std::cout << std::endl;
@@ -384,5 +389,8 @@ int main(int argc, char* argv[])
     
     pspace.SaveData(GlobalAttr, path); // Call saving method
     
-    return 0;
+    // Print out numfails
+    std::cout << "\n\tNUMBER OF FAILURES TO CONVERGE: " << numfails << "\n\n";
+    
+    return numfails;
 }

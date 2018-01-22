@@ -231,7 +231,7 @@ int main(int argc, char* argv[])
             // Use all energies to compute chemical potential (elements get reordered)
             // Be careful about lattice basis
             const int num_states = kx_pts*ky_pts*bands_num;
-            const int filled_states = int( rho * double(2*kx_pts*ky_pts) );
+            const int filled_states = int( rho * (double)(2*kx_pts*ky_pts) );
             double mu = FermiEnerg(num_states, filled_states, &(kspace.energies[0][0][0]));
             if (with_output) std::cout << "mu = " << mu << "\t";
             

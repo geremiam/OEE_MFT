@@ -17,7 +17,7 @@ kspace_t::kspace_t(const int kx_pts_, const double*const kx_bounds_,
     ky_pts(ky_pts_), ky_bounds(ky_bounds_), ky_grid(new double [ky_pts_]),
     bands_num(bands_num_), energies(Alloc3D_d(kx_pts_, ky_pts_, bands_num_))
 {
-    std::cout << "kspace_t instance created." << std::endl;
+    std::cout << "kspace_t instance created.\n";
     // The momentum grids are initialized
     const bool endpoint = false; // Should not include end because k space is periodic
     LinInitArray(kx_bounds[0], kx_bounds[1], kx_pts, kx_grid, endpoint);
@@ -32,5 +32,5 @@ kspace_t::~kspace_t()
     delete [] kx_grid;
     delete [] ky_grid;
     Dealloc3D(energies, kx_pts);
-    std::cout << "kspace_t instance deleted." << std::endl;
+    std::cout << "kspace_t instance deleted.\n";
 }

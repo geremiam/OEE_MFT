@@ -23,7 +23,7 @@ newDS_t::newDS_t(const std::string GlobalAttr,
     :dims_num(dims_num_), dimid(new int [dims_num_]), coord_varid(new int [dims_num_]), 
     vars_num(vars_num_), varid(new int [vars_num_])
 {
-    std::cout << "Instance of newDS_t created" << std::endl;
+    std::cout << "newDS_t instance created.\n";
     /* The dataset is created; existing files of the same name are overwritten. 
     The dataset ID is assigned to ncid. Note that we don't use NetCDF4 to accomodate 
     the python interface. */
@@ -72,7 +72,7 @@ void newDS_t::WriteVars(const double*const*const vars)
 
 newDS_t::~newDS_t()
 {
-    std::cout << "Instance of newDS_t deleted" << std::endl;
+    std::cout << "newDS_t instance deleted.\n";
     
     /* Closes the datased referred to by ncid. */
     ErrorHandler( nc_close(ncid) );
