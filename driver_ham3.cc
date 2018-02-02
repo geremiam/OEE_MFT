@@ -39,7 +39,7 @@ class pars_t {
     // Default values of the parameters
     double t1 = 1.; // NN hopping
     double t2 = 0.25; // NNN hopping
-    double eps = 0.1; // Potential difference between A and B sublattices
+    double eps = 0.; // Potential difference between A and B sublattices
     double phi = pi/2.; // Flux phase in the Haldane model
     pars_t(const double alpha_=1.) { // The energy parameters get scaled by alpha_.
         t1 *= alpha_;
@@ -53,10 +53,11 @@ const double rho = 1.; // Average (global) electron density, between 0 and 2
 /* Range and resolution of the parameter study */
 const int alpha_pts = 6; const double alpha_bounds [2] = {1., 3.}; // scaling factor
 const int U_pts = 6; const double U_bounds [2] = {0., 10.};//Hubbard interaction strength
-/* Starting values for the order parameters */
+/* Settings for the iterative search */
 const double M_startval = 0.1; // Choose a starting value
 const double rhoI_startval = 0.5; // Choose starting value
-const int loops_lim = 3000;
+const int loops_lim = 3000; // Limit to the number of iteration loops
+const double tol = 1.e-6; // Tolerance for the equality of the mean fields
 
 // Class that defines the parameter space for this Hamiltonian
 class pspace_t {
@@ -239,8 +240,7 @@ int main(int argc, char* argv[])
 {
     const bool with_output = false; // Show output for diagnostics
     
-    // Choose a tolerance for the equality of the mean fields and print it.
-    const double tol = 1.e-6;
+    // Print the tolerance for the equality of the mean fields.
     std::cout << "\ntol = " << std::scientific << tol << std::endl << std::endl;
     
     int numfails = 0; // Tracks number of points which failed to converge after loops_lim
@@ -306,7 +306,7 @@ int main(int argc, char* argv[])
             // Use all energies to compute chemical potential (elements get reordered)
             // Be careful about lattice basis
             const int num_states = kx_pts*ky_pts*bands_num;
-            const int filled_states = int( rho * (double)(4*kx_pts*ky_pts) );
+            const int filled_states = (int)( rho * (double)(4*kx_pts*ky_pts) );
             double mu = FermiEnerg(num_states, filled_states, &(kspace.energies[0][0][0]));
             
             // Use all the occupation numbers and the evecs to find the order parameter

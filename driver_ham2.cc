@@ -37,9 +37,13 @@ const double t1 = 1.; // t1 is set to 1, so we measure all other energies in uni
 const double phi = pi/2.; // Flux phase in the Haldane model
 const double eps = 0.; // Potential difference between A and B sublattices
 const double rho = 1.; // Average electron density (FIXED)
+// Range and resolution of the parameter study
 const int t2_pts = 6; const double t2_bounds [2] = {0., 2.}; // NNN hopping amplitude
 const int U_pts = 6; const double U_bounds [2] = {0., 15.}; // Hubbard interaction
+// Settings for the iterative search
 const double M_startval = 0.1; // Choose a starting value
+const int loops_lim = 15; // Limit to the number of iteration loops
+const double tol = 1.e-6; // Tolerance for the equality of the mean fields
 
 // Class that defines the parameter space for this Hamiltonian
 class pspace_t
@@ -178,15 +182,16 @@ int main(int argc, char* argv[])
     // Initialize to the starting value
     ValInitArray(t2_pts*U_pts, &(pspace.M_grid[0][0]), M_startval);
     
-    // Choose a tolerance for the equality of M and Mprime and print it.
-    const double tol = 1.e-6;
+    // Print the tolerance for the equality of the mean fields.
     std::cout << "\ntol = " << std::scientific << tol << std::endl << std::endl;
+    
+    int numfails = 0; // Tracks number of points which failed to converge after loops_lim
     
     // Loop over values of the parameter space
     /* PARALLELIZATION:, note that different threads do not write to the same parts of 
     pspace. For some reason, kx_bounds and ky_bounds need to be declared as shared even 
     though they are const. In any event, they are only read and cannot be written to. */
-    #pragma omp parallel default(none) shared(pspace,kx_bounds,ky_bounds,std::cout)
+    #pragma omp parallel default(none) shared(pspace,kx_bounds,ky_bounds,std::cout) reduction(+:numfails)
     {
     
     /* Declare (and construct) and instance of kspace_t. This variable is local to each 
@@ -214,10 +219,14 @@ int main(int argc, char* argv[])
             std::cout << "t2 = " << pspace.t2_grid[g] << ", "
                       << "U = "  << pspace.U_grid[h] << std::endl; //Print current params
         
+        int counter = 0; // Define counter for number of loops
+        bool converged=false, fail=false; // Used to stop the while looping
         do // Iterate until self-consistency is achieved
         {
+            ++counter; // Increment counter
+            
             M = Mprime;
-            if (with_output) std::cout << "M = " << M << "\t";
+            if (with_output) std::cout << "M=" << M << "\t";
             
             // Given the parameters, diagonalize the Hamiltonian at each grid point
             for (int i=0; i<kx_pts; ++i)
@@ -231,9 +240,9 @@ int main(int argc, char* argv[])
             // Use all energies to compute chemical potential (elements get reordered)
             // Be careful about lattice basis
             const int num_states = kx_pts*ky_pts*bands_num;
-            const int filled_states = int( rho * (double)(2*kx_pts*ky_pts) );
+            const int filled_states = (int)( rho * (double)(2*kx_pts*ky_pts) );
             double mu = FermiEnerg(num_states, filled_states, &(kspace.energies[0][0][0]));
-            if (with_output) std::cout << "mu = " << mu << "\t";
+            if (with_output) std::cout << "mu=" << mu << "\t";
             
             // Use all the occupation numbers and the eigenvectors to find the order parameter
             // It is probably best to diagonalize a second time to avoid storing the evecs
@@ -251,12 +260,29 @@ int main(int argc, char* argv[])
             Mprime = accumulator;
             // Print out final M value
             if (with_output)
-                std::cout << "Mprime = " << Mprime << "\t"
-                          << "abs(Mprime-M) = " << std::abs(Mprime-M) << std::endl;
-        } while (std::abs(Mprime-M) > tol);
+                std::cout << "Mprime=" << Mprime << "\t"
+                          << "|Mprime-M|=" << std::abs(Mprime-M) << std::endl;
+            
+            // Test for convergence
+            converged = (std::abs(Mprime-M)<tol);
+            fail = (!converged) && (counter>loops_lim); // Must come after converged line
+        } while (!converged && !fail);
         
-        // We save the converged M value to the array pspace.M_grid.
-        pspace.M_grid[g][h] = Mprime;
+        if (converged)
+        {
+            // We save the converged M value to the array pspace.M_grid.
+            pspace.M_grid[g][h] = Mprime;
+            if (fail) std::cout << "OUPS: This option shouldn't have occurred! (1)\n";
+        }
+        else if (fail)
+        {
+            std::cout << "\tWARNING: failure to converge after limit reached.\t"
+                      << "t2 = " << pspace.t2_grid[g] << ", "
+                      << "U = "  << pspace.U_grid[h] << std::endl; //Print current params
+            ++numfails;
+        }
+        else std::cout << "OUPS: This option shouldn't have occurred! (2)\n";
+        
         if (with_output) std::cout << std::endl;
       }
     
@@ -290,5 +316,8 @@ int main(int argc, char* argv[])
     
     pspace.SaveData(GlobalAttr, path); // Call saving method
     
-    return 0;
+    // Print out numfails
+    std::cout << "\n\tNUMBER OF FAILURES TO CONVERGE: " << numfails << "\n\n";
+    
+    return numfails;
 }
