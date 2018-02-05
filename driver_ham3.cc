@@ -200,7 +200,7 @@ double Compute_M_term(const double mu, const double*const evals,
     
     // Test for zero imaginary part
     const double imag_part = std::imag(accumulator/(double)(4*kx_pts*ky_pts));
-    if (imag_part>1.e-15)
+    if (std::abs(imag_part)>1.e-15)
         std::cerr << "WARNING: M has nonzero imaginary part: " << imag_part << std::endl;
     
     return std::real(accumulator/(double)(4*kx_pts*ky_pts));
@@ -229,7 +229,7 @@ double Compute_rhoI_term(const double mu, const double*const evals,
     
     // Test for zero imaginary part
     const double imag_part = std::imag(accumulator/(double)(2*kx_pts*ky_pts));
-    if (imag_part>1.e-15)
+    if (std::abs(imag_part)>1.e-15)
         std::cerr << "WARNING: rhoI has nonzero imaginary part: " << imag_part << std::endl;
     
     return std::real(accumulator/(double)(2*kx_pts*ky_pts));

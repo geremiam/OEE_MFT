@@ -42,7 +42,7 @@ const int t2_pts = 6; const double t2_bounds [2] = {0., 2.}; // NNN hopping ampl
 const int U_pts = 6; const double U_bounds [2] = {0., 15.}; // Hubbard interaction
 // Settings for the iterative search
 const double M_startval = 0.1; // Choose a starting value
-const int loops_lim = 15; // Limit to the number of iteration loops
+const int loops_lim = 1000; // Limit to the number of iteration loops
 const double tol = 1.e-6; // Tolerance for the equality of the mean fields
 
 // Class that defines the parameter space for this Hamiltonian
@@ -165,7 +165,7 @@ double Compute_M_term(const double mu, const double*const evals,
     
     // Test for zero imaginary part
     const double imag_part = std::imag(accumulator/(double)(4*kx_pts*ky_pts));
-    if (imag_part>1.e-15)
+    if (std::abs(imag_part)>1.e-15)
         std::cerr << "WARNING: M has nonzero imaginary part: " << imag_part << std::endl;
     
     return std::real(accumulator/(double)(4*kx_pts*ky_pts));
