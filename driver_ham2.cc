@@ -41,7 +41,9 @@ const double rho = 1.; // Average electron density (FIXED)
 const int t2_pts = 6; const double t2_bounds [2] = {0., 2.}; // NNN hopping amplitude
 const int U_pts = 6; const double U_bounds [2] = {0., 15.}; // Hubbard interaction
 // Settings for the iterative search
-const double M_startval = 0.1; // Choose a starting value
+const double rho_a_startval = 0.2; // Start val for antisymmetric density
+const double mag_s_startval = 0.2; // Start val for symmetric mag
+const double mag_a_startval = 0.2; // Start val for antisymmetric (staggered) mag
 const int loops_lim = 1000; // Limit to the number of iteration loops
 const double tol = 1.e-6; // Tolerance for the equality of the mean fields
 
@@ -82,7 +84,7 @@ public:
         LinInitArray(U_bounds[0],  U_bounds[1],  U_pts,  U_grid,  endpoint);
         
         // The other variables (the order parameters) span the coordinate space
-        ValInitArray(t2_pts*U_pts, &(M_grid[0][0])); // Initialize to zero (for now)
+        ValInitArray(t2_pts*U_pts, &(M_grid[0][0]), -99.); // Initialize to zero (for now)
         
         std::cout << "Instance of pspace_t created." << std::endl;
     }
@@ -130,9 +132,9 @@ void Assign_h(const double kx, const double ky, const double t2_,
     h[3] = -eps - 2.*t2_*( 2.*cos(sqrt(3.)/2.*a*kx+phi)*cos(3./2.*a*ky) + cos(sqrt(3.)*a*kx-phi) );
 }
 
-void Assign_ham(const double kx, const double ky, const double t2_, 
-                  const double rho_, const double U_, 
-                  const double M_, std::complex<double>*const*const H)
+void Assign_ham(const double kx, const double ky, const double t2_, const double U_, 
+                const double rho_a_, const double mag_s_, const double mag_a_, 
+                std::complex<double>*const*const H)
 {
     /* Given the parameters kx, ky, and M, calculate the 4*4 k-space Hamiltonian and 
     assign it to ham_array in full storage layout. */
@@ -140,15 +142,64 @@ void Assign_ham(const double kx, const double ky, const double t2_,
     std::complex<double> h [4] = {0.,0.};
     Assign_h(kx, ky, t2_, h);
     
-    H[0][0] = h[0]+U_*rho_/2.; H[0][1] = h[1];        H[0][2] = -U_*M_; H[0][3] = 0.;
-    H[1][0] = h[2]; H[1][1] = h[3]+U_*rho_/2.;        H[1][2] = 0.;     H[1][3] = +U_*M_;
+    H[0][0] = h[0]+U_*(rho+rho_a_)/2.; H[0][1] = h[1];    H[0][2] = -U_*(mag_s_+mag_a_); H[0][3] = 0.;
+    H[1][0] = h[2]; H[1][1] = h[3]+U_*(rho-rho_a_)/2.;    H[1][2] = 0.; H[1][3] = -U_*(mag_s_-mag_a_);
     
-    H[2][0] = -U_*M_; H[2][1] = 0.;            H[2][2] = h[0]+U_*rho_/2.; H[2][3] = h[1];
-    H[3][0] = 0.;     H[3][1] = +U_*M_;        H[3][2] = h[2]; H[3][3] = h[3]+U_*rho_/2.;
+    H[2][0] = -U_*(mag_s_+mag_a_); H[2][1] = 0.;    H[2][2] = h[0]+U_*(rho+rho_a_)/2.; H[2][3] = h[1];
+    H[3][0] = 0.; H[3][1] = -U_*(mag_s_-mag_a_);    H[3][2] = h[2]; H[3][3] = h[3]+U_*(rho-rho_a_)/2.;
 }
 
-double Compute_M_term(const double mu, const double*const evals, 
-                       const std::complex<double>*const*const evecs)
+
+double ComputeTerm_rho_a(const double mu, const double*const evals, 
+                         const std::complex<double>*const*const evecs)
+{
+    // Evaluates the contribution to the OP from a single k (see notes)
+    // Not good to implement matrix mult. by hand... but we will for simplicity
+    const double A [bands_num][bands_num] = {{+1., 0., 0., 0.}, 
+                                             {0., -1., 0., 0.},
+                                             {0., 0., +1., 0.},
+                                             {0., 0., 0., -1.}};
+    // Calculate the trace (see notes)
+    std::complex<double> accumulator = {0.,0.};
+    for (int b=0; b<bands_num; ++b)
+        for (int c=0; c<bands_num; ++c)
+            for (int d=0; d<bands_num; ++d)
+                accumulator += conj(evecs[c][b])*A[c][d]*evecs[d][b]*nF0(evals[b]-mu);
+    
+    // Test for zero imaginary part
+    const double imag_part = std::imag(accumulator/(double)(2*kx_pts*ky_pts));
+    if (std::abs(imag_part)>1.e-15)
+      std::cerr <<"WARNING: rho_a has nonzero imaginary part: " <<imag_part <<std::endl;
+    
+    return std::real(accumulator/(double)(2*kx_pts*ky_pts));
+}
+
+double ComputeTerm_mag_s(const double mu, const double*const evals, 
+                         const std::complex<double>*const*const evecs)
+{
+    // Evaluates the contribution to the OP from a single k (see notes)
+    // Not good to implement matrix mult. by hand... but we will for simplicity
+    const double A [bands_num][bands_num] = {{0., 0., +1., 0.}, 
+                                             {0., 0., 0., +1.},
+                                             {+1., 0., 0., 0.},
+                                             {0., +1., 0., 0.}};
+    // Calculate the trace (see notes)
+    std::complex<double> accumulator = {0.,0.};
+    for (int b=0; b<bands_num; ++b)
+        for (int c=0; c<bands_num; ++c)
+            for (int d=0; d<bands_num; ++d)
+                accumulator += conj(evecs[c][b])*A[c][d]*evecs[d][b]*nF0(evals[b]-mu);
+    
+    // Test for zero imaginary part
+    const double imag_part = std::imag(accumulator/(double)(4*kx_pts*ky_pts));
+    if (std::abs(imag_part)>1.e-15)
+      std::cerr <<"WARNING: mag_s has nonzero imaginary part: " <<imag_part <<std::endl;
+    
+    return std::real(accumulator/(double)(4*kx_pts*ky_pts));
+}
+
+double ComputeTerm_mag_a(const double mu, const double*const evals, 
+                         const std::complex<double>*const*const evecs)
 {
     // Evaluates the contribution to the OP from a single k (see notes)
     // Not good to implement matrix mult. by hand... but we will for simplicity
@@ -166,7 +217,7 @@ double Compute_M_term(const double mu, const double*const evals,
     // Test for zero imaginary part
     const double imag_part = std::imag(accumulator/(double)(4*kx_pts*ky_pts));
     if (std::abs(imag_part)>1.e-15)
-        std::cerr << "WARNING: M has nonzero imaginary part: " << imag_part << std::endl;
+      std::cerr <<"WARNING: mag_a has nonzero imaginary part: " <<imag_part <<std::endl;
     
     return std::real(accumulator/(double)(4*kx_pts*ky_pts));
 }
@@ -175,15 +226,13 @@ double Compute_M_term(const double mu, const double*const evals,
 // ######################################################################################
 int main(int argc, char* argv[])
 {
-    const bool with_output = false; // Show output for diagnostics
+    const bool with_output = true; // Show output for diagnostics
     
     // Declare object of type pspace (parameter space)
     pspace_t pspace(t2_pts, t2_bounds, U_pts, U_bounds);
-    // Initialize to the starting value
-    ValInitArray(t2_pts*U_pts, &(pspace.M_grid[0][0]), M_startval);
     
     // Print the tolerance for the equality of the mean fields.
-    std::cout << "\ntol = " << std::scientific << tol << std::endl << std::endl;
+    std::cout << std::scientific << std::showpos << "\ntol = " << tol << "\n\n";
     
     int numfails = 0; // Tracks number of points which failed to converge after loops_lim
     
@@ -212,8 +261,9 @@ int main(int argc, char* argv[])
       for (int h=0; h<U_pts;  ++h)
       {
         
-        double M =      M_startval;
-        double Mprime = M_startval;
+        double rho_a_in = rho_a_startval; double rho_a_out = rho_a_startval;
+        double mag_s_in = mag_s_startval; double mag_s_out = mag_s_startval;
+        double mag_a_in = mag_a_startval; double mag_a_out = mag_a_startval;
         
         if (with_output)
             std::cout << "t2 = " << pspace.t2_grid[g] << ", "
@@ -225,15 +275,19 @@ int main(int argc, char* argv[])
         {
             ++counter; // Increment counter
             
-            M = Mprime;
-            if (with_output) std::cout << "M=" << M << "\t";
+            rho_a_in = rho_a_out;
+            mag_s_in = mag_s_out;
+            mag_a_in = mag_a_out;
+            if (with_output) std::cout <<   "rho_a_in=" << rho_a_in 
+                                       << ", m_s_in=" << mag_s_in
+                                       << ", m_a_in=" << mag_a_in << "\t";
             
             // Given the parameters, diagonalize the Hamiltonian at each grid point
             for (int i=0; i<kx_pts; ++i)
               for (int j=0; j<ky_pts; ++j)
               {
                 Assign_ham(kspace.kx_grid[i], kspace.ky_grid[j], pspace.t2_grid[g], 
-                             rho, pspace.U_grid[h], M, ham_array);
+                           pspace.U_grid[h], rho_a_in, mag_s_in, mag_a_in, ham_array);
                 simple_zheev(bands_num, &(ham_array[0][0]), &(kspace.energies[i][j][0]));
               }
             
@@ -242,36 +296,50 @@ int main(int argc, char* argv[])
             const int num_states = kx_pts*ky_pts*bands_num;
             const int filled_states = (int)( rho * (double)(2*kx_pts*ky_pts) );
             double mu = FermiEnerg(num_states, filled_states, &(kspace.energies[0][0][0]));
-            if (with_output) std::cout << "mu=" << mu << "\t";
+            //if (with_output) std::cout << "mu=" << mu << "\t";
             
             // Use all the occupation numbers and the eigenvectors to find the order parameter
             // It is probably best to diagonalize a second time to avoid storing the evecs
-            double accumulator = 0;
+            double rho_a_accumulator = 0.;
+            double mag_s_accumulator = 0.;
+            double mag_a_accumulator = 0.;
             
             for (int i=0; i<kx_pts; ++i)
               for (int j=0; j<ky_pts; ++j)
               {
                 Assign_ham(kspace.kx_grid[i], kspace.ky_grid[j], pspace.t2_grid[g], 
-                             rho, pspace.U_grid[h], M, ham_array);
+                           pspace.U_grid[h], rho_a_in, mag_s_in, mag_a_in, ham_array);
                 simple_zheev(bands_num, &(ham_array[0][0]), &(kspace.energies[i][j][0]), 
                              true, &(evecs[0][0]));
-                accumulator += Compute_M_term(mu, &(kspace.energies[i][j][0]), evecs);
+                
+                rho_a_accumulator += ComputeTerm_rho_a(mu, &(kspace.energies[i][j][0]), evecs);
+                mag_s_accumulator += ComputeTerm_mag_s(mu, &(kspace.energies[i][j][0]), evecs);
+                mag_a_accumulator += ComputeTerm_mag_a(mu, &(kspace.energies[i][j][0]), evecs);
               }
-            Mprime = accumulator;
+            rho_a_out = rho_a_accumulator;
+            mag_s_out = mag_s_accumulator;
+            mag_a_out = mag_a_accumulator;
+            
             // Print out final M value
             if (with_output)
-                std::cout << "Mprime=" << Mprime << "\t"
-                          << "|Mprime-M|=" << std::abs(Mprime-M) << std::endl;
+                std::cout //<<  "rho_a_out=" << rho_a_out
+                          //<< " mag_s_out=" << mag_s_out
+                          //<< " mag_a_out=" << mag_a_out
+                          <<   "\td rho_a=" << rho_a_out-rho_a_in
+                          <<     ", d m_s=" << mag_s_out-mag_s_in
+                          <<     ", d m_a=" << mag_a_out-mag_a_in << std::endl;
             
             // Test for convergence
-            converged = (std::abs(Mprime-M)<tol);
+            converged =    (std::abs(rho_a_out-rho_a_in)<tol) 
+                        && (std::abs(mag_s_out-mag_s_in)<tol)
+                        && (std::abs(mag_a_out-mag_a_in)<tol);
             fail = (!converged) && (counter>loops_lim); // Must come after converged line
         } while (!converged && !fail);
         
         if (converged)
         {
             // We save the converged M value to the array pspace.M_grid.
-            pspace.M_grid[g][h] = Mprime;
+            pspace.M_grid[g][h] = mag_a_out;
             if (fail) std::cout << "OUPS: This option shouldn't have occurred! (1)\n";
         }
         else if (fail)
@@ -310,7 +378,7 @@ int main(int argc, char* argv[])
         "; ky_bounds = "+to_string(ky_bounds[0])+", "+to_string(ky_bounds[1])+
         "; bands_num = "+to_string(bands_num)+"; t1 = "+to_string(t1)+
         "; phi = "+to_string(phi)+"; eps = "+to_string(eps)+"; rho = "+to_string(rho)+
-        "; M_startval = "+to_string(M_startval)+"; tol = "+to_string(tol);
+        "; M_startval = "+to_string(mag_a_startval)+"; tol = "+to_string(tol);
         
     const std::string path="data/ham2/"; //Choose the path for saving (include final '/')
     
