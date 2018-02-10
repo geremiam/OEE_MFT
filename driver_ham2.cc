@@ -66,14 +66,19 @@ public:
     double*const t2_grid; // t2 coordinate variable
     double*const U_grid; // U coordinate variable
     
-    double*const*const M_grid; // M variable
+    double*const*const rho_a_grid; // rho_a variable
+    double*const*const mag_s_grid; // mag_s variable
+    double*const*const mag_a_grid; // mag_a variable
+    double*const*const loops_grid; // holds the number of loops done at each point
     
     // Constructor declaration
     pspace_t(const int t2_pts_, const double*const t2_bounds_, 
              const int U_pts_,  const double*const U_bounds_)
         :t2_pts(t2_pts_), t2_bounds(t2_bounds_), t2_grid(new double [t2_pts_]),
          U_pts(U_pts_),   U_bounds(U_bounds_),   U_grid(new double [U_pts_]),
-         M_grid(Alloc2D_d(t2_pts, U_pts)) // Important -- Note order: t2, U
+         rho_a_grid(Alloc2D_d(t2_pts, U_pts)), mag_s_grid(Alloc2D_d(t2_pts, U_pts)),
+         mag_a_grid(Alloc2D_d(t2_pts, U_pts)), loops_grid(Alloc2D_d(t2_pts, U_pts)) 
+         // Important -- Note order: t2, U
     {
         /* The initialization list initialized the parameters and allocates memory for 
         the arrays. */
@@ -84,7 +89,10 @@ public:
         LinInitArray(U_bounds[0],  U_bounds[1],  U_pts,  U_grid,  endpoint);
         
         // The other variables (the order parameters) span the coordinate space
-        ValInitArray(t2_pts*U_pts, &(M_grid[0][0]), -99.); // Initialize to zero (for now)
+        ValInitArray(t2_pts*U_pts,&(rho_a_grid[0][0]),-99.);//Initialize to unlikely value
+        ValInitArray(t2_pts*U_pts,&(mag_s_grid[0][0]),-99.);//Initialize to unlikely value
+        ValInitArray(t2_pts*U_pts,&(mag_a_grid[0][0]),-99.);//Initialize to unlikely value
+        ValInitArray(t2_pts*U_pts,&(loops_grid[0][0]),-99.);//Initialize to unlikely value
         
         std::cout << "Instance of pspace_t created." << std::endl;
     }
@@ -93,7 +101,10 @@ public:
     {
         delete [] t2_grid;
         delete [] U_grid;
-        Dealloc2D(M_grid);
+        Dealloc2D(rho_a_grid);
+        Dealloc2D(mag_s_grid);
+        Dealloc2D(mag_a_grid);
+        Dealloc2D(loops_grid);
         std::cout << "Instance of pspace_t deleted." << std::endl;
     }
     
@@ -107,8 +118,8 @@ public:
         const int dims_num = 2;
         const std::string dim_names [dims_num] = {"t2", "U"};
         const int dim_lengths [dims_num] = {t2_pts, U_pts};
-        const int vars_num = 1; // Variables other than coord variables
-        const std::string var_names [vars_num] = {"M"};
+        const int vars_num = 4; // Variables other than coord variables
+        const std::string var_names [vars_num] = {"rho_a", "mag_s", "mag_a", "loops"};
         
         // Constructor for the dataset class creates a dataset
         newDS_t newDS(GlobalAttr_, dims_num, dim_names, dim_lengths,
@@ -117,7 +128,8 @@ public:
         const double*const coord_vars [dims_num] = {t2_grid, U_grid};
         newDS.WriteCoordVars(coord_vars); // Write the coordinate variables
         
-        const double*const vars [vars_num] = {&(M_grid[0][0])};
+        const double*const vars [vars_num] = {&(rho_a_grid[0][0]), &(mag_s_grid[0][0]), 
+                                              &(mag_a_grid[0][0]), &(loops_grid[0][0])};
         newDS.WriteVars(vars); // Write the variables
     }
 };
@@ -336,10 +348,14 @@ int main(int argc, char* argv[])
             fail = (!converged) && (counter>loops_lim); // Must come after converged line
         } while (!converged && !fail);
         
+        pspace.loops_grid[g][h] = counter; // Save the number of loops to pspace array.
+        
         if (converged)
         {
-            // We save the converged M value to the array pspace.M_grid.
-            pspace.M_grid[g][h] = mag_a_out;
+            // We save the converged MFs to the pspace arrays.
+            pspace.rho_a_grid[g][h] = rho_a_out;
+            pspace.mag_s_grid[g][h] = mag_s_out;
+            pspace.mag_a_grid[g][h] = mag_a_out;
             if (fail) std::cout << "OUPS: This option shouldn't have occurred! (1)\n";
         }
         else if (fail)
@@ -363,8 +379,12 @@ int main(int argc, char* argv[])
     // Print out M array
     if (with_output)
     {
-        std::cout << std::endl << "pspace.M_grid = " << std::endl;
-        PrintMatrix(t2_pts, U_pts, pspace.M_grid, std::cout);
+        std::cout << "\npspace.rho_a_grid = \n";
+        PrintMatrix(t2_pts, U_pts, pspace.rho_a_grid, std::cout);
+        std::cout << "\npspace.mag_s_grid = \n";
+        PrintMatrix(t2_pts, U_pts, pspace.mag_s_grid, std::cout);
+        std::cout << "\npspace.mag_a_grid = \n";
+        PrintMatrix(t2_pts, U_pts, pspace.mag_a_grid, std::cout);
         std::cout << std::endl;
     }
     
@@ -378,7 +398,9 @@ int main(int argc, char* argv[])
         "; ky_bounds = "+to_string(ky_bounds[0])+", "+to_string(ky_bounds[1])+
         "; bands_num = "+to_string(bands_num)+"; t1 = "+to_string(t1)+
         "; phi = "+to_string(phi)+"; eps = "+to_string(eps)+"; rho = "+to_string(rho)+
-        "; M_startval = "+to_string(mag_a_startval)+"; tol = "+to_string(tol);
+        "; rho_a_startval = "+to_string(rho_a_startval)+
+        "; mag_s_startval = "+to_string(mag_s_startval)+
+        "; mag_a_startval = "+to_string(mag_a_startval)+"; tol = "+to_string(tol);
         
     const std::string path="data/ham2/"; //Choose the path for saving (include final '/')
     
