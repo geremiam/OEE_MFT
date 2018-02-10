@@ -238,7 +238,7 @@ double ComputeTerm_mag_a(const double mu, const double*const evals,
 // ######################################################################################
 int main(int argc, char* argv[])
 {
-    const bool with_output = true; // Show output for diagnostics
+    const bool with_output = false; // Show output for diagnostics
     
     // Declare object of type pspace (parameter space)
     pspace_t pspace(t2_pts, t2_bounds, U_pts, U_bounds);
@@ -273,9 +273,9 @@ int main(int argc, char* argv[])
       for (int h=0; h<U_pts;  ++h)
       {
         
-        double rho_a_in = rho_a_startval; double rho_a_out = rho_a_startval;
-        double mag_s_in = mag_s_startval; double mag_s_out = mag_s_startval;
-        double mag_a_in = mag_a_startval; double mag_a_out = mag_a_startval;
+        double rho_a_out = rho_a_startval;
+        double mag_s_out = mag_s_startval;
+        double mag_a_out = mag_a_startval;
         
         if (with_output)
             std::cout << "t2 = " << pspace.t2_grid[g] << ", "
@@ -287,9 +287,9 @@ int main(int argc, char* argv[])
         {
             ++counter; // Increment counter
             
-            rho_a_in = rho_a_out;
-            mag_s_in = mag_s_out;
-            mag_a_in = mag_a_out;
+            double rho_a_in = rho_a_out;
+            double mag_s_in = mag_s_out;
+            double mag_a_in = mag_a_out;
             if (with_output) std::cout <<   "rho_a_in=" << rho_a_in 
                                        << ", m_s_in=" << mag_s_in
                                        << ", m_a_in=" << mag_a_in << "\t";
@@ -308,7 +308,6 @@ int main(int argc, char* argv[])
             const int num_states = kx_pts*ky_pts*bands_num;
             const int filled_states = (int)( rho * (double)(2*kx_pts*ky_pts) );
             double mu = FermiEnerg(num_states, filled_states, &(kspace.energies[0][0][0]));
-            //if (with_output) std::cout << "mu=" << mu << "\t";
             
             // Use all the occupation numbers and the eigenvectors to find the order parameter
             // It is probably best to diagonalize a second time to avoid storing the evecs
