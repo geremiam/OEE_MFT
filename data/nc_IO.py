@@ -1,7 +1,7 @@
 # nc_IO.py
 """ Routines for interacting with NetCDF datasets. """
 
-import numpy
+import numpy as np
 from scipy.io import netcdf
 
 def nc_read(Filename):
@@ -10,6 +10,8 @@ def nc_read(Filename):
     lengths, the coordinate variables, the variable names and the variables are returned. 
     Note that variables are loaded into memory and returned as arrays, so this is not 
     adequate for very large datasets. """
+    np.set_printoptions(linewidth=1000)
+    
     with netcdf.netcdf_file(Filename, 'r') as File: # Open the NetCDF file
         # Print some relevant info
         #print("\nAttributes: ", File.GlobalAtt)

@@ -35,16 +35,16 @@ const int ham_array_cols = bands_num; // Same as matrix order for full storage
 parameter study. */
 const double t1 = 1.; // t1 is set to 1, so we measure all other energies in units of t1
 const double phi = pi/2.; // Flux phase in the Haldane model
-const double eps = 0.; // Potential difference between A and B sublattices
+const double eps = 0.2; // Potential difference between A and B sublattices
 const double rho = 1.; // Average electron density (FIXED)
 // Range and resolution of the parameter study
 const int t2_pts = 6; const double t2_bounds [2] = {0., 2.}; // NNN hopping amplitude
 const int U_pts = 6; const double U_bounds [2] = {0., 15.}; // Hubbard interaction
 // Settings for the iterative search
-const double rho_a_startval = 0.2; // Start val for antisymmetric density
+const double rho_a_startval = 0.04; // Start val for antisymmetric density
 const double mag_s_startval = 0.2; // Start val for symmetric mag
 const double mag_a_startval = 0.2; // Start val for antisymmetric (staggered) mag
-const int loops_lim = 1000; // Limit to the number of iteration loops
+const int loops_lim = 3000; // Limit to the number of iteration loops
 const double tol = 1.e-6; // Tolerance for the equality of the mean fields
 
 // Class that defines the parameter space for this Hamiltonian
