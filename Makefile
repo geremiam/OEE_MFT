@@ -6,9 +6,9 @@
 # Flags for including in path search
 INC_FLAGS=-I${LAPACKE_INC} -I${NETCDF_INC}
 # Compiler flags (add -fopenmp to compilation and linking for OpenMP)
-CXXFLAGS=-std=c++11 -O2 -fopenmp
+CXXFLAGS=-std=c++11 -O2
 # Linker flags (add -fopenmp to compilation and linking for OpenMP)
-LD_FLAGS=-L${LAPACKE_LIB} -L${NETCDF_LIB} -fopenmp
+LD_FLAGS=-L${LAPACKE_LIB} -L${NETCDF_LIB}
 # Flags for linking with libraries (place after all object files)
 LD_LIBS=-llapacke -lnetcdf
 # List of object files and header files belonging to modules
@@ -260,6 +260,34 @@ IO_test.o: IO_test.cc IO.h alloc_dealloc.h
 .PHONY: IO_clean
 IO_clean:
 	rm -f IO_test.o IO.o alloc_dealloc.o IO_test
+
+# #######################################################################################
+# MODULE HAM3
+
+# ham3.o object file depends on header file, source file, and all included header 
+# files
+ham3.o: ham3.cc ham3.h alloc_dealloc.h init_routines.h math_routines.h
+	$(CXX) $(CXXFLAGS) -c ham3.cc -o ham3.o
+
+## ut_ham3: Runs the testing suite for the module ham3
+.PHONY: ut_ham3
+ut_ham3: ham3_test # Runs the testing suite's executable
+	./ham3_test
+
+# Testing suite executable depends on ham3_test.o, ham3.o, and the other 
+# modules used in the source code.
+ham3_test: ham3_test.o IO.o ham3.o alloc_dealloc.o init_routines.o math_routines.o
+	$(CXX) ham3_test.o IO.o ham3.o alloc_dealloc.o init_routines.o math_routines.o -o ham3_test
+
+# ham3_test.o object file depends on source file and IO.h header
+ham3_test.o: ham3_test.cc ham3.h IO.h
+	$(CXX) $(CXXFLAGS) -c ham3_test.cc -o ham3_test.o
+
+# Deletion of the object files and executable files pertaining to this unit test.
+.PHONY: ham3_clean
+ham3_clean:
+	rm -f ham3_test.o IO.o ham3.o alloc_dealloc.o init_routines.o math_routines.o ham3_test
+
 # #######################################################################################
 
 
@@ -276,7 +304,8 @@ ut_clean: ut_alloc_dealloc_clean \
           ut_diag_routines_clean \
           ut_kspace_clean \
           ut_nc_IO_clean \
-          IO_clean
+          IO_clean \
+          ham3_clean
 
 ## help: Shows targets and their descriptions
 .PHONY: help
