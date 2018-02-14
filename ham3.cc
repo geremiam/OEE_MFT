@@ -7,7 +7,9 @@
 #include "init_routines.h" // Initialization of arrays
 #include "math_routines.h" // Various math functions
 #include "ham3.h" // Include header file for consistency check
+//using std::cos; using std::sin; using std::conj; // Not sure if these are necessary
 using std::polar;
+using std::to_string;
 
 void Assign_h(const double kx, const double ky, const double a, const pars_t pars,
               std::complex<double>*const h)
@@ -139,4 +141,25 @@ double ham3_t::ComputeTerm_rhoI(const double mu, const double*const evals,
         std::cerr << "WARNING: rhoI has nonzero imaginary part: " << imag_part << std::endl;
     
     return std::real(accumulator/(double)(2*kx_pts*ky_pts));
+}
+
+std::string ham3_t::GetAttributes()
+{
+    // Define a string of metadata
+    const std::string Attributes = "Haldane Hubbard bilayer (ham3)"
+        ": NN distance a = "+to_string(a)+"; kx_pts = "+to_string(kx_pts)+
+        "; kx_bounds = "+to_string(kx_bounds[0])+", "+to_string(kx_bounds[1])+
+        "; ky_pts = " + to_string(ky_pts)+
+        "; ky_bounds = "+to_string(ky_bounds[0])+", "+to_string(ky_bounds[1])+
+        "; bands_num = "+to_string(bands_num)+
+        "; parsI = ("+to_string(parsI.t1) +","+to_string(parsI.t2)+","+
+                      to_string(parsI.eps)+","+to_string(parsI.phi)+")"
+        "; parsII = ("+to_string(parsII.t1) +","+to_string(parsII.t2)+","+
+                       to_string(parsII.eps)+","+to_string(parsII.phi)+")"
+        "; tperp = "+to_string(tperp)+"; L = "+to_string(L)+"; rho = "+to_string(rho)+
+        "; U = "+to_string(U)+"; mag_startval = "+to_string(mag_startval)+
+        "; rhoI_startval = "+to_string(rhoI_startval)+"; tol = "+to_string(tol)+
+        "; loops_lim = "+to_string(loops_lim);
+    
+    return Attributes;
 }

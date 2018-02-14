@@ -33,16 +33,15 @@ class ham3_t
     // Private assignment operator (prohibits assignment)
     const ham3_t& operator=(const ham3_t&);
     
-    
     const double a = 1.; // We take a to be the NN distance
+    
+  public:
     
     /* Settings for the iterative search */
     const double mag_startval = 0.1; // Choose a starting value
     const double rhoI_startval = 0.5; // Choose starting value
     const int loops_lim = 3000; // Limit to the number of iteration loops
     const double tol = 1.e-6; // Tolerance for the equality of the mean fields
-    
-  public:
     
     /* Size of the Hamiltonian, or equivalently number of bands (constant) */
     const int bands_num = 8; // The number of bands, i.e. the order of the matrix for each k
@@ -57,19 +56,22 @@ class ham3_t
     
     
     
-    double tperp = 0.3; // Base value of tperp (gets scaled)
+    const double tperp_0 = 0.3; // Base value of tperp (gets scaled)
+    double tperp = tperp_0;
     double L = 0.; // bias voltage between layers I and II
     double rho = 1.; // Average (global) electron density, between 0 and 2
     double U = 0.; // Hubbard interaction strength
     
     pars_t parsI, parsII;
     
-    double mag = -88.;
-    double rhoI = -88.;
+    double mag=-88.;
+    double rhoI=-88.;
+    
+    const int num_states = kx_pts*ky_pts*bands_num;
+    int filled_states = (int)( rho * (double)(4*kx_pts*ky_pts) );
     
     
-    
-    std::complex<double>*const*const ham_array; // kx coordinate variable
+    std::complex<double>*const*const ham_array; // array for storing the Hamiltonian
     
     
     ham3_t(); // Constructor declaration
@@ -81,6 +83,8 @@ class ham3_t
                            const std::complex<double>*const*const evecs);
     double ComputeTerm_rhoI(const double mu, const double*const evals, 
                             const std::complex<double>*const*const evecs);
+    
+    std::string GetAttributes();
 };
 
 #endif

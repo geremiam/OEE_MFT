@@ -6,9 +6,9 @@
 # Flags for including in path search
 INC_FLAGS=-I${LAPACKE_INC} -I${NETCDF_INC}
 # Compiler flags (add -fopenmp to compilation and linking for OpenMP)
-CXXFLAGS=-std=c++11 -O2
+CXXFLAGS=-std=c++11 -O2 -fopenmp
 # Linker flags (add -fopenmp to compilation and linking for OpenMP)
-LD_FLAGS=-L${LAPACKE_LIB} -L${NETCDF_LIB}
+LD_FLAGS=-L${LAPACKE_LIB} -L${NETCDF_LIB} -fopenmp
 # Flags for linking with libraries (place after all object files)
 LD_LIBS=-llapacke -lnetcdf
 # List of object files and header files belonging to modules
@@ -60,17 +60,17 @@ driver_ham2_clean:
 
 ## driver_ham3: Builds the final executable for driver_ham3
 # Linking of the object files into the final executable. Depends on all .o files.
-driver_ham3: driver_ham3.o $(OBJECTS)
-	$(CXX) $(LD_FLAGS) driver_ham3.o $(OBJECTS) $(LD_LIBS) -o driver_ham3
+driver_ham3: driver_ham3.o ham3.o $(OBJECTS)
+	$(CXX) $(LD_FLAGS) driver_ham3.o ham3.o $(OBJECTS) $(LD_LIBS) -o driver_ham3
 
 # Creation of the driver_ham3.o object file, which depends on the header files
-driver_ham3.o: driver_ham3.cc $(HEADERS)
+driver_ham3.o: driver_ham3.cc ham3.h $(HEADERS)
 	$(CXX) $(CXXFLAGS) $(INC_FLAGS) -c driver_ham3.cc -o driver_ham3.o
 
 # Deletion of the object file and executable file for this driver
 .PHONY: driver_ham3_clean
 driver_ham3_clean:
-	rm -f driver_ham3.o driver_ham3
+	rm -f driver_ham3.o ham3.o driver_ham3
 
 # #######################################################################################
 # MODULE ALLOC_DEALLOC
