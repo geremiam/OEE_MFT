@@ -29,6 +29,7 @@ void Assign_h(const double kx, const double ky, const double a, const pars_t par
 
 pars_t::pars_t(const double lambda)
 {
+    /* Upon construction, the scaling is set to lambda (default value is 1). */
     SetScaling(lambda);
 }
 
@@ -45,23 +46,23 @@ void pars_t::SetScaling(const double lambda)
 ham3_t::ham3_t()
     :ham_array(Alloc2D_z(ham_array_rows, ham_array_cols))
 {
-    /* Constructor implementation. */
+    /* Constructor implementation. ham_array is allocated and initialized. */
     ValInitArray(ham_array_rows*ham_array_cols, &(ham_array[0][0]));//Initialize to zero
     std::cout << "ham3_t instance created.\n";
 }
 
 ham3_t::~ham3_t()
 {
-    // Destructor implementation
+    /* Destructor implementation. ham_array is deallocated. */
     Dealloc2D(ham_array);
     std::cout << "ham3_t instance deleted.\n";
 }
 
 void ham3_t::Assign_ham(const double kx, const double ky)
 {
-    /* Given the parameters kx, ky, and M_, calculate the 8*8 k-space Hamiltonian and 
-    assign it to H in full storage layout. The diag routine only uses the lower triangle, 
-    so we only assign that part. */
+    /* Given the arguments kx and ky as well as member parameters, calculate the 8*8 
+    k-space Hamiltonian and assign it to ham_array in full storage layout. The diag 
+    routine only uses the lower triangle, so we only assign that part. */
     
     // We calculate the kinetic energy parts of the Hamiltonian
     std::complex<double> hI [4] = {0.,0.};
@@ -69,7 +70,7 @@ void ham3_t::Assign_ham(const double kx, const double ky)
     std::complex<double> hII [4] = {0.,0.};
     Assign_h(kx, ky, a, parsII, hII);
     
-    std::complex<double>*const*const& H = ham_array;//For convenience, define reference
+    std::complex<double>*const*const& H = ham_array; // For convenience, define reference
     
     H[0][0]=hI[0]+U*rhoI/2.+L/2.; 
     H[1][0]=hI[2]; H[1][1]=hI[3]+U*rhoI/2.+L/2.; 
@@ -109,7 +110,7 @@ double ham3_t::ComputeTerm_mag(const double mu, const double*const evals,
     // Test for zero imaginary part
     const double imag_part = std::imag(accumulator/(double)(4*kx_pts*ky_pts));
     if (std::abs(imag_part)>1.e-15)
-        std::cerr << "WARNING: M has nonzero imaginary part: " << imag_part << std::endl;
+        std::cerr << "WARNING: mag has nonzero imaginary part: " << imag_part << "\n";
     
     return std::real(accumulator/(double)(4*kx_pts*ky_pts));
 }
@@ -138,7 +139,7 @@ double ham3_t::ComputeTerm_rhoI(const double mu, const double*const evals,
     // Test for zero imaginary part
     const double imag_part = std::imag(accumulator/(double)(2*kx_pts*ky_pts));
     if (std::abs(imag_part)>1.e-15)
-        std::cerr << "WARNING: rhoI has nonzero imaginary part: " << imag_part << std::endl;
+        std::cerr << "WARNING: rhoI has nonzero imaginary part: " << imag_part << "\n";
     
     return std::real(accumulator/(double)(2*kx_pts*ky_pts));
 }

@@ -17,11 +17,6 @@ NetCDF dataset. */
 #include "ham3.h" // Source code for ham3
 
 
-/* Range and resolution of the parameter study */
-const int alpha_pts = 6; const double alpha_bounds [2] = {1., 3.}; // scaling factor
-const int U_pts = 6; const double U_bounds [2] = {0., 10.};//Hubbard interaction strength
-
-
 // Class that defines the parameter space for this Hamiltonian
 class pspace_t {
   private:
@@ -30,26 +25,25 @@ class pspace_t {
     // Private assignment operator (prohibits assignment)
     const pspace_t& operator=(const pspace_t&);
     
-    // scaling factor
-    const int alpha_pts;
-    const double*const alpha_bounds; // Two-component array
-    // Hubbard interaction
-    const int U_pts;
-    const double*const U_bounds; // Two-component array
   public:
+    // scaling factor
+    const int alpha_pts = 6; const double alpha_bounds [2] = {1., 3.};
+    // Hubbard interaction strength
+    const int U_pts = 6;     const double U_bounds [2] = {0., 10.};
+    
+    // Coordinate variables
     double*const alpha_grid; // alpha coordinate variable
     double*const U_grid; // U coordinate variable
     
+    // MF parameters
     double*const*const M_grid; // M variable
     double*const*const rhoI_grid; // rhoI variable
     
     // Constructor declaration
-    pspace_t(const int alpha_pts_, const double*const alpha_bounds_, 
-             const int U_pts_,  const double*const U_bounds_)
-        :alpha_pts(alpha_pts_), alpha_bounds(alpha_bounds_), alpha_grid(new double [alpha_pts_]),
-         U_pts(U_pts_),   U_bounds(U_bounds_),   U_grid(new double [U_pts_]),
-         M_grid(Alloc2D_d(alpha_pts_, U_pts_)), 
-         rhoI_grid(Alloc2D_d(alpha_pts_, U_pts_)) // Important -- Note order: alpha, U
+    pspace_t()
+        :alpha_grid(new double [alpha_pts]), U_grid(new double [U_pts]),
+         M_grid(Alloc2D_d(alpha_pts, U_pts)), rhoI_grid(Alloc2D_d(alpha_pts, U_pts))
+         // Important -- Note order: alpha, U
     {
         /* The initialization list initializes the parameters and allocates memory for 
         the arrays. */
@@ -99,17 +93,17 @@ class pspace_t {
     }
 };
 
-bool IterativeSearch(double& Mprime, double& rhoIprime, ham3_t& ham3, kspace_t& kspace, 
+bool IterativeSearch(double& mag, double& rhoI, ham3_t& ham3, kspace_t& kspace, 
                     std::complex<double>*const*const evecs, const bool with_output=false)
 {
     /* Performs the iterative self-consistent search using the parameters from ham3 and 
-    the arrays kspace and evecs. The initial values of Mprime and rhoIprime are used as 
-    the starting values for the search; the end values are also output to Mprime and 
-    rhoIprime. */
+    the arrays kspace and evecs. The initial values of mag and rhoI are used as the 
+    starting values for the search; the end values are also output to mag and rhoI. */
     
-    // For clarity, we define references for the MF parameter arguments.
-    double& mag_out  = Mprime;
-    double& rhoI_out = rhoIprime;
+    /* For clarity, we define references for the MF parameter arguments, which are used 
+    to output to. */
+    double& mag_out  = mag;
+    double& rhoI_out = rhoI;
     
     int counter = 0; // Define counter for number of loops
     bool converged=false, fail=false; // Used to stop the while looping
@@ -119,7 +113,8 @@ bool IterativeSearch(double& Mprime, double& rhoIprime, ham3_t& ham3, kspace_t& 
         
         ham3.mag = mag_out;
         ham3.rhoI = rhoI_out; // Update mean-field values
-        if (with_output) std::cout << "mag=" << ham3.mag << ", rhoI=" << ham3.rhoI << "\t";
+        if (with_output) std::cout <<    "mag=" << ham3.mag 
+                                   << ", rhoI=" << ham3.rhoI << "\t";
         
         // Given the parameters, diagonalize the Hamiltonian at each grid point
         for (int i=0; i<ham3.kx_pts; ++i)
@@ -127,12 +122,12 @@ bool IterativeSearch(double& Mprime, double& rhoIprime, ham3_t& ham3, kspace_t& 
             {
             ham3.Assign_ham(kspace.kx_grid[i], kspace.ky_grid[j]);
             simple_zheev(ham3.bands_num, &(ham3.ham_array[0][0]), 
-                                                        &(kspace.energies[i][j][0]));
+                                                            &(kspace.energies[i][j][0]));
             }
         
         // Use all energies to compute chemical potential (elements get reordered)
         double mu = FermiEnerg(ham3.num_states, ham3.filled_states, 
-                                                        &(kspace.energies[0][0][0]));
+                                                            &(kspace.energies[0][0][0]));
         
         // Use all the occupation numbers and the evecs to find the order parameter
         // Probably best to diagonalize a second time to avoid storing the evecs
@@ -144,24 +139,27 @@ bool IterativeSearch(double& Mprime, double& rhoIprime, ham3_t& ham3, kspace_t& 
             {
             ham3.Assign_ham(kspace.kx_grid[i], kspace.ky_grid[j]);
             simple_zheev(ham3.bands_num, &(ham3.ham_array[0][0]), 
-                                  &(kspace.energies[i][j][0]), true, &(evecs[0][0]));
-            mag_accumulator  += ham3.ComputeTerm_mag(mu,  &(kspace.energies[i][j][0]), evecs);
-            rhoI_accumulator += ham3.ComputeTerm_rhoI(mu, &(kspace.energies[i][j][0]), evecs);
+                                      &(kspace.energies[i][j][0]), true, &(evecs[0][0]));
+            mag_accumulator  += ham3.ComputeTerm_mag(mu,&(kspace.energies[i][j][0]),evecs);
+            rhoI_accumulator += ham3.ComputeTerm_rhoI(mu,&(kspace.energies[i][j][0]),evecs);
           }
         mag_out  = mag_accumulator;
         rhoI_out = rhoI_accumulator;
+        
         // Print out final OP values
-        if (with_output)
-            std::cout << "mag_out=" << mag_out << ", rhoI_out=" << rhoI_out 
-                      << "\tmag_out-mag=" << mag_out-ham3.mag 
-                      << ", rhoI_out-rhoI=" << rhoI_out-ham3.rhoI 
-                      << std::endl;
+        if (with_output) std::cout //<< "mag_out=" << mag_out 
+                                   //<< ", rhoI_out=" << rhoI_out
+                                   <<  "\td mag=" << mag_out-ham3.mag 
+                                   << ", d rhoI=" << rhoI_out-ham3.rhoI 
+                                   << std::endl;
         
         // Test for convergence
-        converged = (std::abs(mag_out-ham3.mag)<ham3.tol) && (std::abs(rhoI_out-ham3.rhoI)<ham3.tol);
+        converged =    (std::abs(mag_out-ham3.mag)<ham3.tol) 
+                    && (std::abs(rhoI_out-ham3.rhoI)<ham3.tol);
         fail = (!converged) && (counter>ham3.loops_lim); // Must come after converged line
     } while (!converged && !fail);
     
+    // We make sure that either converged or fail is true.
     if ((converged==true) && (fail==true) )
         std::cout << "OUPS 1: This option shouldn't have occurred! (A)\n";
     if ((converged==false) && (fail==false) )
@@ -174,17 +172,18 @@ bool IterativeSearch(double& Mprime, double& rhoIprime, ham3_t& ham3, kspace_t& 
 // ######################################################################################
 int ParameterStudy()
 {
+    /* This routine performs the mean-field iterative search at every point in the 
+    parameter space defined above. */
+    
     const bool with_output = false; // Show output for diagnostics
     
-    // Format display output
-    std::cout << std::scientific << std::showpos;
+    std::cout << std::scientific << std::showpos; // Format display output
     
     int numfails = 0; // Tracks number of points which failed to converge after loops_lim
     
     std::string GlobalAttr; // String to hold the metadata
     
-    // Declare object of type pspace (parameter space)
-    pspace_t pspace(alpha_pts, alpha_bounds, U_pts, U_bounds);
+    pspace_t pspace; // Declare object of type pspace (parameter space)
     
     // Loop over values of the parameter space
     /* PARALLELIZATION:, note that different threads do not write to the same parts of 
@@ -193,8 +192,7 @@ int ParameterStudy()
     #pragma omp parallel default(none) shared(pspace,GlobalAttr,std::cout) reduction(+:numfails)
     {
     
-    // Declare and construct an instance of ham3_t (local to each thread)
-    ham3_t ham3;
+    ham3_t ham3; // Declare and construct an instance of ham3_t (local to each thread)
     
     #pragma omp single
     {
@@ -211,12 +209,12 @@ int ParameterStudy()
     
     
     #pragma omp for schedule(dynamic,1)
-    for (int g=0; g<alpha_pts; ++g)
-      for (int h=0; h<U_pts;  ++h)
+    for (int g=0; g<pspace.alpha_pts; ++g)
+      for (int h=0; h<pspace.U_pts;  ++h)
       {
         if (with_output)
-            std::cout << "alpha = " << pspace.alpha_grid[g] << ", "
-                      << "U = "  << pspace.U_grid[h] << std::endl; //Print current params
+          std::cout << "alpha = " << pspace.alpha_grid[g] << ", "
+                    << "U = "     << pspace.U_grid[h] << "\n"; // Print current params
         
         // Adjust phase space parameters
         ham3.parsII.SetScaling(pspace.alpha_grid[g]); // parsII is scaled by alpha
@@ -255,9 +253,9 @@ int ParameterStudy()
     if (with_output)
     {
         std::cout << std::endl << "pspace.M_grid = " << std::endl;
-        PrintMatrix(alpha_pts, U_pts, pspace.M_grid, std::cout);
+        PrintMatrix(pspace.alpha_pts, pspace.U_pts, pspace.M_grid, std::cout);
         std::cout << std::endl << "pspace.rhoI_grid = " << std::endl;
-        PrintMatrix(alpha_pts, U_pts, pspace.rhoI_grid, std::cout);
+        PrintMatrix(pspace.alpha_pts, pspace.U_pts, pspace.rhoI_grid, std::cout);
         std::cout << std::endl;
     }
     

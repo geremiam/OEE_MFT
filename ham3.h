@@ -26,6 +26,15 @@ class pars_t
 
 class ham3_t
 {
+  /* Class for holding the Hamiltonian parameters. Some parameters are modifiable by the 
+  user; these are made non-const. After adjusting parameters, the user uses the method 
+  Assign_ham() to calculate the Hamiltonian (for a given momentum) and assign it to 
+  ham_array. The user may then diagonalize ham_array and use the methods for computing 
+  MF parameters.
+  Watch out: as it stands now, parameters in terms of which others are initialized 
+  should not be modified by the user, because that will not update the dependant 
+  parameters. This would need to be taken care of using methods. */
+  
   private:
     
     // Private copy constructor (prohibits copy creation)
@@ -56,10 +65,10 @@ class ham3_t
     
     
     
+    const double rho = 1.; // Average (global) electron density, between 0 and 2
     const double tperp_0 = 0.3; // Base value of tperp (gets scaled)
     double tperp = tperp_0;
     double L = 0.; // bias voltage between layers I and II
-    double rho = 1.; // Average (global) electron density, between 0 and 2
     double U = 0.; // Hubbard interaction strength
     
     pars_t parsI, parsII;
@@ -68,7 +77,7 @@ class ham3_t
     double rhoI=-88.;
     
     const int num_states = kx_pts*ky_pts*bands_num;
-    int filled_states = (int)( rho * (double)(4*kx_pts*ky_pts) );
+    const int filled_states = (int)( rho * (double)(4*kx_pts*ky_pts) );
     
     
     std::complex<double>*const*const ham_array; // array for storing the Hamiltonian
