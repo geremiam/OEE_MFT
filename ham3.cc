@@ -72,11 +72,11 @@ void ham3_t::Assign_ham(const double kx, const double ky)
     
     std::complex<double>*const*const& H = ham_array; // For convenience, define reference
     
-    H[0][0]=hI[0]+U*rhoI/2.+L/2.; 
-    H[1][0]=hI[2]; H[1][1]=hI[3]+U*rhoI/2.+L/2.; 
+    H[0][0]=hI[0]+U*(rhoI_s+rhoI_a)/2.+L/2.; 
+    H[1][0]=hI[2]; H[1][1]=hI[3]+U*(rhoI_s-rhoI_a)/2.+L/2.; 
     
-    H[2][0]=-U*mag; H[2][1]=0.;    H[2][2]=hI[0]+U*rhoI/2.+L/2.; 
-    H[3][0]=0.; H[3][1]=+U*mag;    H[3][2]=hI[2]; H[3][3]=hI[3]+U*rhoI/2.+L/2.; 
+    H[2][0]=-U*(mag_s+mag_a); H[2][1]=0.;    H[2][2]=hI[0]+U*(rhoI_s+rhoI_a)/2.+L/2.; 
+    H[3][0]=0.; H[3][1]=-U*(mag_s-mag_a);    H[3][2]=hI[2]; H[3][3]=hI[3]+U*(rhoI_s-rhoI_a)/2.+L/2.; 
     
     H[4][0]=tperp; H[4][1]=0.;    H[4][2]=0.; H[4][3]=0.;    H[4][4]=hII[0]-L/2.; 
     H[5][0]=0.; H[5][1]=tperp;    H[5][2]=0.; H[5][3]=0.;    H[5][4]=hII[2]; H[5][5]=hII[3]-L/2.; 
@@ -86,36 +86,7 @@ void ham3_t::Assign_ham(const double kx, const double ky)
     
 }
 
-double ham3_t::ComputeTerm_mag(const double mu, const double*const evals, 
-                               const std::complex<double>*const*const evecs)
-{
-    // Evaluates the contribution to mag from a single k (see notes)
-    // Not good to implement matrix mult. by hand... but we will for simplicity
-    const double C [bands_num][bands_num] = {{0., 0., +1., 0.,   0., 0., 0., 0.}, 
-                                             {0., 0., 0., -1.,   0., 0., 0., 0.},
-                                             {+1., 0., 0., 0.,   0., 0., 0., 0.},
-                                             {0., -1., 0., 0.,   0., 0., 0., 0.},
-                                             
-                                             {0., 0., 0., 0.,    0., 0., 0., 0.},
-                                             {0., 0., 0., 0.,    0., 0., 0., 0.},
-                                             {0., 0., 0., 0.,    0., 0., 0., 0.},
-                                             {0., 0., 0., 0.,    0., 0., 0., 0.}};
-    // Calculate the trace (see notes)
-    std::complex<double> accumulator = {0.,0.};
-    for (int b=0; b<bands_num; ++b)
-        for (int c=0; c<bands_num; ++c)
-            for (int d=0; d<bands_num; ++d)
-                accumulator += conj(evecs[c][b])*C[c][d]*evecs[d][b]*nF0(evals[b]-mu);
-    
-    // Test for zero imaginary part
-    const double imag_part = std::imag(accumulator/(double)(4*kx_pts*ky_pts));
-    if (std::abs(imag_part)>1.e-15)
-        std::cerr << "WARNING: mag has nonzero imaginary part: " << imag_part << "\n";
-    
-    return std::real(accumulator/(double)(4*kx_pts*ky_pts));
-}
-
-double ham3_t::ComputeTerm_rhoI(const double mu, const double*const evals, 
+double ham3_t::ComputeTerm_rhoI_s(const double mu, const double*const evals, 
                                 const std::complex<double>*const*const evecs)
 {
     // Evaluates the contribution to rhoI from a single k (see notes)
@@ -139,9 +110,96 @@ double ham3_t::ComputeTerm_rhoI(const double mu, const double*const evals,
     // Test for zero imaginary part
     const double imag_part = std::imag(accumulator/(double)(2*kx_pts*ky_pts));
     if (std::abs(imag_part)>1.e-15)
-        std::cerr << "WARNING: rhoI has nonzero imaginary part: " << imag_part << "\n";
+        std::cerr << "WARNING: rhoI_s has nonzero imaginary part: " << imag_part << "\n";
     
     return std::real(accumulator/(double)(2*kx_pts*ky_pts));
+}
+
+double ham3_t::ComputeTerm_rhoI_a(const double mu, const double*const evals, 
+                                const std::complex<double>*const*const evecs)
+{
+    // Evaluates the contribution to rhoI from a single k (see notes)
+    // Not good to implement matrix mult. by hand... but we will for simplicity
+    const double B [bands_num][bands_num] = {{+1., 0., 0., 0.,    0., 0., 0., 0.}, 
+                                             {0., -1., 0., 0.,    0., 0., 0., 0.},
+                                             {0., 0., +1., 0.,    0., 0., 0., 0.},
+                                             {0., 0., 0., -1.,    0., 0., 0., 0.},
+                                             
+                                             {0., 0., 0., 0.,    0., 0., 0., 0.},
+                                             {0., 0., 0., 0.,    0., 0., 0., 0.},
+                                             {0., 0., 0., 0.,    0., 0., 0., 0.},
+                                             {0., 0., 0., 0.,    0., 0., 0., 0.}};
+    // Calculate the trace (see notes)
+    std::complex<double> accumulator = {0.,0.};
+    for (int b=0; b<bands_num; ++b)
+        for (int c=0; c<bands_num; ++c)
+            for (int d=0; d<bands_num; ++d)
+                accumulator += conj(evecs[c][b])*B[c][d]*evecs[d][b]*nF0(evals[b]-mu);
+    
+    // Test for zero imaginary part
+    const double imag_part = std::imag(accumulator/(double)(2*kx_pts*ky_pts));
+    if (std::abs(imag_part)>1.e-15)
+        std::cerr << "WARNING: rhoI_a has nonzero imaginary part: " << imag_part << "\n";
+    
+    return std::real(accumulator/(double)(2*kx_pts*ky_pts));
+}
+
+double ham3_t::ComputeTerm_mag_s(const double mu, const double*const evals, 
+                               const std::complex<double>*const*const evecs)
+{
+    // Evaluates the contribution to mag from a single k (see notes)
+    // Not good to implement matrix mult. by hand... but we will for simplicity
+    const double C [bands_num][bands_num] = {{0., 0., 1., 0.,   0., 0., 0., 0.}, 
+                                             {0., 0., 0., 1.,   0., 0., 0., 0.},
+                                             {1., 0., 0., 0.,   0., 0., 0., 0.},
+                                             {0., 1., 0., 0.,   0., 0., 0., 0.},
+                                             
+                                             {0., 0., 0., 0.,    0., 0., 0., 0.},
+                                             {0., 0., 0., 0.,    0., 0., 0., 0.},
+                                             {0., 0., 0., 0.,    0., 0., 0., 0.},
+                                             {0., 0., 0., 0.,    0., 0., 0., 0.}};
+    // Calculate the trace (see notes)
+    std::complex<double> accumulator = {0.,0.};
+    for (int b=0; b<bands_num; ++b)
+        for (int c=0; c<bands_num; ++c)
+            for (int d=0; d<bands_num; ++d)
+                accumulator += conj(evecs[c][b])*C[c][d]*evecs[d][b]*nF0(evals[b]-mu);
+    
+    // Test for zero imaginary part
+    const double imag_part = std::imag(accumulator/(double)(4*kx_pts*ky_pts));
+    if (std::abs(imag_part)>1.e-15)
+        std::cerr << "WARNING: mag_s has nonzero imaginary part: " << imag_part << "\n";
+    
+    return std::real(accumulator/(double)(4*kx_pts*ky_pts));
+}
+
+double ham3_t::ComputeTerm_mag_a(const double mu, const double*const evals, 
+                               const std::complex<double>*const*const evecs)
+{
+    // Evaluates the contribution to mag from a single k (see notes)
+    // Not good to implement matrix mult. by hand... but we will for simplicity
+    const double C [bands_num][bands_num] = {{0., 0., +1., 0.,   0., 0., 0., 0.}, 
+                                             {0., 0., 0., -1.,   0., 0., 0., 0.},
+                                             {+1., 0., 0., 0.,   0., 0., 0., 0.},
+                                             {0., -1., 0., 0.,   0., 0., 0., 0.},
+                                             
+                                             {0., 0., 0., 0.,    0., 0., 0., 0.},
+                                             {0., 0., 0., 0.,    0., 0., 0., 0.},
+                                             {0., 0., 0., 0.,    0., 0., 0., 0.},
+                                             {0., 0., 0., 0.,    0., 0., 0., 0.}};
+    // Calculate the trace (see notes)
+    std::complex<double> accumulator = {0.,0.};
+    for (int b=0; b<bands_num; ++b)
+        for (int c=0; c<bands_num; ++c)
+            for (int d=0; d<bands_num; ++d)
+                accumulator += conj(evecs[c][b])*C[c][d]*evecs[d][b]*nF0(evals[b]-mu);
+    
+    // Test for zero imaginary part
+    const double imag_part = std::imag(accumulator/(double)(4*kx_pts*ky_pts));
+    if (std::abs(imag_part)>1.e-15)
+        std::cerr << "WARNING: mag_a has nonzero imaginary part: " << imag_part << "\n";
+    
+    return std::real(accumulator/(double)(4*kx_pts*ky_pts));
 }
 
 std::string ham3_t::GetAttributes()
@@ -158,8 +216,10 @@ std::string ham3_t::GetAttributes()
         "; parsII = ("+to_string(parsII.t1) +","+to_string(parsII.t2)+","+
                        to_string(parsII.eps)+","+to_string(parsII.phi)+")"
         "; tperp = "+to_string(tperp)+"; L = "+to_string(L)+"; rho = "+to_string(rho)+
-        "; U = "+to_string(U)+"; mag_startval = "+to_string(mag_startval)+
-        "; rhoI_startval = "+to_string(rhoI_startval)+"; tol = "+to_string(tol)+
+        "; U = "+to_string(U)+"; rhoI_s_startval = "+to_string(rhoI_s_startval)+
+        "; rhoI_a_startval = "+to_string(rhoI_a_startval)+
+        "; mag_s_startval = "+to_string(mag_s_startval)+
+        "; mag_a_startval = "+to_string(mag_a_startval)+"; tol = "+to_string(tol)+
         "; loops_lim = "+to_string(loops_lim);
     
     return Attributes;

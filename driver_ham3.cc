@@ -36,14 +36,18 @@ class pspace_t {
     double*const U_grid; // U coordinate variable
     
     // MF parameters
-    double*const*const M_grid; // M variable
-    double*const*const rhoI_grid; // rhoI variable
+    double*const*const rhoI_s_grid; // rhoI_s variable
+    double*const*const rhoI_a_grid; // rhoI_a variable
+    double*const*const mag_s_grid; // mag_s variable
+    double*const*const mag_a_grid; // mag_a variable
+    double*const*const loops_grid; // holds the number of loops done at each point
     
     // Constructor declaration
     pspace_t()
         :alpha_grid(new double [alpha_pts]), U_grid(new double [U_pts]),
-         M_grid(Alloc2D_d(alpha_pts, U_pts)), rhoI_grid(Alloc2D_d(alpha_pts, U_pts))
-         // Important -- Note order: alpha, U
+         rhoI_s_grid(Alloc2D_d(alpha_pts, U_pts)),rhoI_a_grid(Alloc2D_d(alpha_pts, U_pts)),
+         mag_s_grid(Alloc2D_d(alpha_pts, U_pts)), mag_a_grid(Alloc2D_d(alpha_pts, U_pts)),
+         loops_grid(Alloc2D_d(alpha_pts, U_pts)) // Important -- Note order: alpha, U
     {
         /* The initialization list initializes the parameters and allocates memory for 
         the arrays. */
@@ -54,8 +58,11 @@ class pspace_t {
         LinInitArray(U_bounds[0],  U_bounds[1],  U_pts,  U_grid,  endpoint);
         
         // The other variables (the order parameters) span the coordinate space
-        ValInitArray(alpha_pts*U_pts, &(M_grid[0][0]), -99.); // Init to unlikely value
-        ValInitArray(alpha_pts*U_pts, &(rhoI_grid[0][0]), -99.); // Likewise
+        ValInitArray(alpha_pts*U_pts, &(rhoI_s_grid[0][0]), -99.);//Init to unlikely value
+        ValInitArray(alpha_pts*U_pts, &(rhoI_a_grid[0][0]), -99.); // Likewise
+        ValInitArray(alpha_pts*U_pts, &(mag_s_grid[0][0]), -99.); // Likewise
+        ValInitArray(alpha_pts*U_pts, &(mag_a_grid[0][0]), -99.); // Likewise
+        ValInitArray(alpha_pts*U_pts, &(loops_grid[0][0]), -99.); // Likewise
         
         
         std::cout << "pspace_t instance created.\n";
@@ -64,8 +71,11 @@ class pspace_t {
     ~pspace_t() {
         delete [] alpha_grid;
         delete [] U_grid;
-        Dealloc2D(M_grid);
-        Dealloc2D(rhoI_grid);
+        Dealloc2D(rhoI_s_grid);
+        Dealloc2D(rhoI_a_grid);
+        Dealloc2D(mag_s_grid);
+        Dealloc2D(mag_a_grid);
+        Dealloc2D(loops_grid);
         std::cout << "pspace_t instance deleted.\n";
     }
     
@@ -78,8 +88,9 @@ class pspace_t {
         const int dims_num = 2;
         const std::string dim_names [dims_num] = {"alpha", "U"};
         const int dim_lengths [dims_num] = {alpha_pts, U_pts};
-        const int vars_num = 2; // Variables other than coord variables
-        const std::string var_names [vars_num] = {"M", "rhoI"}; // Use same order below
+        const int vars_num = 5; // Variables other than coord variables
+        const std::string var_names [vars_num] = {"rho_s", "rho_a", "mag_s", "mag_a", 
+                                                  "loops"}; // Use same order below
         
         // Constructor for the dataset class creates a dataset
         newDS_t newDS(GlobalAttr_, dims_num, dim_names, dim_lengths,
@@ -88,13 +99,16 @@ class pspace_t {
         const double*const coord_vars [dims_num] = {alpha_grid, U_grid};
         newDS.WriteCoordVars(coord_vars); // Write the coordinate variables
         
-        const double*const vars [vars_num] = {&(M_grid[0][0]), &(rhoI_grid[0][0])};
+        const double*const vars [vars_num] = {&(rhoI_s_grid[0][0]), &(rhoI_a_grid[0][0]),
+                                              &(mag_s_grid[0][0]), &(mag_a_grid[0][0]),
+                                              &(loops_grid[0][0])};
         newDS.WriteVars(vars); // Write the variables
     }
 };
 
-bool IterativeSearch(double& mag, double& rhoI, ham3_t& ham3, kspace_t& kspace, 
-                    std::complex<double>*const*const evecs, const bool with_output=false)
+bool IterativeSearch(double& rhoI_s, double& rhoI_a, double& mag_s, double& mag_a, 
+                     ham3_t& ham3, kspace_t& kspace, std::complex<double>*const*const evecs, 
+                     int*const num_loops_p=NULL, const bool with_output=false)
 {
     /* Performs the iterative self-consistent search using the parameters from ham3 and 
     the arrays kspace and evecs. The initial values of mag and rhoI are used as the 
@@ -102,8 +116,10 @@ bool IterativeSearch(double& mag, double& rhoI, ham3_t& ham3, kspace_t& kspace,
     
     /* For clarity, we define references for the MF parameter arguments, which are used 
     to output to. */
-    double& mag_out  = mag;
-    double& rhoI_out = rhoI;
+    double& rhoI_s_out = rhoI_s;
+    double& rhoI_a_out = rhoI_a;
+    double& mag_s_out  = mag_s;
+    double& mag_a_out  = mag_a;
     
     int counter = 0; // Define counter for number of loops
     bool converged=false, fail=false; // Used to stop the while looping
@@ -111,10 +127,14 @@ bool IterativeSearch(double& mag, double& rhoI, ham3_t& ham3, kspace_t& kspace,
     {
         ++counter; // Increment counter
         
-        ham3.mag = mag_out;
-        ham3.rhoI = rhoI_out; // Update mean-field values
-        if (with_output) std::cout <<    "mag=" << ham3.mag 
-                                   << ", rhoI=" << ham3.rhoI << "\t";
+        ham3.rhoI_s = rhoI_s_out;
+        ham3.rhoI_a = rhoI_a_out; 
+        ham3.mag_s  = mag_s_out;
+        ham3.mag_a  = mag_a_out; // Update mean-field values
+        if (with_output) std::cout << "rhoIs=" << ham3.rhoI_s
+                                   << " rhoIa=" << ham3.rhoI_a
+                                   << " ms="  << ham3.mag_s 
+                                   << " ma="  << ham3.mag_a << "\t";
         
         // Given the parameters, diagonalize the Hamiltonian at each grid point
         for (int i=0; i<ham3.kx_pts; ++i)
@@ -131,33 +151,44 @@ bool IterativeSearch(double& mag, double& rhoI, ham3_t& ham3, kspace_t& kspace,
         
         // Use all the occupation numbers and the evecs to find the order parameter
         // Probably best to diagonalize a second time to avoid storing the evecs
-        double mag_accumulator = 0.;
-        double rhoI_accumulator = 0.;
+        double rhoI_s_accumulator = 0.;
+        double rhoI_a_accumulator = 0.;
+        double mag_s_accumulator = 0.;
+        double mag_a_accumulator = 0.;
         
         for (int i=0; i<ham3.kx_pts; ++i)
           for (int j=0; j<ham3.ky_pts; ++j)
-            {
+          {
             ham3.Assign_ham(kspace.kx_grid[i], kspace.ky_grid[j]);
             simple_zheev(ham3.bands_num, &(ham3.ham_array[0][0]), 
                                       &(kspace.energies[i][j][0]), true, &(evecs[0][0]));
-            mag_accumulator  += ham3.ComputeTerm_mag(mu,&(kspace.energies[i][j][0]),evecs);
-            rhoI_accumulator += ham3.ComputeTerm_rhoI(mu,&(kspace.energies[i][j][0]),evecs);
+            rhoI_s_accumulator += ham3.ComputeTerm_rhoI_s(mu,&(kspace.energies[i][j][0]),evecs);
+            rhoI_a_accumulator += ham3.ComputeTerm_rhoI_a(mu,&(kspace.energies[i][j][0]),evecs);
+            mag_s_accumulator  += ham3.ComputeTerm_mag_s(mu,&(kspace.energies[i][j][0]),evecs);
+            mag_a_accumulator  += ham3.ComputeTerm_mag_a(mu,&(kspace.energies[i][j][0]),evecs);
           }
-        mag_out  = mag_accumulator;
-        rhoI_out = rhoI_accumulator;
+        rhoI_s_out = rhoI_s_accumulator;
+        rhoI_a_out = rhoI_a_accumulator;
+        mag_s_out  = mag_s_accumulator;
+        mag_a_out  = mag_a_accumulator;
         
         // Print out final OP values
-        if (with_output) std::cout //<< "mag_out=" << mag_out 
-                                   //<< ", rhoI_out=" << rhoI_out
-                                   <<  "\td mag=" << mag_out-ham3.mag 
-                                   << ", d rhoI=" << rhoI_out-ham3.rhoI 
+        if (with_output) std::cout << "drhoIs=" << rhoI_s_out - ham3.rhoI_s 
+                                   << " drhoIa=" << rhoI_a_out - ham3.rhoI_a
+                                   << " dms="  << mag_s_out - ham3.mag_s
+                                   << " dma="  << mag_a_out - ham3.mag_a
                                    << std::endl;
         
         // Test for convergence
-        converged =    (std::abs(mag_out-ham3.mag)<ham3.tol) 
-                    && (std::abs(rhoI_out-ham3.rhoI)<ham3.tol);
+        converged =    (std::abs(rhoI_s_out - ham3.rhoI_s)<ham3.tol)
+                    && (std::abs(rhoI_a_out - ham3.rhoI_a)<ham3.tol)
+                    && (std::abs(mag_s_out - ham3.mag_s)<ham3.tol) 
+                    && (std::abs(mag_a_out - ham3.mag_a)<ham3.tol);
         fail = (!converged) && (counter>ham3.loops_lim); // Must come after converged line
     } while (!converged && !fail);
+    
+    // Unless num_loops_p is the null pointer, assign the number of loops to its location
+    if (num_loops_p!=NULL) *num_loops_p = counter;
     
     // We make sure that either converged or fail is true.
     if ((converged==true) && (fail==true) )
@@ -222,10 +253,16 @@ int ParameterStudy()
         ham3.U = pspace.U_grid[h];
         
         // Set the OPs to their startvals
-        double mag = ham3.mag_startval;
-        double rhoI = ham3.rhoI_startval;
+        double rhoI_s = ham3.rhoI_s_startval;
+        double rhoI_a = ham3.rhoI_a_startval;
+        double mag_s = ham3.mag_s_startval;
+        double mag_a = ham3.mag_a_startval;
         
-        const bool fail = IterativeSearch(mag, rhoI, ham3, kspace, evecs, with_output);
+        int loops=0; // Will receive the number of loops performed
+        const bool fail = IterativeSearch(rhoI_s, rhoI_a, mag_s, mag_a, ham3, kspace, 
+                                                             evecs, &loops, with_output);
+        
+        pspace.loops_grid[g][h] = loops; // Save the number of loops to pspace array.
         
         if (fail)
         {
@@ -236,9 +273,11 @@ int ParameterStudy()
         }
         else
         {
-            // We save the converged OP values to the pspace arrays.
-            pspace.M_grid[g][h] = mag;
-            pspace.rhoI_grid[g][h] = rhoI;
+            // We save the converged MF parameters to the pspace arrays.
+            pspace.rhoI_s_grid[g][h] = rhoI_s;
+            pspace.rhoI_a_grid[g][h] = rhoI_a;
+            pspace.mag_s_grid[g][h] = mag_s;
+            pspace.mag_a_grid[g][h] = mag_a;
         }
         
         if (with_output) std::cout << std::endl;
@@ -249,13 +288,17 @@ int ParameterStudy()
     }
     
     
-    // Print out M and rhoI arrays
+    // Print out MF parameters
     if (with_output)
     {
-        std::cout << std::endl << "pspace.M_grid = " << std::endl;
-        PrintMatrix(pspace.alpha_pts, pspace.U_pts, pspace.M_grid, std::cout);
-        std::cout << std::endl << "pspace.rhoI_grid = " << std::endl;
-        PrintMatrix(pspace.alpha_pts, pspace.U_pts, pspace.rhoI_grid, std::cout);
+        std::cout << std::endl << "pspace.rhoI_s_grid = " << std::endl;
+        PrintMatrix(pspace.alpha_pts, pspace.U_pts, pspace.rhoI_s_grid, std::cout);
+        std::cout << std::endl << "pspace.rhoI_a_grid = " << std::endl;
+        PrintMatrix(pspace.alpha_pts, pspace.U_pts, pspace.rhoI_a_grid, std::cout);
+        std::cout << std::endl << "pspace.mag_s_grid = " << std::endl;
+        PrintMatrix(pspace.alpha_pts, pspace.U_pts, pspace.mag_s_grid, std::cout);
+        std::cout << std::endl << "pspace.mag_a_grid = " << std::endl;
+        PrintMatrix(pspace.alpha_pts, pspace.U_pts, pspace.mag_a_grid, std::cout);
         std::cout << std::endl;
     }
     

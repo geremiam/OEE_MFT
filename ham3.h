@@ -47,8 +47,10 @@ class ham3_t
   public:
     
     /* Settings for the iterative search */
-    const double mag_startval = 0.1; // Choose a starting value
-    const double rhoI_startval = 0.5; // Choose starting value
+    const double rhoI_s_startval = 1.2; // Choose starting value
+    const double rhoI_a_startval = 0.; // Choose starting value
+    const double mag_s_startval = 0.1; // Choose a starting value
+    const double mag_a_startval = 0.1; // Choose a starting value
     const int loops_lim = 3000; // Limit to the number of iteration loops
     const double tol = 1.e-6; // Tolerance for the equality of the mean fields
     
@@ -73,8 +75,10 @@ class ham3_t
     
     pars_t parsI, parsII;
     
-    double mag=-88.;
-    double rhoI=-88.;
+    double rhoI_s=-88.;
+    double rhoI_a=-88.;
+    double mag_s=-88.;
+    double mag_a=-88.;
     
     const int num_states = kx_pts*ky_pts*bands_num;
     const int filled_states = (int)( rho * (double)(4*kx_pts*ky_pts) );
@@ -88,10 +92,14 @@ class ham3_t
     
     void Assign_ham(const double kx, const double ky);
     
-    double ComputeTerm_mag(const double mu, const double*const evals, 
-                           const std::complex<double>*const*const evecs);
-    double ComputeTerm_rhoI(const double mu, const double*const evals, 
-                            const std::complex<double>*const*const evecs);
+    double ComputeTerm_rhoI_s(const double mu, const double*const evals, 
+                              const std::complex<double>*const*const evecs);
+    double ComputeTerm_rhoI_a(const double mu, const double*const evals, 
+                              const std::complex<double>*const*const evecs);
+    double ComputeTerm_mag_s(const double mu, const double*const evals, 
+                             const std::complex<double>*const*const evecs);
+    double ComputeTerm_mag_a(const double mu, const double*const evals, 
+                             const std::complex<double>*const*const evecs);
     
     std::string GetAttributes();
 };
