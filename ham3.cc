@@ -6,6 +6,8 @@
 #include "alloc_dealloc.h" // Allocation/deallocation of arrays
 #include "init_routines.h" // Initialization of arrays
 #include "math_routines.h" // Various math functions
+#include "kspace.h" // Defines a class for holding a band structure
+#include "diag_routines.h" // Routines for finding evals and evecs
 #include "ham3.h" // Include header file for consistency check
 //using std::cos; using std::sin; using std::conj; // Not sure if these are necessary
 using std::polar;
@@ -44,10 +46,12 @@ void pars_t::SetScaling(const double lambda)
 
 
 ham3_t::ham3_t()
-    :ham_array(Alloc2D_z(ham_array_rows, ham_array_cols))
+    :ham_array(Alloc2D_z(ham_array_rows, ham_array_cols)),
+    evecs(Alloc2D_z(bands_num, bands_num)), kspace(kx_pts, kx_bounds, ky_pts, ky_bounds, bands_num)
 {
     /* Constructor implementation. ham_array is allocated and initialized. */
     ValInitArray(ham_array_rows*ham_array_cols, &(ham_array[0][0]));//Initialize to zero
+    ValInitArray(bands_num*bands_num, &(evecs[0][0])); // Initialize to zero
     std::cout << "ham3_t instance created.\n";
 }
 
@@ -55,6 +59,7 @@ ham3_t::~ham3_t()
 {
     /* Destructor implementation. ham_array is deallocated. */
     Dealloc2D(ham_array);
+    Dealloc2D(evecs);
     std::cout << "ham3_t instance deleted.\n";
 }
 
@@ -200,6 +205,52 @@ double ham3_t::ComputeTerm_mag_a(const double mu, const double*const evals,
         std::cerr << "WARNING: mag_a has nonzero imaginary part: " << imag_part << "\n";
     
     return std::real(accumulator/(double)(4*kx_pts*ky_pts));
+}
+
+void ham3_t::ComputeMFs(const double rhoI_s_in, const double rhoI_a_in, 
+                   const double mag_s_in, const double mag_a_in, 
+                   double& rhoI_s_out, double& rhoI_a_out, 
+                   double& mag_s_out, double& mag_a_out)
+{
+    // Update (private) class members for mean-field values
+    rhoI_s = rhoI_s_in;
+    rhoI_a = rhoI_a_in; 
+    mag_s  = mag_s_in;
+    mag_a  = mag_a_in;
+    
+    // Given the parameters, diagonalize the Hamiltonian at each grid point
+    for (int i=0; i<kx_pts; ++i)
+      for (int j=0; j<ky_pts; ++j)
+      {
+        Assign_ham(kspace.kx_grid[i], kspace.ky_grid[j]);
+        simple_zheev(bands_num, &(ham_array[0][0]), &(kspace.energies[i][j][0]));
+      }
+    
+    // Use all energies to compute chemical potential (elements get reordered)
+    double mu = FermiEnerg(num_states, filled_states, &(kspace.energies[0][0][0]));
+    
+    // Use all the occupation numbers and the evecs to find the order parameter
+    // Probably best to diagonalize a second time to avoid storing the evecs
+    double rhoI_s_accumulator = 0.;
+    double rhoI_a_accumulator = 0.;
+    double mag_s_accumulator = 0.;
+    double mag_a_accumulator = 0.;
+    
+    for (int i=0; i<kx_pts; ++i)
+      for (int j=0; j<ky_pts; ++j)
+      {
+        Assign_ham(kspace.kx_grid[i], kspace.ky_grid[j]);
+        simple_zheev(bands_num, &(ham_array[0][0]), 
+                                      &(kspace.energies[i][j][0]), true, &(evecs[0][0]));
+        rhoI_s_accumulator += ComputeTerm_rhoI_s(mu,&(kspace.energies[i][j][0]),evecs);
+        rhoI_a_accumulator += ComputeTerm_rhoI_a(mu,&(kspace.energies[i][j][0]),evecs);
+        mag_s_accumulator  += ComputeTerm_mag_s(mu,&(kspace.energies[i][j][0]),evecs);
+        mag_a_accumulator  += ComputeTerm_mag_a(mu,&(kspace.energies[i][j][0]),evecs);
+      }
+    rhoI_s_out = rhoI_s_accumulator;
+    rhoI_a_out = rhoI_a_accumulator;
+    mag_s_out  = mag_s_accumulator;
+    mag_a_out  = mag_a_accumulator;
 }
 
 std::string ham3_t::GetAttributes()

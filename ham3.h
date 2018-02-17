@@ -3,6 +3,8 @@
 #ifndef HAM3SOURCE_H
 #define HAM3SOURCE_H
 
+#include "kspace.h" // Defines a class for holding a band structure
+
 const double pi = 3.141592653589793238462643383279502884197169399375105820974944592307816406286;
 
 // Class for holding the parameters proper to each layer
@@ -43,6 +45,45 @@ class ham3_t
     const ham3_t& operator=(const ham3_t&);
     
     const double a = 1.; // We take a to be the NN distance
+    /* Make sure the rectangular zone used is equivalent to the first Brillouin zone. */
+    const int kx_pts = 173;
+    const double kx_bounds [2] = {-(2.*pi)/(3.*sqrt(3.)*a), (4.*pi)/(3.*sqrt(3.)*a)};
+    const int ky_pts = 200;
+    const double ky_bounds [2] = {-(2.*pi)/(3.*a), (2.*pi)/(3.*a)};
+    
+    /* Size of the Hamiltonian, or equivalently number of bands (constant) */
+    const int bands_num = 8; // The number of bands, i.e. the order of the matrix for each k
+    const int ham_array_rows = bands_num; // Same as matrix order for full storage
+    const int ham_array_cols = bands_num; // Same as matrix order for full storage
+    
+    /* These private members are updated in the method ComputeMFs() and are used in the 
+    method Assign_ham() to compute the Hamiltonian. */
+    double rhoI_s=-88.;
+    double rhoI_a=-88.;
+    double mag_s=-88.;
+    double mag_a=-88.;
+    
+    const double rho = 1.; // Average (global) electron density, between 0 and 2
+    const int num_states = kx_pts*ky_pts*bands_num;
+    const int filled_states = (int)( rho * (double)(4*kx_pts*ky_pts) );
+    
+    /* These arrays are used in the method ComputeMFs() to evaluate the output MF 
+    parameters from the input MF parameters. */
+    std::complex<double>*const*const ham_array;//array to hold Ham (local to thread)
+    std::complex<double>*const*const evecs;//Array to hold evecs (local to each thread)
+    /* Declare (and construct) an instance of kspace_t (local to each thread). */
+    kspace_t kspace; // Constructor is called in initialization list
+    
+    // These functions are used in the method ComputeMFs()
+    double ComputeTerm_rhoI_s(const double mu, const double*const evals, 
+                              const std::complex<double>*const*const evecs);
+    double ComputeTerm_rhoI_a(const double mu, const double*const evals, 
+                              const std::complex<double>*const*const evecs);
+    double ComputeTerm_mag_s(const double mu, const double*const evals, 
+                             const std::complex<double>*const*const evecs);
+    double ComputeTerm_mag_a(const double mu, const double*const evals, 
+                             const std::complex<double>*const*const evecs);
+    void Assign_ham(const double kx, const double ky);
     
   public:
     
@@ -54,20 +95,9 @@ class ham3_t
     const int loops_lim = 3000; // Limit to the number of iteration loops
     const double tol = 1.e-6; // Tolerance for the equality of the mean fields
     
-    /* Size of the Hamiltonian, or equivalently number of bands (constant) */
-    const int bands_num = 8; // The number of bands, i.e. the order of the matrix for each k
-    const int ham_array_rows = bands_num; // Same as matrix order for full storage
-    const int ham_array_cols = bands_num; // Same as matrix order for full storage
-    
-    /* Make sure the rectangular zone used here is equivalent to the first Brillouin zone. */
-    const int kx_pts = 173;
-    const double kx_bounds [2] = {-(2.*pi)/(3.*sqrt(3.)*a), (4.*pi)/(3.*sqrt(3.)*a)};
-    const int ky_pts = 200;
-    const double ky_bounds [2] = {-(2.*pi)/(3.*a), (2.*pi)/(3.*a)};
     
     
     
-    const double rho = 1.; // Average (global) electron density, between 0 and 2
     const double tperp_0 = 0.3; // Base value of tperp (gets scaled)
     double tperp = tperp_0;
     double L = 0.; // bias voltage between layers I and II
@@ -75,31 +105,15 @@ class ham3_t
     
     pars_t parsI, parsII;
     
-    double rhoI_s=-88.;
-    double rhoI_a=-88.;
-    double mag_s=-88.;
-    double mag_a=-88.;
-    
-    const int num_states = kx_pts*ky_pts*bands_num;
-    const int filled_states = (int)( rho * (double)(4*kx_pts*ky_pts) );
-    
-    
-    std::complex<double>*const*const ham_array; // array for storing the Hamiltonian
     
     
     ham3_t(); // Constructor declaration
     ~ham3_t(); // Destructor declaration
     
-    void Assign_ham(const double kx, const double ky);
-    
-    double ComputeTerm_rhoI_s(const double mu, const double*const evals, 
-                              const std::complex<double>*const*const evecs);
-    double ComputeTerm_rhoI_a(const double mu, const double*const evals, 
-                              const std::complex<double>*const*const evecs);
-    double ComputeTerm_mag_s(const double mu, const double*const evals, 
-                             const std::complex<double>*const*const evecs);
-    double ComputeTerm_mag_a(const double mu, const double*const evals, 
-                             const std::complex<double>*const*const evecs);
+    void ComputeMFs(const double rhoI_s_in, const double rhoI_a_in, 
+                   const double mag_s_in, const double mag_a_in, 
+                   double& rhoI_s_out, double& rhoI_a_out, 
+                   double& mag_s_out, double& mag_a_out);
     
     std::string GetAttributes();
 };
