@@ -18,18 +18,18 @@ NetCDF dataset. */
 
 
 // Class that defines the parameter space for this Hamiltonian
-class pspace_t {
+class pspaceA_t {
   private:
     // Private copy constructor (prohibits copy creation)
-    pspace_t(const pspace_t&);
+    pspaceA_t(const pspaceA_t&);
     // Private assignment operator (prohibits assignment)
-    const pspace_t& operator=(const pspace_t&);
+    const pspaceA_t& operator=(const pspaceA_t&);
     
   public:
     // scaling factor
-    const int alpha_pts = 6; const double alpha_bounds [2] = {1., 3.};
+    const int alpha_pts = 4; const double alpha_bounds [2] = {1., 3.};
     // Hubbard interaction strength
-    const int U_pts = 6;     const double U_bounds [2] = {0., 10.};
+    const int U_pts = 4;     const double U_bounds [2] = {0., 6.};
     
     // Coordinate variables
     double*const alpha_grid; // alpha coordinate variable
@@ -43,7 +43,7 @@ class pspace_t {
     double*const*const loops_grid; // holds the number of loops done at each point
     
     // Constructor declaration
-    pspace_t()
+    pspaceA_t()
         :alpha_grid(new double [alpha_pts]), U_grid(new double [U_pts]),
          rhoI_s_grid(Alloc2D_d(alpha_pts, U_pts)),rhoI_a_grid(Alloc2D_d(alpha_pts, U_pts)),
          mag_s_grid(Alloc2D_d(alpha_pts, U_pts)), mag_a_grid(Alloc2D_d(alpha_pts, U_pts)),
@@ -65,10 +65,10 @@ class pspace_t {
         ValInitArray(alpha_pts*U_pts, &(loops_grid[0][0]), -99.); // Likewise
         
         
-        std::cout << "pspace_t instance created.\n";
+        std::cout << "pspaceA_t instance created.\n";
     }
     // Destructor declaration
-    ~pspace_t() {
+    ~pspaceA_t() {
         delete [] alpha_grid;
         delete [] U_grid;
         Dealloc2D(rhoI_s_grid);
@@ -76,7 +76,7 @@ class pspace_t {
         Dealloc2D(mag_s_grid);
         Dealloc2D(mag_a_grid);
         Dealloc2D(loops_grid);
-        std::cout << "pspace_t instance deleted.\n";
+        std::cout << "pspaceA_t instance deleted.\n";
     }
     
     void SaveData(const std::string GlobalAttr_, const std::string path_) {
@@ -201,7 +201,7 @@ bool IterativeSearch(double& rhoI_s, double& rhoI_a, double& mag_s, double& mag_
 
 
 // ######################################################################################
-int ParameterStudy()
+int pstudyA()
 {
     /* This routine performs the mean-field iterative search at every point in the 
     parameter space defined above. */
@@ -214,13 +214,13 @@ int ParameterStudy()
     
     std::string GlobalAttr; // String to hold the metadata
     
-    pspace_t pspace; // Declare object of type pspace (parameter space)
+    pspaceA_t pspaceA; // Declare object of type pspaceA (parameter space)
     
     // Loop over values of the parameter space
     /* PARALLELIZATION:, note that different threads do not write to the same parts of 
-    pspace. For some reason, kx_bounds and ky_bounds need to be declared as shared even 
+    pspaceA. For some reason, kx_bounds and ky_bounds need to be declared as shared even 
     though they are const. In any event, they are only read and cannot be written to. */
-    #pragma omp parallel default(none) shared(pspace,GlobalAttr,std::cout) reduction(+:numfails)
+    #pragma omp parallel default(none) shared(pspaceA,GlobalAttr,std::cout) reduction(+:numfails)
     {
     
     ham3_t ham3; // Declare and construct an instance of ham3_t (local to each thread)
@@ -240,17 +240,17 @@ int ParameterStudy()
     
     
     #pragma omp for schedule(dynamic,1)
-    for (int g=0; g<pspace.alpha_pts; ++g)
-      for (int h=0; h<pspace.U_pts;  ++h)
+    for (int g=0; g<pspaceA.alpha_pts; ++g)
+      for (int h=0; h<pspaceA.U_pts;  ++h)
       {
         if (with_output)
-          std::cout << "alpha = " << pspace.alpha_grid[g] << ", "
-                    << "U = "     << pspace.U_grid[h] << "\n"; // Print current params
+          std::cout << "alpha = " << pspaceA.alpha_grid[g] << ", "
+                    << "U = "     << pspaceA.U_grid[h] << "\n"; // Print current params
         
         // Adjust phase space parameters
-        ham3.parsII.SetScaling(pspace.alpha_grid[g]); // parsII is scaled by alpha
-        ham3.tperp = ham3.tperp_0 * pspace.alpha_grid[g];//tperp is also scaled by alpha
-        ham3.U = pspace.U_grid[h];
+        ham3.parsII.SetScaling(pspaceA.alpha_grid[g]); // parsII is scaled by alpha
+        ham3.tperp = ham3.tperp_0 * pspaceA.alpha_grid[g];//tperp is also scaled by alpha
+        ham3.U = pspaceA.U_grid[h];
         
         // Set the OPs to their startvals
         double rhoI_s = ham3.rhoI_s_startval;
@@ -262,22 +262,22 @@ int ParameterStudy()
         const bool fail = IterativeSearch(rhoI_s, rhoI_a, mag_s, mag_a, ham3, kspace, 
                                                              evecs, &loops, with_output);
         
-        pspace.loops_grid[g][h] = loops; // Save the number of loops to pspace array.
+        pspaceA.loops_grid[g][h] = loops; // Save the number of loops to pspaceA array.
         
         if (fail)
         {
             std::cout << "\tWARNING: failure to converge after limit reached\t"
-                      << "alpha = " << pspace.alpha_grid[g] << ", "
-                      << "U = "     << pspace.U_grid[h] << "\n"; //Print current params
+                      << "alpha = " << pspaceA.alpha_grid[g] << ", "
+                      << "U = "     << pspaceA.U_grid[h] << "\n"; //Print current params
             ++numfails;
         }
         else
         {
-            // We save the converged MF parameters to the pspace arrays.
-            pspace.rhoI_s_grid[g][h] = rhoI_s;
-            pspace.rhoI_a_grid[g][h] = rhoI_a;
-            pspace.mag_s_grid[g][h] = mag_s;
-            pspace.mag_a_grid[g][h] = mag_a;
+            // We save the converged MF parameters to the pspaceA arrays.
+            pspaceA.rhoI_s_grid[g][h] = rhoI_s;
+            pspaceA.rhoI_a_grid[g][h] = rhoI_a;
+            pspaceA.mag_s_grid[g][h] = mag_s;
+            pspaceA.mag_a_grid[g][h] = mag_a;
         }
         
         if (with_output) std::cout << std::endl;
@@ -291,21 +291,21 @@ int ParameterStudy()
     // Print out MF parameters
     if (with_output)
     {
-        std::cout << std::endl << "pspace.rhoI_s_grid = " << std::endl;
-        PrintMatrix(pspace.alpha_pts, pspace.U_pts, pspace.rhoI_s_grid, std::cout);
-        std::cout << std::endl << "pspace.rhoI_a_grid = " << std::endl;
-        PrintMatrix(pspace.alpha_pts, pspace.U_pts, pspace.rhoI_a_grid, std::cout);
-        std::cout << std::endl << "pspace.mag_s_grid = " << std::endl;
-        PrintMatrix(pspace.alpha_pts, pspace.U_pts, pspace.mag_s_grid, std::cout);
-        std::cout << std::endl << "pspace.mag_a_grid = " << std::endl;
-        PrintMatrix(pspace.alpha_pts, pspace.U_pts, pspace.mag_a_grid, std::cout);
+        std::cout << std::endl << "pspaceA.rhoI_s_grid = " << std::endl;
+        PrintMatrix(pspaceA.alpha_pts, pspaceA.U_pts, pspaceA.rhoI_s_grid, std::cout);
+        std::cout << std::endl << "pspaceA.rhoI_a_grid = " << std::endl;
+        PrintMatrix(pspaceA.alpha_pts, pspaceA.U_pts, pspaceA.rhoI_a_grid, std::cout);
+        std::cout << std::endl << "pspaceA.mag_s_grid = " << std::endl;
+        PrintMatrix(pspaceA.alpha_pts, pspaceA.U_pts, pspaceA.mag_s_grid, std::cout);
+        std::cout << std::endl << "pspaceA.mag_a_grid = " << std::endl;
+        PrintMatrix(pspaceA.alpha_pts, pspaceA.U_pts, pspaceA.mag_a_grid, std::cout);
         std::cout << std::endl;
     }
     
     
     // We save to a NetCDF dataset using the class defined in nc_IO
     const std::string path="data/ham3/"; //Choose the path for saving (include final '/')
-    pspace.SaveData(GlobalAttr, path); // Call saving method
+    pspaceA.SaveData(GlobalAttr, path); // Call saving method
     
     // Print out numfails
     std::cout << "\n\tNUMBER OF FAILURES TO CONVERGE: " << numfails << "\n\n";
@@ -315,7 +315,7 @@ int ParameterStudy()
 
 int main(int argc, char* argv[])
 {
-    int info = ParameterStudy();
+    int info = pstudyA();
     
     return info;
 }
