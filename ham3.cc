@@ -46,20 +46,21 @@ void pars_t::SetScaling(const double lambda)
 
 
 ham3_t::ham3_t()
-    :ham_array(Alloc2D_z(ham_array_rows, ham_array_cols)),
-    evecs(Alloc2D_z(bands_num, bands_num)), kspace(kx_pts, kx_bounds, ky_pts, ky_bounds, bands_num)
+    :ham_array_(Alloc2D_z(ham_array_rows, ham_array_cols)),
+    evecs_(Alloc2D_z(bands_num, bands_num)), 
+    kspace_(kx_pts, kx_bounds, ky_pts, ky_bounds, bands_num)
 {
     /* Constructor implementation. ham_array is allocated and initialized. */
-    ValInitArray(ham_array_rows*ham_array_cols, &(ham_array[0][0]));//Initialize to zero
-    ValInitArray(bands_num*bands_num, &(evecs[0][0])); // Initialize to zero
+    ValInitArray(ham_array_rows*ham_array_cols, &(ham_array_[0][0]));//Initialize to zero
+    ValInitArray(bands_num*bands_num, &(evecs_[0][0])); // Initialize to zero
     std::cout << "ham3_t instance created.\n";
 }
 
 ham3_t::~ham3_t()
 {
     /* Destructor implementation. ham_array is deallocated. */
-    Dealloc2D(ham_array);
-    Dealloc2D(evecs);
+    Dealloc2D(ham_array_);
+    Dealloc2D(evecs_);
     std::cout << "ham3_t instance deleted.\n";
 }
 
@@ -75,13 +76,13 @@ void ham3_t::Assign_ham(const double kx, const double ky)
     std::complex<double> hII [4] = {0.,0.};
     Assign_h(kx, ky, a, parsII, hII);
     
-    std::complex<double>*const*const& H = ham_array; // For convenience, define reference
+    std::complex<double>*const*const& H = ham_array_; //For convenience, define reference
     
-    H[0][0]=hI[0]+U*(rhoI_s+rhoI_a)/2.+L/2.; 
-    H[1][0]=hI[2]; H[1][1]=hI[3]+U*(rhoI_s-rhoI_a)/2.+L/2.; 
+    H[0][0]=hI[0]+U*(rhoI_s_+rhoI_a_)/2.+L/2.; 
+    H[1][0]=hI[2]; H[1][1]=hI[3]+U*(rhoI_s_-rhoI_a_)/2.+L/2.; 
     
-    H[2][0]=-U*(mag_s+mag_a); H[2][1]=0.;    H[2][2]=hI[0]+U*(rhoI_s+rhoI_a)/2.+L/2.; 
-    H[3][0]=0.; H[3][1]=-U*(mag_s-mag_a);    H[3][2]=hI[2]; H[3][3]=hI[3]+U*(rhoI_s-rhoI_a)/2.+L/2.; 
+    H[2][0]=-U*(mag_s_+mag_a_); H[2][1]=0.;    H[2][2]=hI[0]+U*(rhoI_s_+rhoI_a_)/2.+L/2.; 
+    H[3][0]=0.; H[3][1]=-U*(mag_s_-mag_a_);    H[3][2]=hI[2]; H[3][3]=hI[3]+U*(rhoI_s_-rhoI_a_)/2.+L/2.; 
     
     H[4][0]=tperp; H[4][1]=0.;    H[4][2]=0.; H[4][3]=0.;    H[4][4]=hII[0]-L/2.; 
     H[5][0]=0.; H[5][1]=tperp;    H[5][2]=0.; H[5][3]=0.;    H[5][4]=hII[2]; H[5][5]=hII[3]-L/2.; 
@@ -208,26 +209,26 @@ double ham3_t::ComputeTerm_mag_a(const double mu, const double*const evals,
 }
 
 void ham3_t::ComputeMFs(const double rhoI_s_in, const double rhoI_a_in, 
-                   const double mag_s_in, const double mag_a_in, 
-                   double& rhoI_s_out, double& rhoI_a_out, 
-                   double& mag_s_out, double& mag_a_out)
+                        const double mag_s_in, const double mag_a_in, 
+                        double& rhoI_s_out, double& rhoI_a_out, 
+                        double& mag_s_out, double& mag_a_out)
 {
-    // Update (private) class members for mean-field values
-    rhoI_s = rhoI_s_in;
-    rhoI_a = rhoI_a_in; 
-    mag_s  = mag_s_in;
-    mag_a  = mag_a_in;
+    // Update (private) class members for mean-field values (used by Assign_ham())
+    rhoI_s_ = rhoI_s_in;
+    rhoI_a_ = rhoI_a_in; 
+    mag_s_  = mag_s_in;
+    mag_a_  = mag_a_in;
     
     // Given the parameters, diagonalize the Hamiltonian at each grid point
     for (int i=0; i<kx_pts; ++i)
       for (int j=0; j<ky_pts; ++j)
       {
-        Assign_ham(kspace.kx_grid[i], kspace.ky_grid[j]);
-        simple_zheev(bands_num, &(ham_array[0][0]), &(kspace.energies[i][j][0]));
+        Assign_ham(kspace_.kx_grid[i], kspace_.ky_grid[j]);
+        simple_zheev(bands_num, &(ham_array_[0][0]), &(kspace_.energies[i][j][0]));
       }
     
     // Use all energies to compute chemical potential (elements get reordered)
-    double mu = FermiEnerg(num_states, filled_states, &(kspace.energies[0][0][0]));
+    double mu = FermiEnerg(num_states, filled_states, &(kspace_.energies[0][0][0]));
     
     // Use all the occupation numbers and the evecs to find the order parameter
     // Probably best to diagonalize a second time to avoid storing the evecs
@@ -239,13 +240,13 @@ void ham3_t::ComputeMFs(const double rhoI_s_in, const double rhoI_a_in,
     for (int i=0; i<kx_pts; ++i)
       for (int j=0; j<ky_pts; ++j)
       {
-        Assign_ham(kspace.kx_grid[i], kspace.ky_grid[j]);
-        simple_zheev(bands_num, &(ham_array[0][0]), 
-                                      &(kspace.energies[i][j][0]), true, &(evecs[0][0]));
-        rhoI_s_accumulator += ComputeTerm_rhoI_s(mu,&(kspace.energies[i][j][0]),evecs);
-        rhoI_a_accumulator += ComputeTerm_rhoI_a(mu,&(kspace.energies[i][j][0]),evecs);
-        mag_s_accumulator  += ComputeTerm_mag_s(mu,&(kspace.energies[i][j][0]),evecs);
-        mag_a_accumulator  += ComputeTerm_mag_a(mu,&(kspace.energies[i][j][0]),evecs);
+        Assign_ham(kspace_.kx_grid[i], kspace_.ky_grid[j]);
+        simple_zheev(bands_num, &(ham_array_[0][0]), 
+                                    &(kspace_.energies[i][j][0]), true, &(evecs_[0][0]));
+        rhoI_s_accumulator += ComputeTerm_rhoI_s(mu,&(kspace_.energies[i][j][0]),evecs_);
+        rhoI_a_accumulator += ComputeTerm_rhoI_a(mu,&(kspace_.energies[i][j][0]),evecs_);
+        mag_s_accumulator  += ComputeTerm_mag_s(mu,&(kspace_.energies[i][j][0]),evecs_);
+        mag_a_accumulator  += ComputeTerm_mag_a(mu,&(kspace_.energies[i][j][0]),evecs_);
       }
     rhoI_s_out = rhoI_s_accumulator;
     rhoI_a_out = rhoI_a_accumulator;
@@ -274,4 +275,71 @@ std::string ham3_t::GetAttributes()
         "; loops_lim = "+to_string(loops_lim);
     
     return Attributes;
+}
+
+bool FixedPoint(double& rhoI_s, double& rhoI_a, double& mag_s, double& mag_a, 
+                ham3_t& ham3, int*const num_loops_p, const bool with_output)
+{
+    /* Performs the iterative self-consistent search using the parameters from ham3 and 
+    the arrays kspace and evecs. The initial values of mag and rhoI are used as the 
+    starting values for the search; the end values are also output to mag and rhoI. */
+    std::cout << std::scientific << std::showpos; // Format display output
+    
+    /* Declare output variables and *initialize them to input values*. */
+    double rhoI_s_out = rhoI_s;
+    double rhoI_a_out = rhoI_a;
+    double mag_s_out  = mag_s;
+    double mag_a_out  = mag_a;
+    
+    int counter = 0; // Define counter for number of loops
+    bool converged=false, fail=false; // Used to stop the while looping
+    do // Iterate until self-consistency is achieved
+    {
+        ++counter; // Increment counter
+        
+        rhoI_s = rhoI_s_out;
+        rhoI_a = rhoI_a_out; 
+        mag_s  = mag_s_out;
+        mag_a  = mag_a_out; // Update mean-field values
+        if (with_output) std::cout << "rhoIs="  << rhoI_s
+                                   << " rhoIa=" << rhoI_a
+                                   << " ms="    << mag_s 
+                                   << " ma="    << mag_a << "\t";
+        
+        // Evaluate function. Output is assigned to the 'out' arguments.
+        ham3.ComputeMFs(rhoI_s, rhoI_a, mag_s, mag_a, 
+                        rhoI_s_out, rhoI_a_out, mag_s_out, mag_a_out);
+        
+        // Print out final OP values
+        if (with_output) std::cout << "drhoIs=" << rhoI_s_out - rhoI_s 
+                                   << " drhoIa=" << rhoI_a_out - rhoI_a
+                                   << " dms="  << mag_s_out - mag_s
+                                   << " dma="  << mag_a_out - mag_a
+                                   << std::endl;
+        
+        // Test for convergence
+        converged =    (std::abs(rhoI_s_out - rhoI_s)<ham3.tol)
+                    && (std::abs(rhoI_a_out - rhoI_a)<ham3.tol)
+                    && (std::abs(mag_s_out - mag_s)<ham3.tol) 
+                    && (std::abs(mag_a_out - mag_a)<ham3.tol);
+        fail = (!converged) && (counter>ham3.loops_lim); // Must come after converged line
+        
+    } while (!converged && !fail);
+    
+    // Unless num_loops_p is the null pointer, assign the number of loops to its location
+    if (num_loops_p!=NULL) *num_loops_p = counter;
+    
+    // We make sure that either converged or fail is true.
+    if ((converged==true) && (fail==true) )
+        std::cout << "OUPS 1: This option shouldn't have occurred! (A)\n";
+    if ((converged==false) && (fail==false) )
+        std::cout << "OUPS 1: This option shouldn't have occurred! (B)\n";
+    
+    return fail;
+}
+
+bool Steffensen(double& rhoI_s, double& rhoI_a, double& mag_s, double& mag_a, 
+                ham3_t& ham3, int*const num_loops_p, const bool with_output)
+{
+
 }

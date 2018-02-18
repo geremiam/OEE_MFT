@@ -9,9 +9,6 @@ NetCDF dataset. */
 #include <string>
 #include "init_routines.h" // Array initialization
 #include "alloc_dealloc.h" // Multidim array allocation
-#include "math_routines.h" // Various custom math functions
-#include "diag_routines.h" // Routines for finding evals and evecs
-#include "kspace.h" // Defines a class for holding a band structure
 #include "nc_IO.h" // Class for creating simple NetCDF datasets
 #include "IO.h" // For PrintMatrix()
 #include "ham3.h" // Source code for ham3
@@ -106,99 +103,6 @@ class pspaceA_t {
     }
 };
 
-bool IterativeSearch(double& rhoI_s, double& rhoI_a, double& mag_s, double& mag_a, 
-                     ham3_t& ham3, kspace_t& kspace, std::complex<double>*const*const evecs, 
-                     int*const num_loops_p=NULL, const bool with_output=false)
-{
-    /* Performs the iterative self-consistent search using the parameters from ham3 and 
-    the arrays kspace and evecs. The initial values of mag and rhoI are used as the 
-    starting values for the search; the end values are also output to mag and rhoI. */
-    
-    /* For clarity, we define references for the MF parameter arguments, which are used 
-    to output to. */
-    double& rhoI_s_out = rhoI_s;
-    double& rhoI_a_out = rhoI_a;
-    double& mag_s_out  = mag_s;
-    double& mag_a_out  = mag_a;
-    
-    int counter = 0; // Define counter for number of loops
-    bool converged=false, fail=false; // Used to stop the while looping
-    do // Iterate until self-consistency is achieved
-    {
-        ++counter; // Increment counter
-        
-        ham3.rhoI_s = rhoI_s_out;
-        ham3.rhoI_a = rhoI_a_out; 
-        ham3.mag_s  = mag_s_out;
-        ham3.mag_a  = mag_a_out; // Update mean-field values
-        if (with_output) std::cout << "rhoIs=" << ham3.rhoI_s
-                                   << " rhoIa=" << ham3.rhoI_a
-                                   << " ms="  << ham3.mag_s 
-                                   << " ma="  << ham3.mag_a << "\t";
-        
-        // Given the parameters, diagonalize the Hamiltonian at each grid point
-        for (int i=0; i<ham3.kx_pts; ++i)
-          for (int j=0; j<ham3.ky_pts; ++j)
-            {
-            ham3.Assign_ham(kspace.kx_grid[i], kspace.ky_grid[j]);
-            simple_zheev(ham3.bands_num, &(ham3.ham_array[0][0]), 
-                                                            &(kspace.energies[i][j][0]));
-            }
-        
-        // Use all energies to compute chemical potential (elements get reordered)
-        double mu = FermiEnerg(ham3.num_states, ham3.filled_states, 
-                                                            &(kspace.energies[0][0][0]));
-        
-        // Use all the occupation numbers and the evecs to find the order parameter
-        // Probably best to diagonalize a second time to avoid storing the evecs
-        double rhoI_s_accumulator = 0.;
-        double rhoI_a_accumulator = 0.;
-        double mag_s_accumulator = 0.;
-        double mag_a_accumulator = 0.;
-        
-        for (int i=0; i<ham3.kx_pts; ++i)
-          for (int j=0; j<ham3.ky_pts; ++j)
-          {
-            ham3.Assign_ham(kspace.kx_grid[i], kspace.ky_grid[j]);
-            simple_zheev(ham3.bands_num, &(ham3.ham_array[0][0]), 
-                                      &(kspace.energies[i][j][0]), true, &(evecs[0][0]));
-            rhoI_s_accumulator += ham3.ComputeTerm_rhoI_s(mu,&(kspace.energies[i][j][0]),evecs);
-            rhoI_a_accumulator += ham3.ComputeTerm_rhoI_a(mu,&(kspace.energies[i][j][0]),evecs);
-            mag_s_accumulator  += ham3.ComputeTerm_mag_s(mu,&(kspace.energies[i][j][0]),evecs);
-            mag_a_accumulator  += ham3.ComputeTerm_mag_a(mu,&(kspace.energies[i][j][0]),evecs);
-          }
-        rhoI_s_out = rhoI_s_accumulator;
-        rhoI_a_out = rhoI_a_accumulator;
-        mag_s_out  = mag_s_accumulator;
-        mag_a_out  = mag_a_accumulator;
-        
-        // Print out final OP values
-        if (with_output) std::cout << "drhoIs=" << rhoI_s_out - ham3.rhoI_s 
-                                   << " drhoIa=" << rhoI_a_out - ham3.rhoI_a
-                                   << " dms="  << mag_s_out - ham3.mag_s
-                                   << " dma="  << mag_a_out - ham3.mag_a
-                                   << std::endl;
-        
-        // Test for convergence
-        converged =    (std::abs(rhoI_s_out - ham3.rhoI_s)<ham3.tol)
-                    && (std::abs(rhoI_a_out - ham3.rhoI_a)<ham3.tol)
-                    && (std::abs(mag_s_out - ham3.mag_s)<ham3.tol) 
-                    && (std::abs(mag_a_out - ham3.mag_a)<ham3.tol);
-        fail = (!converged) && (counter>ham3.loops_lim); // Must come after converged line
-    } while (!converged && !fail);
-    
-    // Unless num_loops_p is the null pointer, assign the number of loops to its location
-    if (num_loops_p!=NULL) *num_loops_p = counter;
-    
-    // We make sure that either converged or fail is true.
-    if ((converged==true) && (fail==true) )
-        std::cout << "OUPS 1: This option shouldn't have occurred! (A)\n";
-    if ((converged==false) && (fail==false) )
-        std::cout << "OUPS 1: This option shouldn't have occurred! (B)\n";
-    
-    return fail;
-}
-
 
 // ######################################################################################
 int pstudyA()
@@ -218,25 +122,20 @@ int pstudyA()
     
     // Loop over values of the parameter space
     /* PARALLELIZATION:, note that different threads do not write to the same parts of 
-    pspaceA. For some reason, kx_bounds and ky_bounds need to be declared as shared even 
-    though they are const. In any event, they are only read and cannot be written to. */
+    pspaceA. */
     #pragma omp parallel default(none) shared(pspaceA,GlobalAttr,std::cout) reduction(+:numfails)
     {
     
-    ham3_t ham3; // Declare and construct an instance of ham3_t (local to each thread)
+    /* Declare and construct an instance of ham3_t (local to each thread). This works 
+    because each instance of ham3 internally has its own arrays for the Hamiltonian, the 
+    evals, and the evecs. */
+    ham3_t ham3;
     
     #pragma omp single
     {
       GlobalAttr = ham3.GetAttributes();//Single thread assigns attributes to GlobalAttr
       std::cout << "\ntol = " << ham3.tol << "\n\n";//Print tolerance for equality of MFs.
     }
-    
-    /* Declare (and construct) an instance of kspace_t (local to each thread). */
-    kspace_t kspace(ham3.kx_pts, ham3.kx_bounds, ham3.ky_pts, ham3.ky_bounds, 
-                                                                         ham3.bands_num);
-    /* Declare an array to hold the evecs (local to each thread). */
-    std::complex<double>*const*const evecs = Alloc2D_z(ham3.bands_num, ham3.bands_num);
-    ValInitArray(ham3.bands_num*ham3.bands_num, &(evecs[0][0])); // Initialize to zero
     
     
     #pragma omp for schedule(dynamic,1)
@@ -259,8 +158,8 @@ int pstudyA()
         double mag_a = ham3.mag_a_startval;
         
         int loops=0; // Will receive the number of loops performed
-        const bool fail = IterativeSearch(rhoI_s, rhoI_a, mag_s, mag_a, ham3, kspace, 
-                                                             evecs, &loops, with_output);
+        const bool fail = FixedPoint(rhoI_s, rhoI_a, mag_s, mag_a, ham3, &loops, 
+                                                                            with_output);
         
         pspaceA.loops_grid[g][h] = loops; // Save the number of loops to pspaceA array.
         
@@ -283,8 +182,6 @@ int pstudyA()
         if (with_output) std::cout << std::endl;
       }
     
-    // Deallocate the memory
-    Dealloc2D(evecs);
     }
     
     

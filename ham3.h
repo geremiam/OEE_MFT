@@ -58,10 +58,10 @@ class ham3_t
     
     /* These private members are updated in the method ComputeMFs() and are used in the 
     method Assign_ham() to compute the Hamiltonian. */
-    double rhoI_s=-88.;
-    double rhoI_a=-88.;
-    double mag_s=-88.;
-    double mag_a=-88.;
+    double rhoI_s_=-88.;
+    double rhoI_a_=-88.;
+    double mag_s_=-88.;
+    double mag_a_=-88.;
     
     const double rho = 1.; // Average (global) electron density, between 0 and 2
     const int num_states = kx_pts*ky_pts*bands_num;
@@ -69,10 +69,10 @@ class ham3_t
     
     /* These arrays are used in the method ComputeMFs() to evaluate the output MF 
     parameters from the input MF parameters. */
-    std::complex<double>*const*const ham_array;//array to hold Ham (local to thread)
-    std::complex<double>*const*const evecs;//Array to hold evecs (local to each thread)
+    std::complex<double>*const*const ham_array_;//array to hold Ham (local to thread)
+    std::complex<double>*const*const evecs_;//Array to hold evecs (local to each thread)
     /* Declare (and construct) an instance of kspace_t (local to each thread). */
-    kspace_t kspace; // Constructor is called in initialization list
+    kspace_t kspace_; // Constructor is called in initialization list
     
     // These functions are used in the method ComputeMFs()
     double ComputeTerm_rhoI_s(const double mu, const double*const evals, 
@@ -117,5 +117,10 @@ class ham3_t
     
     std::string GetAttributes();
 };
+
+bool FixedPoint(double& rhoI_s, double& rhoI_a, double& mag_s, double& mag_a, 
+                ham3_t& ham3, int*const num_loops_p=NULL, const bool with_output=false);
+bool Steffensen(double& rhoI_s, double& rhoI_a, double& mag_s, double& mag_a, 
+                ham3_t& ham3, int*const num_loops_p=NULL, const bool with_output=false);
 
 #endif
