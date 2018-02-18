@@ -22,7 +22,6 @@ class pars_t
     double t2=t2_0; // NNN hopping
     double eps=eps_0; // Potential difference between A and B sublattices
     
-    pars_t(const double lambda=1.);
     void SetScaling(const double lambda);
 };
 

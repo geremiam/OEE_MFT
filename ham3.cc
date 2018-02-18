@@ -34,11 +34,6 @@ double del2(const double p0, const double p1, const double d)
 
 
 
-pars_t::pars_t(const double lambda)
-{
-    /* Upon construction, the scaling is set to lambda (default value is 1). */
-    SetScaling(lambda);
-}
 
 void pars_t::SetScaling(const double lambda)
 {

@@ -14,7 +14,7 @@ NetCDF dataset. */
 #include "ham3.h" // Source code for ham3
 
 
-// Class that defines the parameter space for this Hamiltonian
+// Class that defines a parameter space for this Hamiltonian
 class pspaceA_t {
   private:
     // Private copy constructor (prohibits copy creation)
@@ -24,12 +24,12 @@ class pspaceA_t {
     
   public:
     // scaling factor
-    const int alpha_pts = 4; const double alpha_bounds [2] = {1., 3.};
+    const int lambda_pts = 4; const double lambda_bounds [2] = {1./3., 1.};
     // Hubbard interaction strength
     const int U_pts = 6;     const double U_bounds [2] = {0., 10.};
     
     // Coordinate variables
-    double*const alpha_grid; // alpha coordinate variable
+    double*const lambda_grid; // lambda coordinate variable
     double*const U_grid; // U coordinate variable
     
     // MF parameters
@@ -41,32 +41,32 @@ class pspaceA_t {
     
     // Constructor declaration
     pspaceA_t()
-        :alpha_grid(new double [alpha_pts]), U_grid(new double [U_pts]),
-         rhoI_s_grid(Alloc2D_d(alpha_pts, U_pts)),rhoI_a_grid(Alloc2D_d(alpha_pts, U_pts)),
-         mag_s_grid(Alloc2D_d(alpha_pts, U_pts)), mag_a_grid(Alloc2D_d(alpha_pts, U_pts)),
-         loops_grid(Alloc2D_d(alpha_pts, U_pts)) // Important -- Note order: alpha, U
+        :lambda_grid(new double [lambda_pts]), U_grid(new double [U_pts]),
+         rhoI_s_grid(Alloc2D_d(lambda_pts, U_pts)),rhoI_a_grid(Alloc2D_d(lambda_pts, U_pts)),
+         mag_s_grid(Alloc2D_d(lambda_pts, U_pts)), mag_a_grid(Alloc2D_d(lambda_pts, U_pts)),
+         loops_grid(Alloc2D_d(lambda_pts, U_pts)) // Important -- Note order: lambda, U
     {
         /* The initialization list initializes the parameters and allocates memory for 
         the arrays. */
         
         // Coordinate variables are initialized
         const bool endpoint = true; // Include endpoint (not an important choice)
-        LinInitArray(alpha_bounds[0], alpha_bounds[1], alpha_pts, alpha_grid, endpoint);
+        LinInitArray(lambda_bounds[0], lambda_bounds[1], lambda_pts, lambda_grid, endpoint);
         LinInitArray(U_bounds[0],  U_bounds[1],  U_pts,  U_grid,  endpoint);
         
         // The other variables (the order parameters) span the coordinate space
-        ValInitArray(alpha_pts*U_pts, &(rhoI_s_grid[0][0]), -99.);//Init to unlikely value
-        ValInitArray(alpha_pts*U_pts, &(rhoI_a_grid[0][0]), -99.); // Likewise
-        ValInitArray(alpha_pts*U_pts, &(mag_s_grid[0][0]), -99.); // Likewise
-        ValInitArray(alpha_pts*U_pts, &(mag_a_grid[0][0]), -99.); // Likewise
-        ValInitArray(alpha_pts*U_pts, &(loops_grid[0][0]), -99.); // Likewise
+        ValInitArray(lambda_pts*U_pts, &(rhoI_s_grid[0][0]), -99.);//Init to unlikely value
+        ValInitArray(lambda_pts*U_pts, &(rhoI_a_grid[0][0]), -99.); // Likewise
+        ValInitArray(lambda_pts*U_pts, &(mag_s_grid[0][0]), -99.); // Likewise
+        ValInitArray(lambda_pts*U_pts, &(mag_a_grid[0][0]), -99.); // Likewise
+        ValInitArray(lambda_pts*U_pts, &(loops_grid[0][0]), -99.); // Likewise
         
         
         std::cout << "pspaceA_t instance created.\n";
     }
     // Destructor declaration
     ~pspaceA_t() {
-        delete [] alpha_grid;
+        delete [] lambda_grid;
         delete [] U_grid;
         Dealloc2D(rhoI_s_grid);
         Dealloc2D(rhoI_a_grid);
@@ -83,8 +83,8 @@ class pspaceA_t {
         these depending on the parameter space defined above. 
         Important: Note that the order of the variables must be kept consistent. */
         const int dims_num = 2;
-        const std::string dim_names [dims_num] = {"alpha", "U"};
-        const int dim_lengths [dims_num] = {alpha_pts, U_pts};
+        const std::string dim_names [dims_num] = {"lambda", "U"};
+        const int dim_lengths [dims_num] = {lambda_pts, U_pts};
         const int vars_num = 5; // Variables other than coord variables
         const std::string var_names [vars_num] = {"rho_s", "rho_a", "mag_s", "mag_a", 
                                                   "loops"}; // Use same order below
@@ -93,7 +93,7 @@ class pspaceA_t {
         newDS_t newDS(GlobalAttr_, dims_num, dim_names, dim_lengths,
                       vars_num, var_names, path_);
         
-        const double*const coord_vars [dims_num] = {alpha_grid, U_grid};
+        const double*const coord_vars [dims_num] = {lambda_grid, U_grid};
         newDS.WriteCoordVars(coord_vars); // Write the coordinate variables
         
         const double*const vars [vars_num] = {&(rhoI_s_grid[0][0]), &(rhoI_a_grid[0][0]),
@@ -104,13 +104,14 @@ class pspaceA_t {
 };
 
 
+
 // ######################################################################################
 int pstudyA()
 {
     /* This routine performs the mean-field iterative search at every point in the 
     parameter space defined above. */
     
-    const bool with_output = false; // Show output for diagnostics
+    const bool with_output = true; // Show output for diagnostics
     
     std::cout << std::scientific << std::showpos; // Format display output
     
@@ -139,16 +140,15 @@ int pstudyA()
     
     
     #pragma omp for schedule(dynamic,1)
-    for (int g=0; g<pspaceA.alpha_pts; ++g)
+    for (int g=0; g<pspaceA.lambda_pts; ++g)
       for (int h=0; h<pspaceA.U_pts;  ++h)
       {
         if (with_output)
-          std::cout << "alpha = " << pspaceA.alpha_grid[g] << ", "
+          std::cout << "lambda = " << pspaceA.lambda_grid[g] << ", "
                     << "U = "     << pspaceA.U_grid[h] << "\n"; // Print current params
         
         // Adjust phase space parameters
-        ham3.parsII.SetScaling(pspaceA.alpha_grid[g]); // parsII is scaled by alpha
-        ham3.tperp = ham3.tperp_0 * pspaceA.alpha_grid[g];//tperp is also scaled by alpha
+        ham3.parsI.SetScaling(pspaceA.lambda_grid[g]); // parsI is scaled by lambda
         ham3.U = pspaceA.U_grid[h];
         
         // Set the OPs to their startvals
@@ -166,7 +166,7 @@ int pstudyA()
         if (fail)
         {
             std::cout << "\tWARNING: failure to converge after limit reached\t"
-                      << "alpha = " << pspaceA.alpha_grid[g] << ", "
+                      << "lambda = " << pspaceA.lambda_grid[g] << ", "
                       << "U = "     << pspaceA.U_grid[h] << "\n"; //Print current params
             ++numfails;
         }
@@ -189,15 +189,15 @@ int pstudyA()
     if (with_output)
     {
         std::cout << std::endl << "pspaceA.rhoI_s_grid = " << std::endl;
-        PrintMatrix(pspaceA.alpha_pts, pspaceA.U_pts, pspaceA.rhoI_s_grid, std::cout);
+        PrintMatrix(pspaceA.lambda_pts, pspaceA.U_pts, pspaceA.rhoI_s_grid, std::cout);
         std::cout << std::endl << "pspaceA.rhoI_a_grid = " << std::endl;
-        PrintMatrix(pspaceA.alpha_pts, pspaceA.U_pts, pspaceA.rhoI_a_grid, std::cout);
+        PrintMatrix(pspaceA.lambda_pts, pspaceA.U_pts, pspaceA.rhoI_a_grid, std::cout);
         std::cout << std::endl << "pspaceA.mag_s_grid = " << std::endl;
-        PrintMatrix(pspaceA.alpha_pts, pspaceA.U_pts, pspaceA.mag_s_grid, std::cout);
+        PrintMatrix(pspaceA.lambda_pts, pspaceA.U_pts, pspaceA.mag_s_grid, std::cout);
         std::cout << std::endl << "pspaceA.mag_a_grid = " << std::endl;
-        PrintMatrix(pspaceA.alpha_pts, pspaceA.U_pts, pspaceA.mag_a_grid, std::cout);
+        PrintMatrix(pspaceA.lambda_pts, pspaceA.U_pts, pspaceA.mag_a_grid, std::cout);
         std::cout << std::endl << "pspaceA.loops_grid = " << std::endl;
-        PrintMatrix(pspaceA.alpha_pts, pspaceA.U_pts, pspaceA.loops_grid, std::cout);
+        PrintMatrix(pspaceA.lambda_pts, pspaceA.U_pts, pspaceA.loops_grid, std::cout);
         std::cout << std::endl;
     }
     
