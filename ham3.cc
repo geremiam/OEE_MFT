@@ -299,20 +299,24 @@ bool FixedPoint(double& rhoI_s, double& rhoI_a, double& mag_s, double& mag_a,
         ++counter; // Increment counter
         
         // Past a certain number of loops, we mix in part of the previous input vals
-        if (counter==100) {
-            chi = 0.1;
+        if (counter==50) {
+          chi = 0.1;
+          if (with_output)
+            std::cout<<"\n\t Counter has reached "<<counter<<".\tchi = "<<chi<<"\n\n";
+        }
+        else if (counter==100) {
+          chi = 0.2;
+          if (with_output)
+            std::cout<<"\n\t Counter has reached "<<counter<<".\tchi = "<<chi<<"\n\n";
+        }
+        else if (counter==150) {
+          chi = 0.3;
+          if (with_output)
             std::cout<<"\n\t Counter has reached "<<counter<<".\tchi = "<<chi<<"\n\n";
         }
         else if (counter==200) {
-            chi = 0.2;
-            std::cout<<"\n\t Counter has reached "<<counter<<".\tchi = "<<chi<<"\n\n";
-        }
-        else if (counter==300) {
-            chi = 0.3;
-            std::cout<<"\n\t Counter has reached "<<counter<<".\tchi = "<<chi<<"\n\n";
-        }
-        else if (counter==400) {
-            chi = 0.4;
+          chi = 0.4;
+          if (with_output)
             std::cout<<"\n\t Counter has reached "<<counter<<".\tchi = "<<chi<<"\n\n";
         }
         

@@ -89,14 +89,14 @@ class ham3_t
     /* Settings for the iterative search */
     const double rhoI_s_startval = 1.2; // Choose starting value
     const double rhoI_a_startval = 0.; // Choose starting value
-    const double mag_s_startval = 0.1; // Choose a starting value
-    const double mag_a_startval = 0.1; // Choose a starting value
+    const double mag_s_startval = 0.; // Choose a starting value
+    const double mag_a_startval = 0.2; // Choose a starting value
     const int loops_lim = 3000; // Limit to the number of iteration loops
     const double tol = 1.e-6; // Tolerance for the equality of the mean fields
     
     
     
-    
+    const double lambda = 1.; // Note that scaling must be done by hand in the driver
     const double tperp_0 = 0.3; // Base value of tperp (gets scaled)
     double tperp = tperp_0;
     double L = 0.; // bias voltage between layers I and II
