@@ -27,6 +27,11 @@ void Assign_h(const double kx, const double ky, const double a, const pars_t par
     h[3] = -eps - 2.*t2*( 2.*cos(sqrt(3.)/2.*a*kx+phi)*cos(3./2.*a*ky) + cos(sqrt(3.)*a*kx-phi) );
 }
 
+double del2(const double p0, const double p1, const double d)
+{
+    return p0 - (p1-p0)*(p1-p0)/d;
+}
+
 
 
 pars_t::pars_t(const double lambda)
@@ -280,9 +285,9 @@ std::string ham3_t::GetAttributes()
 bool FixedPoint(double& rhoI_s, double& rhoI_a, double& mag_s, double& mag_a, 
                 ham3_t& ham3, int*const num_loops_p, const bool with_output)
 {
-    /* Performs the iterative self-consistent search using the parameters from ham3 and 
-    the arrays kspace and evecs. The initial values of mag and rhoI are used as the 
-    starting values for the search; the end values are also output to mag and rhoI. */
+    /* Performs the iterative self-consistent search using the parameters from ham3. 
+    The initial values of mag and rhoI are used as the starting values for the search; 
+    the end values are also output to mag and rhoI. */
     std::cout << std::scientific << std::showpos; // Format display output
     
     /* Declare output variables and *initialize them to input values*. */
@@ -341,5 +346,77 @@ bool FixedPoint(double& rhoI_s, double& rhoI_a, double& mag_s, double& mag_a,
 bool Steffensen(double& rhoI_s, double& rhoI_a, double& mag_s, double& mag_a, 
                 ham3_t& ham3, int*const num_loops_p, const bool with_output)
 {
-
+    /* Performs the iterative Steffensen search using the parameters from ham3. The 
+    initial values of mag and rhoI are used as the starting values for the search; the 
+    end values are also output to mag and rhoI. The algorithm does not seem to work... */
+    /*https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.fixed_point.html
+    (see source code) */
+    std::cout << std::scientific << std::showpos; // Format display output
+    
+    const int num_vars = 4;
+    
+    // Declare arrays for intermediate values
+    double p  [num_vars] = {rhoI_s, rhoI_a, mag_s, mag_a};
+    double p0 [num_vars] = {rhoI_s, rhoI_a, mag_s, mag_a};
+    
+    int counter = 0; // Define counter for number of loops
+    bool converged=false, fail=false; // Used to stop the while looping
+    do // Iterate until self-consistency is achieved
+    {
+        ++counter; // Increment counter
+        
+        for (int i=0; i< num_vars; ++i) p0[i] = p[i];
+        
+        if (with_output) std::cout << "rhoIs="  << p0[0]
+                                   << " rhoIa=" << p0[1]
+                                   << " ms="    << p0[2] 
+                                   << " ma="    << p0[3] << "\t";
+        
+        double p1   [num_vars] = {0.};
+        double p2   [num_vars] = {0.};
+        double d    [num_vars] = {0.};
+        double diff [num_vars] = {0.};
+        
+        ham3.ComputeMFs(p0[0], p0[1], p0[2], p0[3], 
+                        p1[0], p1[1], p1[2], p1[3]);
+        
+        ham3.ComputeMFs(p1[0], p1[1], p1[2], p1[3], 
+                        p2[0], p2[1], p2[2], p2[3]);
+        
+        for (int i=0; i<num_vars; ++i)
+        {
+            d[i] = p2[i] - 2.*p1[i] + p0[i];
+            if (d[i]!=0.) p[i] = del2(p0[i], p1[i], d[i]);
+            else p[i] = p2[i];
+            diff[i] = std::abs(p[i] - p0[i]);
+        }
+        
+        if (with_output) std::cout << "drhoIs="  << p[0] - p0[0]
+                                   << " drhoIa=" << p[1] - p0[1]
+                                   << " dms="    << p[2] - p0[2]
+                                   << " dma="    << p[3] - p0[3]
+                                   << std::endl;
+        
+        // Test for convergence
+        converged = ( MaxArrayValue(diff, num_vars) < ham3.tol );
+        fail = (!converged) && (counter>ham3.loops_lim);//Must come after converged line
+        
+    } while (!converged && !fail);
+    
+    // Assign the final values to the function arguments
+    rhoI_s = p[0];
+    rhoI_a = p[1];
+    mag_s  = p[2];
+    mag_a  = p[3];
+    
+    // Unless num_loops_p is the null pointer, assign the number of loops to its location
+    if (num_loops_p!=NULL) *num_loops_p = counter;
+    
+    // We make sure that either converged or fail is true.
+    if ((converged==true) && (fail==true) )
+        std::cout << "OUPS 1: This option shouldn't have occurred! (A)\n";
+    if ((converged==false) && (fail==false) )
+        std::cout << "OUPS 1: This option shouldn't have occurred! (B)\n";
+    
+    return fail;
 }

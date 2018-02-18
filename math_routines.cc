@@ -9,6 +9,13 @@ applications.
 #include <algorithm> // Useful algorithms. Here, we use std::sort()
 #include "math_routines.h" // Include header file for consistency check
 
+double MaxArrayValue(const double* const Array, const int ArrayLen)
+{
+    // Routine for finding the maximum value in an Array of length 'ArrayLen'.
+    const double* const max_p = std::max_element(Array,Array+ArrayLen);
+    return *max_p;
+}
+
 double nF0(double const energy)
 {
     /* Zero-temperature Fermi function. Overloaded for floats. */
