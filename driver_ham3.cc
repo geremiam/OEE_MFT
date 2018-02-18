@@ -26,7 +26,7 @@ class pspaceA_t {
     // scaling factor
     const int alpha_pts = 4; const double alpha_bounds [2] = {1., 3.};
     // Hubbard interaction strength
-    const int U_pts = 4;     const double U_bounds [2] = {0., 6.};
+    const int U_pts = 6;     const double U_bounds [2] = {0., 10.};
     
     // Coordinate variables
     double*const alpha_grid; // alpha coordinate variable
@@ -196,6 +196,8 @@ int pstudyA()
         PrintMatrix(pspaceA.alpha_pts, pspaceA.U_pts, pspaceA.mag_s_grid, std::cout);
         std::cout << std::endl << "pspaceA.mag_a_grid = " << std::endl;
         PrintMatrix(pspaceA.alpha_pts, pspaceA.U_pts, pspaceA.mag_a_grid, std::cout);
+        std::cout << std::endl << "pspaceA.loops_grid = " << std::endl;
+        PrintMatrix(pspaceA.alpha_pts, pspaceA.U_pts, pspaceA.loops_grid, std::cout);
         std::cout << std::endl;
     }
     

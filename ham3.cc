@@ -296,16 +296,35 @@ bool FixedPoint(double& rhoI_s, double& rhoI_a, double& mag_s, double& mag_a,
     double mag_s_out  = mag_s;
     double mag_a_out  = mag_a;
     
+    double chi = 0.; // Mixing fraction (zero corresponds to using fully new value)
     int counter = 0; // Define counter for number of loops
     bool converged=false, fail=false; // Used to stop the while looping
     do // Iterate until self-consistency is achieved
     {
         ++counter; // Increment counter
         
-        rhoI_s = rhoI_s_out;
-        rhoI_a = rhoI_a_out; 
-        mag_s  = mag_s_out;
-        mag_a  = mag_a_out; // Update mean-field values
+        // Past a certain number of loops, we mix in part of the previous input vals
+        if (counter==100) {
+            chi = 0.1;
+            std::cout<<"\n\t Counter has reached "<<counter<<".\tchi = "<<chi<<"\n\n";
+        }
+        else if (counter==200) {
+            chi = 0.2;
+            std::cout<<"\n\t Counter has reached "<<counter<<".\tchi = "<<chi<<"\n\n";
+        }
+        else if (counter==300) {
+            chi = 0.3;
+            std::cout<<"\n\t Counter has reached "<<counter<<".\tchi = "<<chi<<"\n\n";
+        }
+        else if (counter==400) {
+            chi = 0.4;
+            std::cout<<"\n\t Counter has reached "<<counter<<".\tchi = "<<chi<<"\n\n";
+        }
+        
+        rhoI_s = chi*rhoI_s + (1.-chi)*rhoI_s_out;
+        rhoI_a = chi*rhoI_a + (1.-chi)*rhoI_a_out; 
+        mag_s  = chi*mag_s + (1.-chi)*mag_s_out;
+        mag_a  = chi*mag_a + (1.-chi)*mag_a_out; // Update mean-field values
         if (with_output) std::cout << "rhoIs="  << rhoI_s
                                    << " rhoIa=" << rhoI_a
                                    << " ms="    << mag_s 
