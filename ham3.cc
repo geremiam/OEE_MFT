@@ -32,6 +32,23 @@ double del2(const double p0, const double p1, const double d)
     return p0 - (p1-p0)*(p1-p0)/d;
 }
 
+double Set_chi(const int counter, const int*const counter_vals, const double*const chi_vals, 
+               const int len, const bool with_output=false)
+{
+    /* When 'counter' reaches one of the values in 'counter_values', the corresponding 
+    entry of 'chi_values' is returned. */
+    double chi;
+    for (int i=0; i<len; ++i)
+        if (counter==counter_vals[i]) 
+        {
+            chi = chi_vals[i];
+            if (with_output)
+                std::cout << "\n\t Counter has reached " << counter
+                          << ".\tchi = " << chi << "\n\n";
+        }
+    return chi;
+}
+
 
 
 
@@ -69,6 +86,7 @@ void ham3_t::Assign_ham(const double kx, const double ky)
     /* Given the arguments kx and ky as well as member parameters, calculate the 8*8 
     k-space Hamiltonian and assign it to ham_array in full storage layout. The diag 
     routine only uses the lower triangle, so we only assign that part. */
+    // NOTE THAT L IS DEFINED AS THE OPPOSITE OF WHAT IT IS IN THE NOTES
     
     // We calculate the kinetic energy parts of the Hamiltonian
     std::complex<double> hI [4] = {0.,0.};
@@ -78,17 +96,17 @@ void ham3_t::Assign_ham(const double kx, const double ky)
     
     std::complex<double>*const*const& H = ham_array_; //For convenience, define reference
     
-    H[0][0]=hI[0]+U*(rhoI_s_+rhoI_a_)/2.+L/2.; 
-    H[1][0]=hI[2]; H[1][1]=hI[3]+U*(rhoI_s_-rhoI_a_)/2.+L/2.; 
+    H[0][0]=hI[0]+U*(rhoI_s_+rhoI_a_)/2.-L/2.; 
+    H[1][0]=hI[2]; H[1][1]=hI[3]+U*(rhoI_s_-rhoI_a_)/2.-L/2.; 
     
-    H[2][0]=-U*(mag_s_+mag_a_); H[2][1]=0.;    H[2][2]=hI[0]+U*(rhoI_s_+rhoI_a_)/2.+L/2.; 
-    H[3][0]=0.; H[3][1]=-U*(mag_s_-mag_a_);    H[3][2]=hI[2]; H[3][3]=hI[3]+U*(rhoI_s_-rhoI_a_)/2.+L/2.; 
+    H[2][0]=-U*(mag_s_+mag_a_); H[2][1]=0.;    H[2][2]=hI[0]+U*(rhoI_s_+rhoI_a_)/2.-L/2.; 
+    H[3][0]=0.; H[3][1]=-U*(mag_s_-mag_a_);    H[3][2]=hI[2]; H[3][3]=hI[3]+U*(rhoI_s_-rhoI_a_)/2.-L/2.; 
     
-    H[4][0]=tperp; H[4][1]=0.;    H[4][2]=0.; H[4][3]=0.;    H[4][4]=hII[0]-L/2.; 
-    H[5][0]=0.; H[5][1]=tperp;    H[5][2]=0.; H[5][3]=0.;    H[5][4]=hII[2]; H[5][5]=hII[3]-L/2.; 
+    H[4][0]=tperp; H[4][1]=0.;    H[4][2]=0.; H[4][3]=0.;    H[4][4]=hII[0]+L/2.; 
+    H[5][0]=0.; H[5][1]=tperp;    H[5][2]=0.; H[5][3]=0.;    H[5][4]=hII[2]; H[5][5]=hII[3]+L/2.; 
     
-    H[6][0]=0.; H[6][1]=0.;    H[6][2]=tperp; H[6][3]=0.;    H[6][4]=0.; H[6][5]=0.;    H[6][6]=hII[0]-L/2.; 
-    H[7][0]=0.; H[7][1]=0.;    H[7][2]=0.; H[7][3]=tperp;    H[7][4]=0.; H[7][5]=0.;    H[7][6]=hII[2]; H[7][7]=hII[3]-L/2.;
+    H[6][0]=0.; H[6][1]=0.;    H[6][2]=tperp; H[6][3]=0.;    H[6][4]=0.; H[6][5]=0.;    H[6][6]=hII[0]+L/2.; 
+    H[7][0]=0.; H[7][1]=0.;    H[7][2]=0.; H[7][3]=tperp;    H[7][4]=0.; H[7][5]=0.;    H[7][6]=hII[2]; H[7][7]=hII[3]+L/2.;
     
 }
 
@@ -291,7 +309,6 @@ bool FixedPoint(double& rhoI_s, double& rhoI_a, double& mag_s, double& mag_a,
     double mag_s_out  = mag_s;
     double mag_a_out  = mag_a;
     
-    double chi = 0.; // Mixing fraction (zero corresponds to using fully new value)
     int counter = 0; // Define counter for number of loops
     bool converged=false, fail=false; // Used to stop the while looping
     do // Iterate until self-consistency is achieved
@@ -299,26 +316,11 @@ bool FixedPoint(double& rhoI_s, double& rhoI_a, double& mag_s, double& mag_a,
         ++counter; // Increment counter
         
         // Past a certain number of loops, we mix in part of the previous input vals
-        if (counter==50) {
-          chi = 0.1;
-          if (with_output)
-            std::cout<<"\n\t Counter has reached "<<counter<<".\tchi = "<<chi<<"\n\n";
-        }
-        else if (counter==100) {
-          chi = 0.2;
-          if (with_output)
-            std::cout<<"\n\t Counter has reached "<<counter<<".\tchi = "<<chi<<"\n\n";
-        }
-        else if (counter==150) {
-          chi = 0.3;
-          if (with_output)
-            std::cout<<"\n\t Counter has reached "<<counter<<".\tchi = "<<chi<<"\n\n";
-        }
-        else if (counter==200) {
-          chi = 0.4;
-          if (with_output)
-            std::cout<<"\n\t Counter has reached "<<counter<<".\tchi = "<<chi<<"\n\n";
-        }
+        const int len = 12;
+        const int counter_vals [len] = {50,  100, 150, 200, 300, 400, 500, 600, 700, 800,  900,  1000};
+        const double  chi_vals [len] = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.97, 0.99};
+        // Mixing fraction chi (zero corresponds to using fully new value)
+        const double chi = Set_chi(counter, counter_vals, chi_vals, len, with_output);
         
         rhoI_s = chi*rhoI_s + (1.-chi)*rhoI_s_out;
         rhoI_a = chi*rhoI_a + (1.-chi)*rhoI_a_out; 
