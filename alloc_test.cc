@@ -1,8 +1,8 @@
-// alloc_dealloc_test.cc
+// alloc_test.cc
 // Testing suite for the module alloc_dealloc.
 #include <iostream>
 #include <complex>
-#include "alloc_dealloc.h"
+#include "alloc.h"
 
 void Alloc3D_d_TEST()
 {

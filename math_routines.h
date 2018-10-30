@@ -6,6 +6,8 @@ applications.
 #ifndef MATH_ROUTINES_H
 #define MATH_ROUTINES_H
 
+void MinMaxArray(const double* const Array, const int ArrayLen, double& min, double& max);
+
 double MaxArrayValue(const double* const Array, const int ArrayLen);
 
 double nF0(double const energy);

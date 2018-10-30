@@ -1,8 +1,8 @@
-// alloc_dealloc.cc
+// alloc.cc
 /* Routines for allocation and deallocation of dynamically allocated memory. */
 #include <complex>
 #include <iostream>
-#include "alloc_dealloc.h" // Include header for consistency check
+#include "alloc.h" // Include header for consistency check
 
 
 double*** Alloc3D_d(const int Dim0Len, const int Dim1Len, const int Dim2Len)

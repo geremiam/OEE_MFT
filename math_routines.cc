@@ -9,6 +9,15 @@ applications.
 #include <algorithm> // Useful algorithms. Here, we use std::sort()
 #include "math_routines.h" // Include header file for consistency check
 
+void MinMaxArray(const double* const Array, const int ArrayLen, double& min, double& max)
+{
+    // Routine for finding the maximum value in an Array of length 'ArrayLen'.
+    const double* const min_p = std::min_element(Array,Array+ArrayLen);
+    const double* const max_p = std::max_element(Array,Array+ArrayLen);
+    min = *min_p;
+    max = *max_p;
+}
+
 double MaxArrayValue(const double* const Array, const int ArrayLen)
 {
     // Routine for finding the maximum value in an Array of length 'ArrayLen'.

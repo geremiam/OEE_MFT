@@ -6,14 +6,14 @@
 # Flags for including in path search
 INC_FLAGS=-I${LAPACKE_INC} -I${NETCDF_INC}
 # Compiler flags (add -fopenmp to compilation and linking for OpenMP)
-CXXFLAGS=-std=c++11 -O2 -fopenmp
+CXXFLAGS=-std=c++11 -O2
 # Linker flags (add -fopenmp to compilation and linking for OpenMP)
-LD_FLAGS=-L${LAPACKE_LIB} -L${NETCDF_LIB} -fopenmp
+LD_FLAGS=-L${LAPACKE_LIB} -L${NETCDF_LIB}
 # Flags for linking with libraries (place after all object files)
 LD_LIBS=-llapacke -lnetcdf
 # List of object files and header files belonging to modules
-OBJECTS=alloc_dealloc.o init_routines.o math_routines.o diag_routines.o kspace.o nc_IO.o IO.o
-HEADERS=alloc_dealloc.h init_routines.h math_routines.h diag_routines.h kspace.h nc_IO.h IO.h
+OBJECTS=alloc.o init_routines.o math_routines.o diag_routines.o kspace.o nc_IO.o IO.o
+HEADERS=alloc.h init_routines.h math_routines.h diag_routines.h kspace.h nc_IO.h IO.h
 
 
 ## all: Default target; empty
@@ -21,51 +21,16 @@ HEADERS=alloc_dealloc.h init_routines.h math_routines.h diag_routines.h kspace.h
 all: help
 
 # #######################################################################################
-# DRIVER_HAM1
-
-## driver_ham1: Builds the final executable for driver_ham1
-# Linking of the object files into the final executable. Depends on all .o files.
-driver_ham1: driver_ham1.o $(OBJECTS)
-	$(CXX) $(LD_FLAGS) driver_ham1.o $(OBJECTS) $(LD_LIBS) -o driver_ham1
-
-# Creation of the driver_ham1.o object file, which depends on the module's header file 
-# and the other headers
-driver_ham1.o: driver_ham1.cc $(HEADERS)
-	$(CXX) $(CXXFLAGS) $(INC_FLAGS) -c driver_ham1.cc -o driver_ham1.o
-
-# Deletion of the object file and executable file for this driver
-.PHONY: driver_ham1_clean
-driver_ham1_clean:
-	rm -f driver_ham1.o driver_ham1
-
-# #######################################################################################
-# DRIVER_HAM2
-
-## driver_ham2: Builds the final executable for driver_ham2
-# Linking of the object files into the final executable. Depends on all .o files.
-driver_ham2: driver_ham2.o $(OBJECTS)
-	$(CXX) $(LD_FLAGS) driver_ham2.o $(OBJECTS) $(LD_LIBS) -o driver_ham2
-
-# Creation of the driver_ham2.o object file, which depends on the header files
-driver_ham2.o: driver_ham2.cc $(HEADERS)
-	$(CXX) $(CXXFLAGS) $(INC_FLAGS) -c driver_ham2.cc -o driver_ham2.o
-
-# Deletion of the object file and executable file for this driver
-.PHONY: driver_ham2_clean
-driver_ham2_clean:
-	rm -f driver_ham2.o driver_ham2
-
-# #######################################################################################
 # DRIVER_HAM3
 
 ## driver_ham3: Builds the final executable for driver_ham3
 # Linking of the object files into the final executable. Depends on all .o files.
 driver_ham3: driver_ham3.o ham3.o $(OBJECTS)
-	$(CXX) $(LD_FLAGS) driver_ham3.o ham3.o $(OBJECTS) $(LD_LIBS) -o driver_ham3
+	${CXX} $(LD_FLAGS) driver_ham3.o ham3.o $(OBJECTS) $(LD_LIBS) -o driver_ham3
 
 # Creation of the driver_ham3.o object file, which depends on the header files
 driver_ham3.o: driver_ham3.cc ham3.h $(HEADERS)
-	$(CXX) $(CXXFLAGS) $(INC_FLAGS) -c driver_ham3.cc -o driver_ham3.o
+	${CXX} $(CXXFLAGS) $(INC_FLAGS) -c driver_ham3.cc -o driver_ham3.o
 
 # Deletion of the object file and executable file for this driver
 .PHONY: driver_ham3_clean
@@ -73,32 +38,32 @@ driver_ham3_clean:
 	rm -f driver_ham3.o ham3.o driver_ham3
 
 # #######################################################################################
-# MODULE ALLOC_DEALLOC
+# MODULE ALLOC
 
-# Creation of the alloc_dealloc.o object file, which depends on the module's header file 
+# Creation of the alloc.o object file, which depends on the module's header file 
 # and its source file
-alloc_dealloc.o: alloc_dealloc.cc alloc_dealloc.h
-	$(CXX) $(CXXFLAGS) -c alloc_dealloc.cc -o alloc_dealloc.o
+alloc.o: alloc.cc alloc.h
+	${CXX} $(CXXFLAGS) -c alloc.cc -o alloc.o
 
-## ut_alloc_dealloc: Runs the testing suite for the module alloc_dealloc
-.PHONY: ut_alloc_dealloc
-ut_alloc_dealloc: alloc_dealloc_test # Runs the testing suite's executable
-	./alloc_dealloc_test
+## ut_alloc: Runs the testing suite for the module alloc
+.PHONY: ut_alloc
+ut_alloc: alloc_test # Runs the testing suite's executable
+	./alloc_test
 
-# Linking of the alloc_dealloc_test.o object and alloc_dealloc.o object files to create 
+# Linking of the alloc_test.o object and alloc.o object files to create 
 # the executable file.
-alloc_dealloc_test: alloc_dealloc_test.o alloc_dealloc.o
-	$(CXX) alloc_dealloc_test.o alloc_dealloc.o -o alloc_dealloc_test
+alloc_test: alloc_test.o alloc.o
+	${CXX} alloc_test.o alloc.o -o alloc_test
 
-# Creation of the alloc_dealloc_test.o object file, which depends on its source file and 
-# on the alloc_dealloc.h header file.
-alloc_dealloc_test.o: alloc_dealloc_test.cc alloc_dealloc.h
-	$(CXX) $(CXXFLAGS) -c alloc_dealloc_test.cc -o alloc_dealloc_test.o
+# Creation of the alloc_test.o object file, which depends on its source file and 
+# on the alloc.h header file.
+alloc_test.o: alloc_test.cc alloc.h
+	${CXX} $(CXXFLAGS) -c alloc_test.cc -o alloc_test.o
 
 # Deletion of the object files and executable files pertaining to this unit test.
-.PHONY: ut_alloc_dealloc_clean
-ut_alloc_dealloc_clean:
-	rm -f alloc_dealloc_test.o alloc_dealloc.o alloc_dealloc_test
+.PHONY: ut_alloc_clean
+ut_alloc_clean:
+	rm -f alloc_test.o alloc.o alloc_test
 
 # #######################################################################################
 # MODULE INIT_ROUTINES
@@ -106,7 +71,7 @@ ut_alloc_dealloc_clean:
 # Creation of the init_routines.o object file, which depends on the module's header file 
 # and its source file
 init_routines.o: init_routines.cc init_routines.h
-	$(CXX) $(CXXFLAGS) -c init_routines.cc -o init_routines.o
+	${CXX} $(CXXFLAGS) -c init_routines.cc -o init_routines.o
 
 ## ut_init_routines: Runs the testing suite for the module init_routines
 .PHONY: ut_init_routines
@@ -116,12 +81,12 @@ ut_init_routines: init_routines_test # Runs the testing suite's executable
 # Linking of the init_routines_test.o object and init_routines.o object files to create 
 # the executable file.
 init_routines_test: init_routines_test.o init_routines.o
-	$(CXX) init_routines_test.o init_routines.o -o init_routines_test
+	${CXX} init_routines_test.o init_routines.o -o init_routines_test
 
 # Creation of the init_routines_test.o object file, which depends on its source file and 
 # on the init_routines.h header file.
 init_routines_test.o: init_routines_test.cc init_routines.h
-	$(CXX) $(CXXFLAGS) -c init_routines_test.cc -o init_routines_test.o
+	${CXX} $(CXXFLAGS) -c init_routines_test.cc -o init_routines_test.o
 
 # Deletion of the object files and executable files pertaining to this unit test.
 .PHONY: ut_init_routines_clean
@@ -134,7 +99,7 @@ ut_init_routines_clean:
 # Creation of the math_routines.o object file, which depends on the module's header file 
 # and its source file
 math_routines.o: math_routines.cc math_routines.h
-	$(CXX) $(CXXFLAGS) -c math_routines.cc -o math_routines.o
+	${CXX} $(CXXFLAGS) -c math_routines.cc -o math_routines.o
 
 ## ut_math_routines: Runs the testing suite for the module math_routines
 .PHONY: ut_math_routines
@@ -144,12 +109,12 @@ ut_math_routines: math_routines_test # Runs the testing suite's executable
 # Linking of the math_routines_test.o object and math_routines.o object files to create 
 # the executable file.
 math_routines_test: math_routines_test.o math_routines.o
-	$(CXX) math_routines_test.o math_routines.o -o math_routines_test
+	${CXX} math_routines_test.o math_routines.o -o math_routines_test
 
 # Creation of the math_routines_test.o object file, which depends on its source file and 
 # on the math_routines.h header file.
 math_routines_test.o: math_routines_test.cc math_routines.h
-	$(CXX) $(CXXFLAGS) -c math_routines_test.cc -o math_routines_test.o
+	${CXX} $(CXXFLAGS) -c math_routines_test.cc -o math_routines_test.o
 
 # Deletion of the object files and executable files pertaining to this unit test.
 .PHONY: ut_math_routines_clean
@@ -162,7 +127,7 @@ ut_math_routines_clean:
 # diag_routines.o object file depends on header file and source file
 # Must include LAPACKE_INC in the path search
 diag_routines.o: diag_routines.cc diag_routines.h
-	$(CXX) $(CXXFLAGS) -I${LAPACKE_INC} -c diag_routines.cc -o diag_routines.o
+	${CXX} $(CXXFLAGS) -I${LAPACKE_INC} -c diag_routines.cc -o diag_routines.o
 
 ## ut_diag_routines: Runs the testing suite for the module diag_routines
 .PHONY: ut_diag_routines
@@ -172,12 +137,12 @@ ut_diag_routines: diag_routines_test # Runs the testing suite's executable
 # Testing suite executable depends on diag_routines_test.o diag_routines.o
 # Must include LAPACKE_LIB in path search and lapacke library
 diag_routines_test: diag_routines_test.o diag_routines.o
-	$(CXX) -L${LAPACKE_LIB} diag_routines_test.o diag_routines.o -llapacke \
+	${CXX} -L${LAPACKE_LIB} diag_routines_test.o diag_routines.o -llapacke \
 	-o diag_routines_test
 
 # diag_routines_test.o object file depends on source file and diag_routines.h header file
 diag_routines_test.o: diag_routines_test.cc diag_routines.h
-	$(CXX) $(CXXFLAGS) -c diag_routines_test.cc -o diag_routines_test.o
+	${CXX} $(CXXFLAGS) -c diag_routines_test.cc -o diag_routines_test.o
 
 # Clean target for this unit test
 .PHONY: ut_diag_routines_clean
@@ -188,8 +153,8 @@ ut_diag_routines_clean:
 # MODULE KSPACE
 
 # kspace.o object file depends on header file, source file, and all included header files
-kspace.o: kspace.cc kspace.h alloc_dealloc.h init_routines.h
-	$(CXX) $(CXXFLAGS) -c kspace.cc -o kspace.o
+kspace.o: kspace.cc kspace.h alloc.h init_routines.h
+	${CXX} $(CXXFLAGS) -c kspace.cc -o kspace.o
 
 ## ut_kspace: Runs the testing suite for the module kspace
 .PHONY: ut_kspace
@@ -198,24 +163,24 @@ ut_kspace: kspace_test # Runs the testing suite's executable
 
 # Testing suite executable depends on kspace_test.o, kspace.o, and the other modules used 
 # in the source code.
-kspace_test: kspace_test.o kspace.o alloc_dealloc.o init_routines.o
-	$(CXX) kspace_test.o kspace.o alloc_dealloc.o init_routines.o -o kspace_test
+kspace_test: kspace_test.o kspace.o alloc.o init_routines.o
+	${CXX} kspace_test.o kspace.o alloc.o init_routines.o -o kspace_test
 
 # kspace_test.o object file depends on source file and kspace.h header
 kspace_test.o: kspace_test.cc kspace.h
-	$(CXX) $(CXXFLAGS) -c kspace_test.cc -o kspace_test.o
+	${CXX} $(CXXFLAGS) -c kspace_test.cc -o kspace_test.o
 
 # Deletion of the object files and executable files pertaining to this unit test.
 .PHONY: ut_kspace_clean
 ut_kspace_clean:
-	rm -f alloc_dealloc.o init_routines.o kspace_test.o kspace.o kspace_test
+	rm -f alloc.o init_routines.o kspace_test.o kspace.o kspace_test
 
 # #######################################################################################
 # MODULE NC_IO
 
 # nc_IO.o object file depends on header file, source file, and all included header files
 nc_IO.o: nc_IO.cc nc_IO.h
-	$(CXX) $(CXXFLAGS) -I${NETCDF_INC} -c nc_IO.cc -o nc_IO.o
+	${CXX} $(CXXFLAGS) -I${NETCDF_INC} -c nc_IO.cc -o nc_IO.o
 
 ## ut_nc_IO: Runs the testing suite for the module nc_IO
 .PHONY: ut_nc_IO
@@ -225,11 +190,11 @@ ut_nc_IO: nc_IO_test # Runs the testing suite's executable
 # Testing suite executable depends on nc_IO_test.o, Z.o, and the other modules used 
 # in the source code.
 nc_IO_test: nc_IO_test.o nc_IO.o
-	$(CXX) -L${NETCDF_LIB} nc_IO_test.o nc_IO.o -lnetcdf -o nc_IO_test
+	${CXX} -L${NETCDF_LIB} nc_IO_test.o nc_IO.o -lnetcdf -o nc_IO_test
 
 # nc_IO_test.o object file depends on source file and nc_IO.h header
 nc_IO_test.o: nc_IO_test.cc nc_IO.h
-	$(CXX) $(CXXFLAGS) -c nc_IO_test.cc -o nc_IO_test.o
+	${CXX} $(CXXFLAGS) -c nc_IO_test.cc -o nc_IO_test.o
 
 # Deletion of the object files and executable files pertaining to this unit test.
 .PHONY: ut_nc_IO_clean
@@ -241,7 +206,7 @@ ut_nc_IO_clean:
 
 # IO.o object file depends on header file, source file, and all included header files
 IO.o: IO.cc IO.h
-	$(CXX) $(CXXFLAGS) -c IO.cc -o IO.o
+	${CXX} $(CXXFLAGS) -c IO.cc -o IO.o
 
 ## ut_IO: Runs the testing suite for the module IO
 .PHONY: ut_IO
@@ -249,25 +214,25 @@ ut_IO: IO_test # Runs the testing suite's executable
 	./IO_test
 
 # Testing suite executable depends on IO_test.o and IO.o
-IO_test: IO_test.o IO.o alloc_dealloc.o
-	$(CXX) IO_test.o IO.o alloc_dealloc.o -o IO_test
+IO_test: IO_test.o IO.o alloc.o
+	${CXX} IO_test.o IO.o alloc.o -o IO_test
 
 # IO_test.o object file depends on source file and IO.h header
-IO_test.o: IO_test.cc IO.h alloc_dealloc.h
-	$(CXX) $(CXXFLAGS) -c IO_test.cc -o IO_test.o
+IO_test.o: IO_test.cc IO.h alloc.h
+	${CXX} $(CXXFLAGS) -c IO_test.cc -o IO_test.o
 
 # Deletion of the object files and executable files pertaining to this unit test.
 .PHONY: IO_clean
 IO_clean:
-	rm -f IO_test.o IO.o alloc_dealloc.o IO_test
+	rm -f IO_test.o IO.o alloc.o IO_test
 
 # #######################################################################################
 # MODULE HAM3
 
 # ham3.o object file depends on header file, source file, and all included header 
 # files
-ham3.o: ham3.cc ham3.h alloc_dealloc.h init_routines.h math_routines.h kspace.h diag_routines.h
-	$(CXX) $(CXXFLAGS) $(INC_FLAGS) -c ham3.cc -o ham3.o
+ham3.o: ham3.cc ham3.h alloc.h init_routines.h math_routines.h kspace.h diag_routines.h
+	${CXX} $(CXXFLAGS) $(INC_FLAGS) -c ham3.cc -o ham3.o
 
 ## ut_ham3: Runs the testing suite for the module ham3
 .PHONY: ut_ham3
@@ -276,19 +241,19 @@ ut_ham3: ham3_test # Runs the testing suite's executable
 
 # Testing suite executable depends on ham3_test.o, ham3.o, and the other 
 # modules used in the source code.
-ham3_test: ham3_test.o IO.o ham3.o alloc_dealloc.o init_routines.o math_routines.o \
+ham3_test: ham3_test.o IO.o ham3.o alloc.o init_routines.o math_routines.o \
            kspace.o diag_routines.o
-	$(CXX) $(LD_FLAGS) ham3_test.o IO.o ham3.o alloc_dealloc.o init_routines.o \
+	${CXX} $(LD_FLAGS) ham3_test.o IO.o ham3.o alloc.o init_routines.o \
 	math_routines.o kspace.o diag_routines.o $(LD_LIBS) -o ham3_test
 
 # ham3_test.o object file depends on source file and IO.h header
 ham3_test.o: ham3_test.cc ham3.h IO.h
-	$(CXX) $(CXXFLAGS) -c ham3_test.cc -o ham3_test.o
+	${CXX} $(CXXFLAGS) -c ham3_test.cc -o ham3_test.o
 
 # Deletion of the object files and executable files pertaining to this unit test.
 .PHONY: ham3_clean
 ham3_clean:
-	rm -f ham3_test.o IO.o ham3.o alloc_dealloc.o init_routines.o math_routines.o kspace.o diag_routines.o ham3_test
+	rm -f ham3_test.o IO.o ham3.o alloc.o init_routines.o math_routines.o kspace.o diag_routines.o ham3_test
 
 # #######################################################################################
 
@@ -300,7 +265,7 @@ clean: driver_ham1_clean driver_ham2_clean driver_ham3_clean
 
 ## ut_clean: Runs clean rules for all unit tests
 .PHONY: ut_clean
-ut_clean: ut_alloc_dealloc_clean \
+ut_clean: ut_alloc_clean \
           ut_init_routines_clean \
           ut_math_routines_clean \
           ut_diag_routines_clean \
