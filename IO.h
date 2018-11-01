@@ -8,4 +8,9 @@ void PrintMatrix(const int num_rows, const int num_cols, const double*const*cons
 void PrintMatrix(const int num_rows, const int num_cols, const std::complex<double>*const mat, std::ostream& out);
 void PrintMatrix(const int num_rows, const int num_cols, const std::complex<double>*const*const mat, std::ostream& out);
 
+void PrintVector(const int len, const double*const vec, std::ostream& out);
+void PrintVector(const int len, const float*const vec, std::ostream& out);
+void PrintVector(const int len, const std::complex<double>*const vec, std::ostream& out);
+void PrintVector(const int len, const std::complex<float>*const vec, std::ostream& out);
+
 #endif

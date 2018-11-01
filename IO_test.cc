@@ -2,10 +2,10 @@
 /* Testing suite for the module misc. */
 #include <iostream>
 #include <complex>
-#include "alloc_dealloc.h" //Allocation and deallocation of arrays (must include complex)
+#include "alloc.h" //Allocation and deallocation of arrays (must include complex beforehand)
 #include "IO.h" // Include header file for consistency check
 
-int test_PrintMatrix()
+void test_PrintMatrix()
 {
     /* Unit test for the (overloaded) function PrintMatrix() */
     const int num_rows = 2;
@@ -39,9 +39,24 @@ int test_PrintMatrix()
     
 }
 
+void test_PrintVector()
+{
+    /* Unit test for the (overloaded) routine PrintVector() */
+    
+    // Declare a test array
+    const int len = 5;
+    float arra [len] = {3., 6., 10., 5., -8.};
+    PrintVector(len, arra, std::cout);
+    
+    std::complex<double> vec [len] = {{1.,-5.}, {2.,-1.}, {3.,0.}, {4.,6.}, {5.,-7.}};
+    PrintVector(len,vec,std::cout);
+    
+}
+
 int main()
 {
     test_PrintMatrix();
+    //test_PrintVector();
     
     return 0;
 }
