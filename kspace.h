@@ -13,25 +13,31 @@ private:
     // Private assignment operator (prohibits assignment)
     const kspace_t& operator=(const kspace_t&);
     
-    // Declare quantities relevant to the momentum space
-    const int kx_pts;
-    const double*const kx_bounds; // Two-component array
-    const int ky_pts;
-    const double*const ky_bounds; // Two-component array
-    // Declare quantities relevant to the dispersion
-    const int bands_num;
+    // Points in momentum space grids. Choose even values to avoid the origin.
+    const int ka_pts_;
+    const int kb_pts_;
+    const int kc_pts_;
+    
+    const int bands_num_; // Number of bands
+    
+    const double a_; // Length of translations in each orthogonal direction
+    const double b_;
+    const double c_;
 public:
-    double*const kx_grid; // kx coordinate variable
-    
-    double*const ky_grid; // ky coordinate variable
-    
-    double*const*const*const energies; // energy variable
+    double*const ka_grid; // ka coordinate variable
+    double*const kb_grid; // kb coordinate variable
+    double*const kc_grid; // kc coordinate variable
+    /* The energies are held in a 1D array with the understanding that from slowest 
+    varying to fastest varying, the indices are those for ka, kb, kc, and band.*/
+    double*const energies; // energy variable
     
     // Constructor declaration
-    kspace_t(const int kx_pts_, const double*const kx_bounds_, 
-             const int ky_pts_, const double*const ky_bounds_, 
-             const int bands_num_);
+    kspace_t(const double a, const double b, const double c, 
+                   const int ka_pts, const int kb_pts, const int kc_pts, 
+                   const int bands_num);
     ~kspace_t(); // Destructor declaration
+    
+    int index(const int ka_ind, const int kb_ind, const int kc_ind, const int band_int);
 };
 
 #endif

@@ -4,43 +4,52 @@
 
 void kspace_t_test()
 {
-    const int kx_pts_ = 10;
-    const double kx_bounds_ [2] = {-3., 3.};
-    const int ky_pts_ = 20;
-    const double ky_bounds_ [2] = {-3., 3.};
-    const int bands_num_ = 2;
+    const double a=1., b=1., c=1.;
+    const int ka_pts=2, kb_pts=4, kc_pts = 6, bands_num=2;
     
-    kspace_t Inst1(kx_pts_, kx_bounds_, ky_pts_, ky_bounds_, bands_num_);
+    kspace_t Inst1(a, b, c, ka_pts, kb_pts, kc_pts, bands_num);
     
     /*
-    std::cout << "Inst1.kx_pts = " << Inst1.kx_pts << std::endl;
-    std::cout << "Inst1.kx_bounds = " << Inst1.kx_bounds[0] << " " 
-                                      << Inst1.kx_bounds[1] << std::endl;
-    std::cout << "Inst1.ky_pts = " << Inst1.ky_pts << std::endl;
-    std::cout << "Inst1.ky_bounds = " << Inst1.ky_bounds[0] << " " 
-                                      << Inst1.ky_bounds[1] << std::endl;
+    std::cout << "Inst1.ka_pts_ = " << Inst1.ka_pts_ << std::endl;
+    std::cout << "Inst1.kb_pts_ = " << Inst1.kb_pts_ << std::endl;
+    std::cout << "Inst1.kc_pts_ = " << Inst1.kc_pts_ << std::endl;
+    std::cout << "Inst1.bands_num_ = " << Inst1.bands_num_ << std::endl;
     */
     
-    std::cout << "Inst1.kx_grid = " << std::endl;
-    for (int i=0; i< kx_pts_; ++i)
-        std::cout << Inst1.kx_grid[i] << " ";
+    std::cout << "Inst1.ka_grid = " << std::endl;
+    for (int i=0; i< ka_pts; ++i)
+        std::cout << Inst1.ka_grid[i] << " ";
     std::cout << std::endl;
     
-    std::cout << "Inst1.ky_grid = " << std::endl;
-    for (int i=0; i< ky_pts_; ++i)
-        std::cout << Inst1.ky_grid[i] << " ";
+    std::cout << "Inst1.kb_grid = " << std::endl;
+    for (int i=0; i< kb_pts; ++i)
+        std::cout << Inst1.kb_grid[i] << " ";
     std::cout << std::endl;
     
+    std::cout << "Inst1.kc_grid = " << std::endl;
+    for (int i=0; i< kc_pts; ++i)
+        std::cout << Inst1.kc_grid[i] << " ";
+    std::cout << std::endl;
+    
+    // Assign values to energies
+    for (int i=0 ; i<ka_pts*kb_pts*kc_pts*bands_num; ++i)
+      Inst1.energies[i] = (double)(i);
+    
+    // Print them out using the 'index()' function
     std::cout << "Inst1.energies = " << std::endl;
-    for (int band=0; band<bands_num_; ++band)
+    for (int i=0; i<ka_pts; ++i)
     {
-        for (int i=0; i<kx_pts_; ++i)
+      for (int j=0; j<kb_pts; ++j)
+      {
+        for (int k=0; k<kc_pts; ++k)
         {
-            for (int j=0; j<ky_pts_; ++j)
-                std::cout << Inst1.energies[i][j][band] << " ";
-            std::cout << std::endl;
+          for (int l=0; l<bands_num; ++l)
+            std::cout << Inst1.energies[Inst1.index(i,j,k,l)] << " ";
+          std::cout << "\t";
         }
-        std::cout << std::endl;
+        std::cout << "\n";
+      }
+      std::cout << "\n\n";
     }
 }
 

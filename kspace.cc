@@ -3,34 +3,54 @@
 
 #include <iostream>
 #include <complex> // Needed to import alloc_dealloc.h
-#include "alloc_dealloc.h" // Allocation/deallocation of arrays
+#include <cmath> // For constant M_PI
 #include "init_routines.h" // Initialization of arrays
 #include "kspace.h" // Include header file for consistency check
 
+// Internal subroutines
+void MonkhorstPack(const double a, const int num_pts, double*const k_grid)
+{
+    /* Assigns the MK momentum grid points to a 1D BZ given lattice cell length 'a'. We 
+    use the notation of the MK article for simplicity. Choose num_pts even to avoid the 
+    origin. */
+    const int q = num_pts;
+    for (int r=0; r<q; ++r)
+        k_grid[r] = (M_PI/a)* (double)(2*r-q+1)/(double)(q);
+}
 
-/* Constructor implementation. To avoid naming ambiguities, we end the argument variables 
-with an underscore. */
-kspace_t::kspace_t(const int kx_pts_, const double*const kx_bounds_, 
-                   const int ky_pts_, const double*const ky_bounds_, 
-                   const int bands_num_)
-    :kx_pts(kx_pts_), kx_bounds(kx_bounds_), kx_grid(new double [kx_pts_]),
-    ky_pts(ky_pts_), ky_bounds(ky_bounds_), ky_grid(new double [ky_pts_]),
-    bands_num(bands_num_), energies(Alloc3D_d(kx_pts_, ky_pts_, bands_num_))
+// Constructor implementation
+kspace_t::kspace_t(const double a, const double b, const double c, 
+                   const int ka_pts, const int kb_pts, const int kc_pts, 
+                   const int bands_num)
+    :a_(a), ka_pts_(ka_pts), ka_grid(new double [ka_pts]), 
+    b_(b), kb_pts_(kb_pts), kb_grid(new double [kb_pts]), 
+    c_(c), kc_pts_(kc_pts), kc_grid(new double [kc_pts]), 
+    bands_num_(bands_num), energies(new double [ka_pts*kb_pts*kc_pts*bands_num])
 {
     std::cout << "kspace_t instance created.\n";
-    // The momentum grids are initialized
-    const bool endpoint = false; // Should not include end because k space is periodic
-    LinInitArray(kx_bounds[0], kx_bounds[1], kx_pts, kx_grid, endpoint);
-    LinInitArray(ky_bounds[0], ky_bounds[1], ky_pts, ky_grid, endpoint);
+    MonkhorstPack(a, ka_pts, ka_grid); // Assign MK momentum values along each axis
+    MonkhorstPack(b, kb_pts, kb_grid);
+    MonkhorstPack(c, kc_pts, kc_grid);
     // The energies grid is initialized to zero
-    ValInitArray(kx_pts*ky_pts*bands_num, energies[0][0], 0.);
+    ValInitArray(ka_pts*kb_pts*kc_pts*bands_num, energies, 0.);
 }
 
 // Destructor implementation
 kspace_t::~kspace_t()
 {
-    delete [] kx_grid;
-    delete [] ky_grid;
-    Dealloc3D(energies, kx_pts);
+    delete [] ka_grid;
+    delete [] kb_grid;
+    delete [] kc_grid;
+    delete [] energies;
     std::cout << "kspace_t instance deleted.\n";
+}
+
+int kspace_t::index(const int ka_ind, const int kb_ind, const int kc_ind, const int band_int)
+{
+    /* Given indices for the momenta and bands, returns the corresponding index to be 
+    used in the array "energies". */
+    return band_int + 
+           bands_num_*kc_ind + 
+           bands_num_*kc_pts_*kb_ind + 
+           bands_num_*kc_pts_*kb_pts_*ka_ind;
 }

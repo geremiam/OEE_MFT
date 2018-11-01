@@ -6,7 +6,7 @@
 # Flags for including in path search
 INC_FLAGS=-I${LAPACKE_INC} -I${NETCDF_INC}
 # Compiler flags (add -fopenmp to compilation and linking for OpenMP)
-CXXFLAGS=-std=c++11 -O2
+CXXFLAGS=-std=c++14 -O2
 # Linker flags (add -fopenmp to compilation and linking for OpenMP)
 LD_FLAGS=-L${LAPACKE_LIB} -L${NETCDF_LIB}
 # Flags for linking with libraries (place after all object files)
@@ -94,6 +94,33 @@ ut_init_routines_clean:
 	rm -f init_routines_test.o init_routines.o init_routines_test
 
 # #######################################################################################
+# MODULE CHEMPOT
+
+# Creation of the chempot.o object file, which depends on header file and source file as 
+# well as math_routines.h
+chempot.o: chempot.cc chempot.h math_routines.h
+	${CXX} $(CXXFLAGS) -c chempot.cc -o chempot.o
+
+## ut_math_routines: Runs the testing suite for the module math_routines
+.PHONY: ut_chempot
+ut_chempot: chempot_test # Runs the testing suite's executable
+	./chempot_test
+
+# Executable file from linking of chempot_test.o, chempot.o, and math_routines.o
+chempot_test: chempot_test.o chempot.o math_routines.o
+	${CXX} chempot_test.o chempot.o math_routines.o -o chempot_test
+
+# Creation of the chempot_test.o object file, which depends on its source file and 
+# on the chempot.h header file.
+chempot_test.o: chempot_test.cc chempot.h
+	${CXX} $(CXXFLAGS) -c chempot_test.cc -o chempot_test.o
+
+# Deletion of the object files and executable files pertaining to this unit test.
+.PHONY: chempot_clean
+chempot_clean:
+	rm -f chempot_test.o chempot.o math_routines.o chempot_test
+
+# #######################################################################################
 # MODULE MATH_ROUTINES
 
 # Creation of the math_routines.o object file, which depends on the module's header file 
@@ -153,7 +180,7 @@ ut_diag_routines_clean:
 # MODULE KSPACE
 
 # kspace.o object file depends on header file, source file, and all included header files
-kspace.o: kspace.cc kspace.h alloc.h init_routines.h
+kspace.o: kspace.cc kspace.h init_routines.h
 	${CXX} $(CXXFLAGS) -c kspace.cc -o kspace.o
 
 ## ut_kspace: Runs the testing suite for the module kspace
@@ -163,17 +190,17 @@ ut_kspace: kspace_test # Runs the testing suite's executable
 
 # Testing suite executable depends on kspace_test.o, kspace.o, and the other modules used 
 # in the source code.
-kspace_test: kspace_test.o kspace.o alloc.o init_routines.o
-	${CXX} kspace_test.o kspace.o alloc.o init_routines.o -o kspace_test
+kspace_test: kspace_test.o kspace.o init_routines.o
+	${CXX} kspace_test.o kspace.o init_routines.o -o kspace_test
 
 # kspace_test.o object file depends on source file and kspace.h header
 kspace_test.o: kspace_test.cc kspace.h
 	${CXX} $(CXXFLAGS) -c kspace_test.cc -o kspace_test.o
 
 # Deletion of the object files and executable files pertaining to this unit test.
-.PHONY: ut_kspace_clean
-ut_kspace_clean:
-	rm -f alloc.o init_routines.o kspace_test.o kspace.o kspace_test
+.PHONY: kspace_clean
+kspace_clean:
+	rm -f init_routines.o kspace_test.o kspace.o kspace_test
 
 # #######################################################################################
 # MODULE NC_IO
@@ -267,9 +294,10 @@ clean: driver_ham1_clean driver_ham2_clean driver_ham3_clean
 .PHONY: ut_clean
 ut_clean: ut_alloc_clean \
           ut_init_routines_clean \
+          chempot_clean \
           ut_math_routines_clean \
           ut_diag_routines_clean \
-          ut_kspace_clean \
+          kspace_clean \
           ut_nc_IO_clean \
           IO_clean \
           ham3_clean
