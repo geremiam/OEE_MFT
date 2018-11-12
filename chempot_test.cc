@@ -16,15 +16,15 @@ void test_ChemPot()
     for (int i=0; i<ArrLen; ++i)
       energies1[i] = std::sqrt((double)(i));
     
-    const int num_electrons = (int)((double)(ArrLen)*0.6397);
-    //std::cout << "num_electrons = " << num_electrons << std::endl;
-    const double beta = 10.;
-    const double tol = 1.e-12;
+    const int num_electrons = (int)((double)(ArrLen)*0.639);
+    std::cout << "num_electrons = " << num_electrons << std::endl;
+    const double T = 0.1;
+    const double tol = 1.e-13;
     
-    double mu = ChemPotBisec(ArrLen, num_electrons, energies1, beta, tol);
-    //double mu = ChemPotNewton(ArrLen, num_electrons, energies1, beta, tol, 20, true);
+    double mu = ChemPotBisec(ArrLen, num_electrons, energies1, T, tol, true);
+    //double mu = ChemPotNewton(ArrLen, num_electrons, energies1, T, tol, 20, true);
     
-    //std::cout << std::setprecision(40) << "mu = " << mu << std::endl;
+    std::cout << std::setprecision(40) << "mu = " << mu << std::endl;
 }
 
 

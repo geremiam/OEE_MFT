@@ -6,6 +6,7 @@ applications.
 
 #include <iostream> // Input/output to command line
 #include <cmath> // Numerous math functions
+#include <complex> // Includes complex numbers
 #include <algorithm> // Useful algorithms. Here, we use std::sort()
 #include "math_routines.h" // Include header file for consistency check
 
@@ -43,15 +44,15 @@ float  nF0(float const energy)
     
     return ans;    
 }
-double nF(const double beta, const double energy)
+double nF(const double T, const double energy)
 {
     /* Fermi function. Overloaded for floats. */
-    return 1./( 1. + std::exp(beta*energy) );
+    return 1./( 1. + std::exp(energy/T) );
 }
-float nF(const float beta, const float energy)
+float nF(const float T, const float energy)
 {
     /* Fermi function. Overloaded for doubles. */
-    return 1.f/( 1.f + std::exp(beta*energy) );
+    return 1.f/( 1.f + std::exp(energy/T) );
 }
 
 double FermiEnerg_cpy(const int num_states, const int filled_states, 
@@ -155,4 +156,36 @@ double FermiEnerg(const int num_states, const int filled_states,
     }
     
     return FermiEnerg;
+}
+
+std::complex<double> TraceMF(const int num_bands, 
+                             const std::complex<double>*const*const evecs, 
+                             const std::complex<double>*const*const mat, 
+                             const double*const occs)
+{
+    /* Calculates traces of the form that comes up in mean-field computations. evecs is a 
+    2D array whose columns are the evecs, mat is the matrix that defines the MF in the 
+    form of a 2D array, and occs is a 1D array giving the occupations of the bands (with 
+    the same choice of order as evecs) (given by the Fermi function). */
+    // Not great to implement mat. mul. by hand, be we will do it for simplicity
+    std::complex<double> accumulator = {0.,0.};
+    
+    for (int a=0; a<num_bands; ++a)
+      for (int b=0; b<num_bands; ++b)
+        for (int c=0; c<num_bands; ++c)
+          accumulator += conj(evecs[b][a]) * mat[b][c] * evecs[c][a] * occs[a];
+    
+    return accumulator;
+}
+
+void Occupations(const int arrlen, const double mu, const double*const energies, 
+                 double*const occs, const bool zerotemp, const double T)
+{
+    /* Calculates the occupations based on energies, mu, etc. */
+    if (zerotemp)
+      for (int i=0; i<arrlen; ++i)
+        occs[i] = nF0(energies[i]-mu);
+    else
+      for (int i=0; i<arrlen; ++i)
+        occs[i] = nF(T, energies[i]-mu);
 }

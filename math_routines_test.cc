@@ -59,6 +59,30 @@ void test_FermiEnerg()
     std::cout << "Fermi energy is " << FE << std::endl;
 }
 
+void test_Occupations()
+{
+    const int arrlen = 50;
+    
+    double energies [arrlen] = {0.};
+    for (int i=0; i<arrlen; ++i)
+    {
+        energies[i] = 0.1*(double)(i);
+        std::cout << "E[" << i << "]=" << energies[i] << "\n";
+    }
+    std::cout << std::endl;
+    
+    const double mu = 3.55;
+    const bool zerotemp = true;
+    const double T = 0.001;
+    
+    double occs [arrlen] = {0.};
+    Occupations(arrlen, mu, energies, occs, zerotemp, T);
+    
+    for (int i=0; i<arrlen; ++i)
+    {
+        std::cout << "occs[" << i << "]=" << occs[i] << "\n";
+    }
+}
 
 int main()
 {
@@ -69,6 +93,8 @@ int main()
     //test_FermiEnerg_cpy();
     
     //test_FermiEnerg();
+    
+    //test_Occupations();
     
     return 0;
 }
