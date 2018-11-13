@@ -1,2 +1,4 @@
-Performs a Hartree-Fock mean-field theory on a 2D translationally invariant lattice 
-Hamiltonian.
+Performs a Hartree-Fock mean-field theory on a tight-binding model of a 3D crystal.
+
+This specific model searches for symmetry breaking that leads to gyrotropic crystal 
+symmetry.

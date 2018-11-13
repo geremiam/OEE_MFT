@@ -3,38 +3,15 @@
 #ifndef HAM3SOURCE_H
 #define HAM3SOURCE_H
 
-#include "kspace.h" // Defines a class for holding a band structure
-
-const double pi = 3.141592653589793238462643383279502884197169399375105820974944592307816406286;
-
-// Class for holding the parameters proper to each layer
-class pars_t
-{
-  private:
-    // Default values of the parameters
-    const double t1_0 = 1.; // NN hopping
-    const double t2_0 = 0.25; // NNN hopping
-    const double eps_0 = 0.; // Potential difference between A and B sublattices
-  public:
-    // Default values of the parameters
-    const double phi = pi/2.; // Flux phase in the Haldane model
-    double t1=t1_0; // NN hopping
-    double t2=t2_0; // NNN hopping
-    double eps=eps_0; // Potential difference between A and B sublattices
-    
-    void SetScaling(const double lambda);
-};
+#include <complex>
+using std::complex;
 
 class ham3_t
 {
-  /* Class for holding the Hamiltonian parameters. Some parameters are modifiable by the 
-  user; these are made non-const. After adjusting parameters, the user uses the method 
-  Assign_ham() to calculate the Hamiltonian (for a given momentum) and assign it to 
-  ham_array. The user may then diagonalize ham_array and use the methods for computing 
-  MF parameters.
-  Watch out: as it stands now, parameters in terms of which others are initialized 
-  should not be modified by the user, because that will not update the dependant 
-  parameters. This would need to be taken care of using methods. */
+  /* Class for holding the Hamiltonian parameters. Parameters than are not likely to be 
+  changed in a parameter study are made private (and const). Parameters that may be 
+  varied during a parameter study are public, except for those on which other parameters 
+  depend; such parameters are modifiable with a public method. */
   
   private:
     
@@ -43,83 +20,99 @@ class ham3_t
     // Private assignment operator (prohibits assignment)
     const ham3_t& operator=(const ham3_t&);
     
-    const double a = 1.; // We take a to be the NN distance
-    /* Make sure the rectangular zone used is equivalent to the first Brillouin zone. */
-    const int kx_pts = 173;
-    const double kx_bounds [2] = {-(2.*pi)/(3.*sqrt(3.)*a), (4.*pi)/(3.*sqrt(3.)*a)};
-    const int ky_pts = 200;
-    const double ky_bounds [2] = {-(2.*pi)/(3.*a), (2.*pi)/(3.*a)};
-    
-    /* Size of the Hamiltonian, or equivalently number of bands (constant) */
-    const int bands_num = 8; // The number of bands, i.e. the order of the matrix for each k
-    const int ham_array_rows = bands_num; // Same as matrix order for full storage
-    const int ham_array_cols = bands_num; // Same as matrix order for full storage
-    
-    /* These private members are updated in the method ComputeMFs() and are used in the 
-    method Assign_ham() to compute the Hamiltonian. */
-    double rhoI_s_=-88.;
-    double rhoI_a_=-88.;
-    double mag_s_=-88.;
-    double mag_a_=-88.;
-    
-    const double rho = 1.; // Average (global) electron density, between 0 and 2
-    const int num_states = kx_pts*ky_pts*bands_num;
-    const int filled_states = (int)( rho * (double)(4*kx_pts*ky_pts) );
-    
-    /* These arrays are used in the method ComputeMFs() to evaluate the output MF 
-    parameters from the input MF parameters. */
-    std::complex<double>*const*const ham_array_;//array to hold Ham (local to thread)
-    std::complex<double>*const*const evecs_;//Array to hold evecs (local to each thread)
-    /* Declare (and construct) an instance of kspace_t (local to each thread). */
-    kspace_t kspace_; // Constructor is called in initialization list
-    
-    // These functions are used in the method ComputeMFs()
-    double ComputeTerm_rhoI_s(const double mu, const double*const evals, 
-                              const std::complex<double>*const*const evecs);
-    double ComputeTerm_rhoI_a(const double mu, const double*const evals, 
-                              const std::complex<double>*const*const evecs);
-    double ComputeTerm_mag_s(const double mu, const double*const evals, 
-                             const std::complex<double>*const*const evecs);
-    double ComputeTerm_mag_a(const double mu, const double*const evals, 
-                             const std::complex<double>*const*const evecs);
-    void Assign_ham(const double kx, const double ky);
-    
   public:
     
+    /* Parameters that the user doesn't need to modify after instantiation. */
+    
+    const double a_ = 1.; // a- and b-axis length
+    const double c_ = 1.; // c-axis length
+    
+    /* Parameters for the momentum space grid. Assigned in the constructor. */
+    const int ka_pts_; // Useful to allow the user to set these for convergence studies
+    const int kb_pts_;
+    const int kc_pts_;
+    
+    /* Size of the Hamiltonian, or equivalently number of bands */
+    const int num_bands = 2; // The number of bands, i.e. the order of the matrix for each k
+    const int ham_array_rows = num_bands; // Same as matrix order for full storage
+    const int ham_array_cols = num_bands; // Same as matrix order for full storage
+    const int num_states = ka_pts_*kb_pts_*kc_pts_*num_bands;
+    
+    const int loops_lim_ = 1000; // Limit to the number of iteration loops
+    
+    
+    /* Parameters that have dependencies or are dependent on other parameters. These 
+    should be modified with an appropriate method. */
+    double rho_ = 0.4; // Average (global) electron density, between 0 and 1
+    int filled_states=0; // Value assigned in constructor or upon calling 'assign_rho()'
+    
+    bool zerotemp_ = true; // Sets whether the temperature is zero or not
+    double T_ = 0.; // Sets the temperature. Irrelevant when zerotemp_ is true.
+    
+    
+    // Functions useful for computing the Hamiltonian
+    double              zeta(double ka, double kb);
+    complex<double> chi(double ka, double kb);
+    complex<double>   f(double ka, double kb, double kc);
+    double            ftilde(double ka, double kb, double kc);
+    
+    
+    // These functions are used in the method ComputeMFs()
+    double ComputeTerm_rho_a(const double*const occs, const complex<double>*const*const evecs);
+    complex<double> ComputeTerm_u1   (const double ka, const double kb, const double*const occs, const complex<double>*const*const evecs);
+    complex<double> ComputeTerm_u1p_s(const double ka, const double*const occs, const complex<double>*const*const evecs);
+    complex<double> ComputeTerm_u1p_a(const double ka, const double*const occs, const complex<double>*const*const evecs);
+    complex<double> ComputeTerm_u2A  (const double ka, const double kb, const double kc, const double*const occs, const complex<double>*const*const evecs);
+    complex<double> ComputeTerm_u2B  (const double ka, const double kb, const double kc, const double*const occs, const complex<double>*const*const evecs);
+    complex<double> ComputeTerm_u3_s (const double kc, const double*const occs, const complex<double>*const*const evecs);
+    complex<double> ComputeTerm_u3_a (const double kc, const double*const occs, const complex<double>*const*const evecs);
+    
+    void Assign_ham(const double ka, const double kb, const double kc, complex<double>*const*const ham_array);
+    
+    void ComputeMFs(double& rho_a_out, complex<double>& u1_out, complex<double>& u1p_s_out, complex<double>& u1p_a_out,
+                    complex<double>& u2A_out, complex<double>& u2B_out,complex<double>& u3_s_out, complex<double>& u3_a_out);
+    
+  //public:
+    
     /* Settings for the iterative search */
-    const double rhoI_s_startval = 1.2; // Choose starting value
-    const double rhoI_a_startval = 0.; // Choose starting value
-    const double mag_s_startval = 0.1; // Choose a starting value
-    const double mag_a_startval = 0.2; // Choose a starting value
-    const int loops_lim = 3000; // Limit to the number of iteration loops
-    const double tol = 1.e-6; // Tolerance for the equality of the mean fields
+    
+    // The MF values that are used in the Hamiltonian.
+    // This is where the user sets the initial values of the MFs.
+    
+            double  rho_a_ = 0.;
+    complex<double> u1_    = {0.,0.};
+    complex<double> u1p_s_ = {0.,0.};
+    complex<double> u1p_a_ = {0.,0.};
+    complex<double> u2A_   = {0.,0.};
+    complex<double> u2B_   = {0.,0.};
+    complex<double> u3_s_  = {0.,0.};
+    complex<double> u3_a_  = {0.,0.};
+    
+    const double tol_ = 1.e-6; // Tolerance for the equality of the mean fields
     
     
+    // Hamiltonian parameters that the user may want to change
+    double t1_  = 1.; // x- and y-direction hopping
+    double t1p_ = 1.; // a- and b-direction hopping
+    double t2A_ = 1.; // "A-emanating" solenoid-like hopping
+    double t2B_ = 0.; // "B-emanating" solenoid-like hopping
+    double t3_  = 1.; // c-direction hopping
+    double V1_  = 1.; // Repulsion between neighbours in x and y directions
+    double V1p_ = 1.; // Repulsion between neighbours in a and b directions
+    double V2_  = 1.; // We choose to use the same V2 for A- and B-emanating
+    double V3_  = 1.; // Repulsion between neighbours in c direction
     
-    const double lambda = 1.; // Note that scaling must be done by hand in the driver
-    const double tperp_0 = 0.3; // Base value of tperp (gets scaled)
-    double tperp = tperp_0;
-    double L = 0.; // bias voltage between layers I and II
-    double U = 0.; // Hubbard interaction strength
     
-    pars_t parsI, parsII;
+    void assign_rho(const double rho); // Assign rho_ and dependent variables
+    void set_zerotemp();
+    void set_nonzerotemp(const double T);
     
-    
-    
-    ham3_t(); // Constructor declaration
+    ham3_t(const int ka_pts, const int kb_pts, const int kc_pts); // Constructor declaration
     ~ham3_t(); // Destructor declaration
     
-    void ComputeMFs(const double rhoI_s_in, const double rhoI_a_in, 
-                   const double mag_s_in, const double mag_a_in, 
-                   double& rhoI_s_out, double& rhoI_a_out, 
-                   double& mag_s_out, double& mag_a_out);
+    bool FixedPoint(int*const num_loops_p=NULL, const bool with_output=false);
     
     std::string GetAttributes();
 };
-
-bool FixedPoint(double& rhoI_s, double& rhoI_a, double& mag_s, double& mag_a, 
-                ham3_t& ham3, int*const num_loops_p=NULL, const bool with_output=false);
-bool Steffensen(double& rhoI_s, double& rhoI_a, double& mag_s, double& mag_a, 
-                ham3_t& ham3, int*const num_loops_p=NULL, const bool with_output=false);
 
 #endif

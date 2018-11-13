@@ -8,12 +8,12 @@ INC_FLAGS=-I${LAPACKE_INC} -I${NETCDF_INC}
 # Compiler flags (add -fopenmp to compilation and linking for OpenMP)
 CXXFLAGS=-std=c++14 -O2
 # Linker flags (add -fopenmp to compilation and linking for OpenMP)
-LD_FLAGS=-L${LAPACKE_LIB} -L${NETCDF_LIB}
+LDFLAGS=-L${LAPACKE_LIB} -L${NETCDF_LIB}
 # Flags for linking with libraries (place after all object files)
-LD_LIBS=-llapacke -lnetcdf
+LDLIBS=-llapacke -lnetcdf
 # List of object files and header files belonging to modules
-OBJECTS=alloc.o init_routines.o math_routines.o diag_routines.o kspace.o nc_IO.o IO.o
-HEADERS=alloc.h init_routines.h math_routines.h diag_routines.h kspace.h nc_IO.h IO.h
+OBJECTS=alloc.o init_routines.o chempot.o math_routines.o diag_routines.o kspace.o nc_IO.o IO.o
+HEADERS=alloc.h init_routines.h chempot.h math_routines.h diag_routines.h kspace.h nc_IO.h IO.h
 
 
 ## all: Default target; empty
@@ -26,7 +26,7 @@ all: help
 ## driver_ham3: Builds the final executable for driver_ham3
 # Linking of the object files into the final executable. Depends on all .o files.
 driver_ham3: driver_ham3.o ham3.o $(OBJECTS)
-	${CXX} $(LD_FLAGS) driver_ham3.o ham3.o $(OBJECTS) $(LD_LIBS) -o driver_ham3
+	${CXX} $(LDFLAGS) driver_ham3.o ham3.o $(OBJECTS) $(LDLIBS) -o driver_ham3
 
 # Creation of the driver_ham3.o object file, which depends on the header files
 driver_ham3.o: driver_ham3.cc ham3.h $(HEADERS)
@@ -269,7 +269,7 @@ ut_ham3: ham3_test # Runs the testing suite's executable
 # Testing suite executable depends on ham3_test.o, ham3.o, and the other 
 # modules used in the source code.
 ham3_test: ham3_test.o ham3.o IO.o alloc.o init_routines.o math_routines.o chempot.o kspace.o diag_routines.o
-	${CXX} $(LD_FLAGS) ham3_test.o IO.o ham3.o alloc.o init_routines.o math_routines.o chempot.o kspace.o diag_routines.o $(LD_LIBS) -o ham3_test
+	${CXX} $(LDFLAGS) -o ham3_test ham3_test.o IO.o ham3.o alloc.o init_routines.o math_routines.o chempot.o kspace.o diag_routines.o $(LDLIBS)
 
 # ham3_test.o object file depends on source file and IO.h header
 ham3_test.o: ham3_test.cc ham3.h alloc.h IO.h
@@ -285,7 +285,7 @@ ham3_clean:
 
 ## clean: Removes module object files as well as driver object files and executables
 .PHONY: clean
-clean: driver_ham1_clean driver_ham2_clean driver_ham3_clean
+clean: driver_ham3_clean
 	rm -f $(OBJECTS)
 
 ## ut_clean: Runs clean rules for all unit tests
