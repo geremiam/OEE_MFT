@@ -7,7 +7,7 @@ void kspace_t_test()
     const double a=1., b=1., c=1.;
     const int ka_pts=2, kb_pts=4, kc_pts = 6, bands_num=2;
     
-    kspace_t Inst1(a, b, c, ka_pts, kb_pts, kc_pts, bands_num);
+    kspace_t Inst1(a, b, c, ka_pts, kb_pts, kc_pts, bands_num, true);
     
     /*
     std::cout << "Inst1.ka_pts_ = " << Inst1.ka_pts_ << std::endl;

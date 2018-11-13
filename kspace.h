@@ -23,6 +23,8 @@ private:
     const double a_; // Length of translations in each orthogonal direction
     const double b_;
     const double c_;
+    
+    const bool with_output_; // Whether or not to silence diagnostic output
 public:
     double*const ka_grid; // ka coordinate variable
     double*const kb_grid; // kb coordinate variable
@@ -34,7 +36,7 @@ public:
     // Constructor declaration
     kspace_t(const double a, const double b, const double c, 
                    const int ka_pts, const int kb_pts, const int kc_pts, 
-                   const int bands_num);
+                   const int bands_num, const bool with_output=false);
     ~kspace_t(); // Destructor declaration
     
     int index(const int ka_ind, const int kb_ind, const int kc_ind, const int band_int);

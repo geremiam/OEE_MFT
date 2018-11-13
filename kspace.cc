@@ -21,13 +21,14 @@ void MonkhorstPack(const double a, const int num_pts, double*const k_grid)
 // Constructor implementation
 kspace_t::kspace_t(const double a, const double b, const double c, 
                    const int ka_pts, const int kb_pts, const int kc_pts, 
-                   const int bands_num)
+                   const int bands_num, const bool with_output)
     :a_(a), ka_pts_(ka_pts), ka_grid(new double [ka_pts]), 
     b_(b), kb_pts_(kb_pts), kb_grid(new double [kb_pts]), 
     c_(c), kc_pts_(kc_pts), kc_grid(new double [kc_pts]), 
-    bands_num_(bands_num), energies(new double [ka_pts*kb_pts*kc_pts*bands_num])
+    bands_num_(bands_num), energies(new double [ka_pts*kb_pts*kc_pts*bands_num]),
+    with_output_(with_output)
 {
-    std::cout << "kspace_t instance created.\n";
+    if (with_output) std::cout << "kspace_t instance created.\n";
     MonkhorstPack(a, ka_pts, ka_grid); // Assign MK momentum values along each axis
     MonkhorstPack(b, kb_pts, kb_grid);
     MonkhorstPack(c, kc_pts, kc_grid);
@@ -42,7 +43,7 @@ kspace_t::~kspace_t()
     delete [] kb_grid;
     delete [] kc_grid;
     delete [] energies;
-    std::cout << "kspace_t instance deleted.\n";
+    if (with_output_) std::cout << "kspace_t instance deleted.\n";
 }
 
 int kspace_t::index(const int ka_ind, const int kb_ind, const int kc_ind, const int band_int)
