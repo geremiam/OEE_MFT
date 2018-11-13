@@ -160,20 +160,20 @@ double FermiEnerg(const int num_states, const int filled_states,
 
 std::complex<double> TraceMF(const int num_bands, 
                              const std::complex<double>*const*const evecs, 
-                             const std::complex<double>*const*const mat, 
-                             const double*const occs)
+                             const std::complex<double>*const mat, const double*const occs)
 {
     /* Calculates traces of the form that comes up in mean-field computations. evecs is a 
     2D array whose columns are the evecs, mat is the matrix that defines the MF in the 
-    form of a 2D array, and occs is a 1D array giving the occupations of the bands (with 
-    the same choice of order as evecs) (given by the Fermi function). */
+    form of a 1D array in row-major storage, and occs is a 1D array giving the occupations 
+    of the bands (with the same choice of order as evecs) (given by the Fermi function).*/
     // Not great to implement mat. mul. by hand, be we will do it for simplicity
+    // In row-major storage, "mat[b][c]" is mat[b*num_bands + c].
     std::complex<double> accumulator = {0.,0.};
     
     for (int a=0; a<num_bands; ++a)
       for (int b=0; b<num_bands; ++b)
         for (int c=0; c<num_bands; ++c)
-          accumulator += conj(evecs[b][a]) * mat[b][c] * evecs[c][a] * occs[a];
+          accumulator += conj(evecs[b][a]) * mat[b*num_bands+c] * evecs[c][a] * occs[a];
     
     return accumulator;
 }

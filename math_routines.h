@@ -24,7 +24,7 @@ double FermiEnerg(const int num_states, const int filled_states,
 
 std::complex<double> TraceMF(const int num_bands, 
                              const std::complex<double>*const*const evecs, 
-                             const std::complex<double>*const*const mat, 
+                             const std::complex<double>*const mat, 
                              const double*const occs);
 
 void Occupations(const int arrlen, const double mu, const double*const energies, 
