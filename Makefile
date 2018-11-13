@@ -258,7 +258,7 @@ IO_clean:
 
 # ham3.o object file depends on header file, source file, and all included header 
 # files
-ham3.o: ham3.cc ham3.h alloc.h init_routines.h math_routines.h kspace.h diag_routines.h
+ham3.o: ham3.cc ham3.h alloc.h init_routines.h math_routines.h chempot.h kspace.h diag_routines.h
 	${CXX} $(CXXFLAGS) $(INC_FLAGS) -c ham3.cc -o ham3.o
 
 ## ut_ham3: Runs the testing suite for the module ham3
@@ -268,19 +268,17 @@ ut_ham3: ham3_test # Runs the testing suite's executable
 
 # Testing suite executable depends on ham3_test.o, ham3.o, and the other 
 # modules used in the source code.
-ham3_test: ham3_test.o IO.o ham3.o alloc.o init_routines.o math_routines.o \
-           kspace.o diag_routines.o
-	${CXX} $(LD_FLAGS) ham3_test.o IO.o ham3.o alloc.o init_routines.o \
-	math_routines.o kspace.o diag_routines.o $(LD_LIBS) -o ham3_test
+ham3_test: ham3_test.o ham3.o IO.o alloc.o init_routines.o math_routines.o chempot.o kspace.o diag_routines.o
+	${CXX} $(LD_FLAGS) ham3_test.o IO.o ham3.o alloc.o init_routines.o math_routines.o chempot.o kspace.o diag_routines.o $(LD_LIBS) -o ham3_test
 
 # ham3_test.o object file depends on source file and IO.h header
-ham3_test.o: ham3_test.cc ham3.h IO.h
+ham3_test.o: ham3_test.cc ham3.h alloc.h IO.h
 	${CXX} $(CXXFLAGS) -c ham3_test.cc -o ham3_test.o
 
 # Deletion of the object files and executable files pertaining to this unit test.
 .PHONY: ham3_clean
 ham3_clean:
-	rm -f ham3_test.o IO.o ham3.o alloc.o init_routines.o math_routines.o kspace.o diag_routines.o ham3_test
+	rm -f ham3_test.o ham3.o IO.o alloc.o init_routines.o math_routines.o chempot.o kspace.o diag_routines.o ham3_test
 
 # #######################################################################################
 
