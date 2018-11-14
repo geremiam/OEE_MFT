@@ -154,7 +154,7 @@ ut_math_routines_clean:
 # diag_routines.o object file depends on header file and source file
 # Must include LAPACKE_INC in the path search
 diag_routines.o: diag_routines.cc diag_routines.h
-	${CXX} $(CXXFLAGS) -I${LAPACKE_INC} -c diag_routines.cc -o diag_routines.o
+	${CXX} $(CXXFLAGS) $(INC_FLAGS) -c diag_routines.cc -o diag_routines.o
 
 ## ut_diag_routines: Runs the testing suite for the module diag_routines
 .PHONY: ut_diag_routines
@@ -164,8 +164,7 @@ ut_diag_routines: diag_routines_test # Runs the testing suite's executable
 # Testing suite executable depends on diag_routines_test.o diag_routines.o
 # Must include LAPACKE_LIB in path search and lapacke library
 diag_routines_test: diag_routines_test.o diag_routines.o
-	${CXX} -L${LAPACKE_LIB} diag_routines_test.o diag_routines.o -llapacke \
-	-o diag_routines_test
+	${CXX} $(LDFLAGS) -o diag_routines_test diag_routines_test.o diag_routines.o $(LDLIBS)
 
 # diag_routines_test.o object file depends on source file and diag_routines.h header file
 diag_routines_test.o: diag_routines_test.cc diag_routines.h
@@ -207,7 +206,7 @@ kspace_clean:
 
 # nc_IO.o object file depends on header file, source file, and all included header files
 nc_IO.o: nc_IO.cc nc_IO.h
-	${CXX} $(CXXFLAGS) -I${NETCDF_INC} -c nc_IO.cc -o nc_IO.o
+	${CXX} $(CXXFLAGS) $(INC_FLAGS) -c nc_IO.cc -o nc_IO.o
 
 ## ut_nc_IO: Runs the testing suite for the module nc_IO
 .PHONY: ut_nc_IO
@@ -217,7 +216,7 @@ ut_nc_IO: nc_IO_test # Runs the testing suite's executable
 # Testing suite executable depends on nc_IO_test.o, Z.o, and the other modules used 
 # in the source code.
 nc_IO_test: nc_IO_test.o nc_IO.o
-	${CXX} -L${NETCDF_LIB} nc_IO_test.o nc_IO.o -lnetcdf -o nc_IO_test
+	${CXX} $(LDFLAGS) -o nc_IO_test nc_IO_test.o nc_IO.o $(LDLIBS)
 
 # nc_IO_test.o object file depends on source file and nc_IO.h header
 nc_IO_test.o: nc_IO_test.cc nc_IO.h
