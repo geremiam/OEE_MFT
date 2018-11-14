@@ -26,16 +26,16 @@ all: help
 ## driver_ham3: Builds the final executable for driver_ham3
 # Linking of the object files into the final executable. Depends on all .o files.
 driver_ham3: driver_ham3.o ham3.o $(OBJECTS)
-	${CXX} $(LDFLAGS) driver_ham3.o ham3.o $(OBJECTS) $(LDLIBS) -o driver_ham3
+	${CXX} $(LDFLAGS) -o driver_ham3 driver_ham3.o ham3.o $(OBJECTS) $(LDLIBS)
 
 # Creation of the driver_ham3.o object file, which depends on the header files
 driver_ham3.o: driver_ham3.cc ham3.h $(HEADERS)
-	${CXX} $(CXXFLAGS) $(INC_FLAGS) -c driver_ham3.cc -o driver_ham3.o
+	${CXX} $(CXXFLAGS) $(INC_FLAGS) -c -o driver_ham3.o driver_ham3.cc
 
 # Deletion of the object file and executable file for this driver
 .PHONY: driver_ham3_clean
 driver_ham3_clean:
-	rm -f driver_ham3.o ham3.o driver_ham3
+	rm -f driver_ham3 driver_ham3.o ham3.o
 
 # #######################################################################################
 # MODULE ALLOC
