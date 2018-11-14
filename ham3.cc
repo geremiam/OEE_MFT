@@ -249,10 +249,14 @@ void ham3_t::ComputeMFs(double& rho_a_out, complex<double>& u1_out,
 {
     // Declare (and construct) an instance of kspace_t.
     kspace_t kspace(a_, a_, c_, ka_pts_, kb_pts_, kc_pts_, num_bands);
+    
+    // Step 1: diagonalize to find all the energy evals and store them in kspace
+    #pragma omp parallel default(none) shared (kspace)
+    {
     // array to hold Ham (local to thread)
     complex<double>*const*const ham_array = Alloc2D_z(ham_array_rows, ham_array_cols);
     ValInitArray(ham_array_rows*ham_array_cols, &(ham_array[0][0])); //Initialize to zero
-    
+    #pragma omp for collapse(3)
     // Given the parameters, diagonalize the Hamiltonian at each grid point
     for (int i=0; i<ka_pts_; ++i)
       for (int j=0; j<kb_pts_; ++j)
@@ -262,25 +266,18 @@ void ham3_t::ComputeMFs(double& rho_a_out, complex<double>& u1_out,
           const int index = kspace.index(i, j, k, 0); // Last index is the band index
           simple_zheev(num_bands, &(ham_array[0][0]), &(kspace.energies[index]));
         }
+    Dealloc2D(ham_array);
+    }
     
-    // Use all energies to compute chemical potential
+    // Step 2: Use all energies to compute chemical potential
     double mu = 666.;
     if (zerotemp_) // (elements get reordered)
         mu = FermiEnerg(num_states, filled_states, kspace.energies);
     else
         mu = ChemPotBisec(num_states, filled_states, kspace.energies, T_, 1.e-13);
     
-    // Array to hold evecs (local to each thread)
-    complex<double>*const*const evecs = Alloc2D_z(num_bands, num_bands);
-    // Array to hold evals in second loop (local to thread)
-    double*const evals = new double [num_bands];
-    // Array to hold occupations (local to thread)
-    double*const occs = new double [num_bands];
-    ValInitArray(num_bands*num_bands, &(evecs[0][0])); // Initialize to zero
-    ValInitArray(num_bands, evals); // Initialize to zero
-    ValInitArray(num_bands, occs); // Initialize to zero
     
-    // Use all the occupation numbers and the evecs to find the order parameter
+    // Step 3: Use all the occupation numbers and the evecs to find the order parameter
     // Probably best to diagonalize a second time to avoid storing the evecs
             double  rho_a_accum = 0.;
     complex<double> u1_accum    = {0.,0.};
@@ -291,6 +288,19 @@ void ham3_t::ComputeMFs(double& rho_a_out, complex<double>& u1_out,
     complex<double> u3_s_accum  = {0.,0.};
     complex<double> u3_a_accum  = {0.,0.};
     
+    #pragma omp declare reduction(+:complex<double>:omp_out+=omp_in) // Must declare reduction on complex numbers
+    #pragma omp parallel default(none) private(mu) shared(kspace) reduction(+:rho_a_accum,u1_accum,u1p_s_accum,u1p_a_accum,u2A_accum,u2B_accum,u3_s_accum,u3_a_accum)
+    {
+    complex<double>*const*const ham_array = Alloc2D_z(ham_array_rows, ham_array_cols); // array to hold Ham (local to thread)
+    ValInitArray(ham_array_rows*ham_array_cols, &(ham_array[0][0])); // Initialize to zero
+    complex<double>*const*const evecs = Alloc2D_z(num_bands, num_bands); // Array to hold evecs (local to each thread)
+    ValInitArray(num_bands*num_bands, &(evecs[0][0])); // Initialize to zero
+    double*const evals = new double [num_bands]; // Array to hold evals in second loop (local to thread)
+    ValInitArray(num_bands, evals); // Initialize to zero
+    double*const occs = new double [num_bands]; // Array to hold occupations (local to thread)
+    ValInitArray(num_bands, occs); // Initialize to zero
+    
+    #pragma omp for collapse(3)
     for (int i=0; i<ka_pts_; ++i)
       for (int j=0; j<kb_pts_; ++j)
         for (int k=0; k<kc_pts_; ++k)
@@ -309,6 +319,11 @@ void ham3_t::ComputeMFs(double& rho_a_out, complex<double>& u1_out,
           u3_s_accum  += ComputeTerm_u3_s(kspace.kc_grid[k], occs, evecs);
           u3_a_accum  += ComputeTerm_u3_a(kspace.kc_grid[k], occs, evecs);
         }
+    delete [] occs; // Deallocate memory for arrays. 
+    delete [] evals;
+    Dealloc2D(evecs);
+    Dealloc2D(ham_array);
+    }
     
     // This is where we should check that quantities are real, etc.
     
@@ -321,11 +336,7 @@ void ham3_t::ComputeMFs(double& rho_a_out, complex<double>& u1_out,
     u3_s_out  = u3_s_accum;
     u3_a_out  = u3_a_accum;
     
-    // Deallocate memory for arrays. The kspace_t destructor is called automatically.
-    delete [] occs;
-    delete [] evals;
-    Dealloc2D(evecs);
-    Dealloc2D(ham_array);
+    // The kspace_t destructor is called automatically.
 }
 
 

@@ -6,9 +6,9 @@
 # Flags for including in path search
 INC_FLAGS=-I${LAPACKE_INC} -I${NETCDF_INC}
 # Compiler flags (add -fopenmp to compilation and linking for OpenMP)
-CXXFLAGS=-std=c++14 -O2
+CXXFLAGS=-std=c++14 -O2 -fopenmp
 # Linker flags (add -fopenmp to compilation and linking for OpenMP)
-LDFLAGS=-L${LAPACKE_LIB} -L${NETCDF_LIB}
+LDFLAGS=-L${LAPACKE_LIB} -L${NETCDF_LIB} -fopenmp
 # Flags for linking with libraries (place after all object files)
 LDLIBS=-llapacke -lnetcdf
 # List of object files and header files belonging to modules
