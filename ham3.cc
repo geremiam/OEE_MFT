@@ -10,6 +10,7 @@
 #include "chempot.h"
 #include "kspace.h" // Defines a class for holding a band structure
 #include "diag_routines.h" // Routines for finding evals and evecs
+#include "ticktock.h"
 #include "ham3.h" // Include header file for consistency check
 //using std::cos; using std::sin; using std::conj; // Not sure if these are necessary
 using std::polar;
@@ -247,12 +248,16 @@ void ham3_t::ComputeMFs(double& rho_a_out, complex<double>& u1_out,
                         complex<double>& u2A_out, complex<double>& u2B_out,
                         complex<double>& u3_s_out, complex<double>& u3_a_out)
 {
+    TickTock stopwatch, Stopwatch;
+    Stopwatch.tick();
+    
     // Declare (and construct) an instance of kspace_t.
     kspace_t kspace(a_, a_, c_, ka_pts_, kb_pts_, kc_pts_, num_bands);
     // array to hold Ham (local to thread)
     complex<double>*const*const ham_array = Alloc2D_z(ham_array_rows, ham_array_cols);
     ValInitArray(ham_array_rows*ham_array_cols, &(ham_array[0][0])); //Initialize to zero
     
+    stopwatch.tick();
     // Given the parameters, diagonalize the Hamiltonian at each grid point
     for (int i=0; i<ka_pts_; ++i)
       for (int j=0; j<kb_pts_; ++j)
@@ -262,13 +267,16 @@ void ham3_t::ComputeMFs(double& rho_a_out, complex<double>& u1_out,
           const int index = kspace.index(i, j, k, 0); // Last index is the band index
           simple_zheev(num_bands, &(ham_array[0][0]), &(kspace.energies[index]));
         }
+    stopwatch.tock();
     
+    stopwatch.tick();
     // Use all energies to compute chemical potential
     double mu = 666.;
     if (zerotemp_) // (elements get reordered)
         mu = FermiEnerg(num_states, filled_states, kspace.energies);
     else
         mu = ChemPotBisec(num_states, filled_states, kspace.energies, T_, 1.e-13);
+    stopwatch.tock();
     
     // Array to hold evecs (local to each thread)
     complex<double>*const*const evecs = Alloc2D_z(num_bands, num_bands);
@@ -291,6 +299,7 @@ void ham3_t::ComputeMFs(double& rho_a_out, complex<double>& u1_out,
     complex<double> u3_s_accum  = {0.,0.};
     complex<double> u3_a_accum  = {0.,0.};
     
+    stopwatch.tick();
     for (int i=0; i<ka_pts_; ++i)
       for (int j=0; j<kb_pts_; ++j)
         for (int k=0; k<kc_pts_; ++k)
@@ -309,6 +318,7 @@ void ham3_t::ComputeMFs(double& rho_a_out, complex<double>& u1_out,
           u3_s_accum  += ComputeTerm_u3_s(kspace.kc_grid[k], occs, evecs);
           u3_a_accum  += ComputeTerm_u3_a(kspace.kc_grid[k], occs, evecs);
         }
+    stopwatch.tock();
     
     // This is where we should check that quantities are real, etc.
     
@@ -326,6 +336,8 @@ void ham3_t::ComputeMFs(double& rho_a_out, complex<double>& u1_out,
     delete [] evals;
     Dealloc2D(evecs);
     Dealloc2D(ham_array);
+    
+    Stopwatch.tock("Total");
 }
 
 

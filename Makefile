@@ -12,8 +12,8 @@ LDFLAGS=-L${LAPACKE_LIB} -L${NETCDF_LIB}
 # Flags for linking with libraries (place after all object files)
 LDLIBS=-llapacke -lnetcdf
 # List of object files and header files belonging to modules
-OBJECTS=alloc.o init_routines.o chempot.o math_routines.o diag_routines.o kspace.o nc_IO.o IO.o
-HEADERS=alloc.h init_routines.h chempot.h math_routines.h diag_routines.h kspace.h nc_IO.h IO.h
+OBJECTS=alloc.o init_routines.o chempot.o math_routines.o diag_routines.o kspace.o nc_IO.o IO.o ticktock.o
+HEADERS=alloc.h init_routines.h chempot.h math_routines.h diag_routines.h kspace.h nc_IO.h IO.h ticktock.h
 
 
 ## all: Default target; empty
@@ -258,7 +258,7 @@ IO_clean:
 
 # ham3.o object file depends on header file, source file, and all included header 
 # files
-ham3.o: ham3.cc ham3.h alloc.h init_routines.h math_routines.h chempot.h kspace.h diag_routines.h
+ham3.o: ham3.cc ham3.h alloc.h init_routines.h math_routines.h chempot.h kspace.h diag_routines.h ticktock.h
 	${CXX} $(CXXFLAGS) $(INC_FLAGS) -c ham3.cc -o ham3.o
 
 ## ut_ham3: Runs the testing suite for the module ham3
@@ -268,8 +268,8 @@ ut_ham3: ham3_test # Runs the testing suite's executable
 
 # Testing suite executable depends on ham3_test.o, ham3.o, and the other 
 # modules used in the source code.
-ham3_test: ham3_test.o ham3.o IO.o alloc.o init_routines.o math_routines.o chempot.o kspace.o diag_routines.o
-	${CXX} $(LDFLAGS) -o ham3_test ham3_test.o IO.o ham3.o alloc.o init_routines.o math_routines.o chempot.o kspace.o diag_routines.o $(LDLIBS)
+ham3_test: ham3_test.o ham3.o IO.o alloc.o init_routines.o math_routines.o chempot.o kspace.o diag_routines.o ticktock.o
+	${CXX} $(LDFLAGS) -o ham3_test ham3_test.o IO.o ham3.o alloc.o init_routines.o math_routines.o chempot.o kspace.o diag_routines.o ticktock.o $(LDLIBS)
 
 # ham3_test.o object file depends on source file and IO.h header
 ham3_test.o: ham3_test.cc ham3.h alloc.h IO.h
@@ -278,10 +278,13 @@ ham3_test.o: ham3_test.cc ham3.h alloc.h IO.h
 # Deletion of the object files and executable files pertaining to this unit test.
 .PHONY: ham3_clean
 ham3_clean:
-	rm -f ham3_test.o ham3.o IO.o alloc.o init_routines.o math_routines.o chempot.o kspace.o diag_routines.o ham3_test
+	rm -f ham3_test.o ham3.o IO.o alloc.o init_routines.o math_routines.o chempot.o kspace.o diag_routines.o ham3_test ticktock.o
 
 # #######################################################################################
-
+# MODULE TICKTOCK
+ticktock.o: ticktock.cc ticktock.h
+	${CXX} $(CXXFLAGS) -c -o ticktock.o ticktock.cc
+# #######################################################################################
 
 ## clean: Removes module object files as well as driver object files and executables
 .PHONY: clean
