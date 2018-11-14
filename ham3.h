@@ -93,14 +93,14 @@ class ham3_t
     
     // Hamiltonian parameters that the user may want to change
     double t1_  = 1.; // x- and y-direction hopping
-    double t1p_ = 1.; // a- and b-direction hopping
-    double t2A_ = 1.; // "A-emanating" solenoid-like hopping
-    double t2B_ = 0.; // "B-emanating" solenoid-like hopping
-    double t3_  = 1.; // c-direction hopping
-    double V1_  = 1.; // Repulsion between neighbours in x and y directions
-    double V1p_ = 1.; // Repulsion between neighbours in a and b directions
-    double V2_  = 1.; // We choose to use the same V2 for A- and B-emanating
-    double V3_  = 1.; // Repulsion between neighbours in c direction
+    double t1p_ = 0.7; // a- and b-direction hopping
+    double t2A_ = 0.1; // "A-emanating" solenoid-like hopping
+    double t2B_ = 0.4; // "B-emanating" solenoid-like hopping
+    double t3_  = 0.5; // c-direction hopping
+    double V1_  = 1.0; // Repulsion between neighbours in x and y directions
+    double V1p_ = 0.7; // Repulsion between neighbours in a and b directions
+    double V2_  = 0.4; // We choose to use the same V2 for A- and B-emanating
+    double V3_  = 0.5; // Repulsion between neighbours in c direction
     
     
     void assign_rho(const double rho); // Assign rho_ and dependent variables
