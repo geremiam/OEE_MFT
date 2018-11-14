@@ -20,7 +20,7 @@ class ham3_t
     // Private assignment operator (prohibits assignment)
     const ham3_t& operator=(const ham3_t&);
     
-  public:
+  //public:
     
     /* Parameters that the user doesn't need to modify after instantiation. */
     
@@ -72,7 +72,7 @@ class ham3_t
     void ComputeMFs(double& rho_a_out, complex<double>& u1_out, complex<double>& u1p_s_out, complex<double>& u1p_a_out,
                     complex<double>& u2A_out, complex<double>& u2B_out,complex<double>& u3_s_out, complex<double>& u3_a_out);
     
-  //public:
+  public:
     
     /* Settings for the iterative search */
     
@@ -107,7 +107,7 @@ class ham3_t
     void set_zerotemp();
     void set_nonzerotemp(const double T);
     
-    ham3_t(const int ka_pts, const int kb_pts, const int kc_pts); // Constructor declaration
+    ham3_t(const int ka_pts=100, const int kb_pts=100, const int kc_pts=100); // Constructor declaration
     ~ham3_t(); // Destructor declaration
     
     bool FixedPoint(int*const num_loops_p=NULL, const bool with_output=false);
