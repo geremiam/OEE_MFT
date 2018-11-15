@@ -1,10 +1,11 @@
 // DiagonalizationRoutines.cc
 /* Routines for finding eigenvalues and eigenvectors of matrices. */
-#define lapack_complex_double std::complex<double> /* Workaround to get LAPACKE to take 
-std::complex types...Redefines latter type by former type (?) Has to appear ***before*** 
-lapacke.h. */
-#include <lapacke.h> // Linear algebra routines (here: diagonalization)
+ 
 #include <complex> // Complex numbers
+/* Workaround to get LAPACKE to take std::complex types...Redefines latter type by former 
+type (?) Has to come *before* including lapacke.h and *after* including complex. */
+#define lapack_complex_double std::complex<double>
+#include <lapacke.h> // Linear algebra routines (here: diagonalization)
 #include <iostream> // Input from/output to command line
 #include "diag_routines.h" // Include for consistency check with header
 
