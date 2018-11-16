@@ -43,12 +43,24 @@ void ValInitArray_TEST()
     for (int i=0; i<NumPts; ++i)
         std::cout << "Array2[" << i << "] = " << Array2[i] << std::endl;
     std::cout << std::endl;
+    
+    //&&&&&&&&&
+    int IntArray[NumPts];
+    
+    for (int i=0; i<NumPts; ++i)
+        IntArray[i] = 1;
+    
+    ValInitArray(NumPts, IntArray, 2);
+    
+    for (int i=0; i<NumPts; ++i)
+        std::cout << "IntArray[" << i << "] = " << IntArray[i] << std::endl;
+    std::cout << std::endl;
 }
 
 
 int main()
 {
-    LinInitArray_TEST();
+    //LinInitArray_TEST();
     ValInitArray_TEST();
     
     return 0;

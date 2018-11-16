@@ -371,8 +371,8 @@ bool ham3_t::FixedPoint(int*const num_loops_p, const bool with_output)
     // Performs the iterative self-consistent search using the parameters from ham3. 
     // The initial values of mag and rhoI are used as the starting values for the search; 
     // the end values are also output to mag and rhoI.
-    std::cout << std::scientific << std::showpos; // Format display output
-    std::cout << std::setprecision(2); // Set precision of output
+    if (with_output) // Format display output and set precision
+        std::cout << std::scientific << std::showpos << std::setprecision(2);
     
     // Declare output variables and *initialize them to input values*.
             double  rho_a_out = rho_a_;
@@ -396,7 +396,7 @@ bool ham3_t::FixedPoint(int*const num_loops_p, const bool with_output)
         
         // Past a certain number of loops, we mix in part of the previous input vals
         const int len = 12;
-        const int counter_vals [len] = {50,  100, 150, 200, 300, 400, 500, 600, 700, 800,  900,  1000};
+        const int counter_vals [len] = {25,  50, 75, 100, 150, 200, 250, 300, 350, 400,  450,  500};
         const double  chi_vals [len] = {0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.05, 0.03, 0.01};
         // Mixing fraction chi (chi=1 corresponds to using fully new value)
         const double chi = Set_chi(counter, counter_vals, chi_vals, len, with_output);

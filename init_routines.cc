@@ -38,6 +38,13 @@ float LinInitArray(const float xMin, const float xMax, const int NumPts,
     return dx;
 }
 
+
+void ValInitArray(const int NumPts, int*const Array, const int Value)
+{
+    // Initializes all values in the array to a single value (zero by default)
+    for (int i=0; i<NumPts; ++i)
+        Array[i] = Value;
+}
 void ValInitArray(const int NumPts, double*const Array, const double Value)
 {
     // Initializes all values in the array to a single value (zero by default).
@@ -52,16 +59,14 @@ void ValInitArray(const int NumPts, float*const Array, const float Value)
         Array[i] = Value;
 }
 
-void ValInitArray(const int NumPts, std::complex<double>*const Array, 
-                  const std::complex<double> Value)
+void ValInitArray(const int NumPts, std::complex<double>*const Array, const std::complex<double> Value)
 {
     // Initializes all values in the array to a single value (zero by default).
     for (int i=0; i<NumPts; ++i)
         Array[i] = Value;
 }
 
-void ValInitArray(const int NumPts, std::complex<float>*const Array, 
-                  const std::complex<float> Value)
+void ValInitArray(const int NumPts, std::complex<float>*const Array, const std::complex<float> Value)
 {
     // Initializes all values in the array to a single value (zero by default).
     for (int i=0; i<NumPts; ++i)
