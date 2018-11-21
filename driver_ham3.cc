@@ -163,11 +163,11 @@ int pstudyA()
     pspaceA_t pspaceA; // Declare object of type pspaceA (parameter space)
     
     // Declare and construct an instance of ham3_t
-    ham3_t ham3(100,100,100);
+    ham3_t ham3(20,20,20);
     // Make any initial adjustment to the parameters
     ham3.set_zerotemp();
     
-    //GlobalAttr = ham3.GetAttributes();//Single thread assigns attributes to GlobalAttr
+    GlobalAttr = ham3.GetAttributes(); // assign attributes to GlobalAttr
     std::cout << "\n\n\ttol = " << ham3.tol_ << "\n";//Print tolerance for equality of MFs.
     
     // Loop over values of the parameter space
