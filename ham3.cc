@@ -340,30 +340,23 @@ void ham3_t::ComputeMFs(double& rho_a_out, complex<double>& u1_out,
 }
 
 
-/*
+
 std::string ham3_t::GetAttributes()
 {
     // Define a string of metadata
-    const std::string Attributes = "Haldane Hubbard bilayer (ham3)"
-        ": NN distance a = "+to_string(a)+"; kx_pts = "+to_string(kx_pts)+
-        "; kx_bounds = "+to_string(kx_bounds[0])+", "+to_string(kx_bounds[1])+
-        "; ky_pts = " + to_string(ky_pts)+
-        "; ky_bounds = "+to_string(ky_bounds[0])+", "+to_string(ky_bounds[1])+
-        "; num_bands = "+to_string(num_bands)+
-        "; parsI = ("+to_string(parsI.t1) +","+to_string(parsI.t2)+","+
-                      to_string(parsI.eps)+","+to_string(parsI.phi)+")"
-        "; parsII = ("+to_string(parsII.t1) +","+to_string(parsII.t2)+","+
-                       to_string(parsII.eps)+","+to_string(parsII.phi)+")"
-        "; tperp = "+to_string(tperp)+"; L = "+to_string(L)+"; rho = "+to_string(rho)+
-        "; U = "+to_string(U)+"; rhoI_s_startval = "+to_string(rhoI_s_startval)+
-        "; rhoI_a_startval = "+to_string(rhoI_a_startval)+
-        "; mag_s_startval = "+to_string(mag_s_startval)+
-        "; mag_a_startval = "+to_string(mag_a_startval)+"; tol = "+to_string(tol)+
-        "; loops_lim_ = "+to_string(loops_lim_);
+    const std::string Attributes = "Gyrotropic SSB (ham3)"
+        ": a = "+to_string(a_)+", c = "+to_string(c_)+
+        "; k-space points: "+to_string(ka_pts_)+", "+to_string(kb_pts_)+", "+to_string(kc_pts_)+
+        "; num_bands = "+to_string(num_bands)+"; rho = "+to_string(rho_)+
+        "; zerotemp = "+to_string(zerotemp_)+", T = "+to_string(T_)+"; tol = "+to_string(tol_)+
+        "; t1 = "+to_string(t1_)+", t1p = "+to_string(t1p_)+", t2A = "+to_string(t2A_)+
+        "; t2B = "+to_string(t2B_)+", t3 = "+to_string(t3_)+", V1 = "+to_string(V1_)+
+        "; V1p = "+to_string(V1p_)+", V2 = "+to_string(V2_)+", V3 = "+to_string(V3_)+
+        "; loops_lim = "+to_string(loops_lim_);
     
     return Attributes;
 }
-*/
+
 
 bool ham3_t::FixedPoint(int*const num_loops_p, const bool with_output)
 {
