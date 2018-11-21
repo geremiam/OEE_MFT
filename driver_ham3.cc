@@ -12,6 +12,7 @@ NetCDF dataset. */
 #include "IO.h" // For PrintMatrix()
 #include "ham3.h" // Source code for ham3
 using std::complex;
+using std::string;
 
 
 // Class that defines a parameter space for this Hamiltonian
@@ -24,9 +25,9 @@ class pspaceA_t {
     
   public:
     // rho
-    const double rho_bounds [2] = {0.3, 0.7}; const int rho_pts = 3;
+    const double rho_bounds [2] = {0.3, 0.7}; const size_t rho_pts = 3;
     // V1
-    const double V1_bounds [2] = {0., 1.};    const int V1_pts = 5;
+    const double V1_bounds [2] = {0., 1.};    const size_t V1_pts = 5;
     
     // Coordinate variables
     double*const rho_grid; // rho coordinate variable
@@ -43,6 +44,7 @@ class pspaceA_t {
     complex<double>*const u3_s_grid;
     complex<double>*const u3_a_grid;
                 int*const loops_grid; // holds the number of loops done at each point
+            double *const energy_grid; // Holds the MF energy for later comparison
     
     // Constructor declaration
     pspaceA_t()
@@ -56,7 +58,8 @@ class pspaceA_t {
          u2B_grid  (new complex<double> [rho_pts*V1_pts]),
          u3_s_grid (new complex<double> [rho_pts*V1_pts]),
          u3_a_grid (new complex<double> [rho_pts*V1_pts]),
-         loops_grid(new         int     [rho_pts*V1_pts]) // Important -- Note order
+         loops_grid(new         int     [rho_pts*V1_pts]),
+         energy_grid(new        double  [rho_pts*V1_pts]) // Important -- Note order
     {
         /* The initialization list initializes the parameters and allocates memory for 
         the arrays. */
@@ -94,6 +97,7 @@ class pspaceA_t {
         delete [] u3_s_grid;
         delete [] u3_a_grid;
         delete [] loops_grid;
+        delete [] energy_grid;
         
         std::cout << "pspaceA_t instance deleted.\n";
     }
@@ -104,32 +108,44 @@ class pspaceA_t {
         // var arrays. We pick the order rho, V1 so that V1 varies faster than rho.
         return i*V1_pts + j;
     }
-    /*
-    void SaveData(const std::string GlobalAttr_, const std::string path_)
+    
+    void SaveData(const string GlobalAttr, const string path)
     {
         // Method for saving the data of this class. This method uses the class from the 
         // module nc_IO that creates a simple NetCDF class and allows writing of variables.
         // We define parameters required to create the dataset. Don't forget to adjust these depending on the parameter space defined above. 
         // Important: Note that the order of the variables must be kept consistent.
-        const int dims_num = 2;
-        const std::string dim_names [dims_num] = {"lambda", "U"};
-        const int dim_lengths [dims_num] = {lambda_pts, U_pts};
-        const int vars_num = 5; // Variables other than coord variables
-        const std::string var_names [vars_num] = {"rho_s", "rho_a", "mag_s", "mag_a", 
-                                                  "loops"}; // Use same order below
+        const size_t dims_num = 2;
+        const string dim_names [dims_num] = {"rho", "V1"};
+        const size_t dim_lengths [dims_num] = {rho_pts, V1_pts};
+        const size_t vars_num = 8; // Variables other than coord variables
+        const string var_names [vars_num] = {"rho_a", "u1", "u1p_s", "u1p_a", "u2A", "u2B", "u3_s", "u3_a"}; // Use same order below
+        const bool var_complex [vars_num] = {false,   true, true,    true,    true,  true,  true,   true};
         
         // Constructor for the dataset class creates a dataset
-        newDS_t newDS(GlobalAttr_, dims_num, dim_names, dim_lengths,
-                      vars_num, var_names, path_);
+        newDS_t newDS(dims_num, dim_names, dim_lengths, vars_num, var_names, var_complex, GlobalAttr, path);
         
-        const double*const coord_vars [dims_num] = {lambda_grid, U_grid};
-        newDS.WriteCoordVars(coord_vars); // Write the coordinate variables
+        newDS.DefCoordVar(0, "rho"); // Define "default" coordinate variables
+        newDS.DefCoordVar(1, "V1");
         
-        const double*const vars [vars_num] = {&(rhoI_s_grid[0][0]), &(rhoI_a_grid[0][0]),
-                                              &(mag_s_grid[0][0]), &(mag_a_grid[0][0]),
-                                              &(loops_grid[0][0])};
+        newDS.EndDef(); // Exit definition mode
+        
+        newDS.WriteCoordVar(0, rho_grid); // Write coordinate variables
+        newDS.WriteCoordVar(1, V1_grid);
+        
+        const double*const vars [vars_num] = {rho_a_grid, 
+                                              reinterpret_cast<double*const>(u1_grid), 
+                                              reinterpret_cast<double*const>(u1p_s_grid), 
+                                              reinterpret_cast<double*const>(u1p_a_grid), 
+                                              reinterpret_cast<double*const>(u2A_grid), 
+                                              reinterpret_cast<double*const>(u2B_grid), 
+                                              reinterpret_cast<double*const>(u3_s_grid), 
+                                              reinterpret_cast<double*const>(u3_a_grid)};
         newDS.WriteVars(vars); // Write the variables
-    }*/
+        
+        newDS.WriteLoops(loops_grid);
+        newDS.WriteEnergy(energy_grid);
+    }
 };
 
 
@@ -142,12 +158,12 @@ int pstudyA()
     
     const bool with_output = true; // Show output for diagnostics
     int numfails = 0; // Tracks number of points which failed to converge after loops_lim
-    std::string GlobalAttr; // String to hold the metadata
+    string GlobalAttr; // String to hold the metadata
     
     pspaceA_t pspaceA; // Declare object of type pspaceA (parameter space)
     
     // Declare and construct an instance of ham3_t
-    ham3_t ham3;
+    ham3_t ham3(100,100,100);
     // Make any initial adjustment to the parameters
     ham3.set_zerotemp();
     
@@ -199,21 +215,40 @@ int pstudyA()
     {
         std::cout << std::endl << "pspaceA.rho_a_grid = " << std::endl;
         PrintMatrix(pspaceA.rho_pts, pspaceA.V1_pts, pspaceA.rho_a_grid, std::cout);
-        /*std::cout << std::endl << "pspaceA.rhoI_a_grid = " << std::endl;
-        PrintMatrix(pspaceA.lambda_pts, pspaceA.U_pts, pspaceA.rhoI_a_grid, std::cout);
-        std::cout << std::endl << "pspaceA.mag_s_grid = " << std::endl;
-        PrintMatrix(pspaceA.lambda_pts, pspaceA.U_pts, pspaceA.mag_s_grid, std::cout);
-        std::cout << std::endl << "pspaceA.mag_a_grid = " << std::endl;
-        PrintMatrix(pspaceA.lambda_pts, pspaceA.U_pts, pspaceA.mag_a_grid, std::cout);
+        
+        std::cout << std::endl << "pspaceA.u1_grid = " << std::endl;
+        PrintMatrix(pspaceA.rho_pts, pspaceA.V1_pts, pspaceA.u1_grid, std::cout);
+        
+        std::cout << std::endl << "pspaceA.u1p_s_grid = " << std::endl;
+        PrintMatrix(pspaceA.rho_pts, pspaceA.V1_pts, pspaceA.u1p_s_grid, std::cout);
+        
+        std::cout << std::endl << "pspaceA.u1p_a_grid = " << std::endl;
+        PrintMatrix(pspaceA.rho_pts, pspaceA.V1_pts, pspaceA.u1p_a_grid, std::cout);
+        
+        std::cout << std::endl << "pspaceA.u2A_grid = " << std::endl;
+        PrintMatrix(pspaceA.rho_pts, pspaceA.V1_pts, pspaceA.u2A_grid, std::cout);
+        
+        std::cout << std::endl << "pspaceA.u2B_grid = " << std::endl;
+        PrintMatrix(pspaceA.rho_pts, pspaceA.V1_pts, pspaceA.u2B_grid, std::cout);
+        
+        std::cout << std::endl << "pspaceA.u3_s_grid = " << std::endl;
+        PrintMatrix(pspaceA.rho_pts, pspaceA.V1_pts, pspaceA.u3_s_grid, std::cout);
+        
+        std::cout << std::endl << "pspaceA.u3_a_grid = " << std::endl;
+        PrintMatrix(pspaceA.rho_pts, pspaceA.V1_pts, pspaceA.u3_a_grid, std::cout);
+        
+        std::cout << std::endl << "pspaceA.energy_grid = " << std::endl;
+        PrintMatrix(pspaceA.rho_pts, pspaceA.V1_pts, pspaceA.energy_grid, std::cout);
+        
         std::cout << std::endl << "pspaceA.loops_grid = " << std::endl;
-        PrintMatrix(pspaceA.lambda_pts, pspaceA.U_pts, pspaceA.loops_grid, std::cout);
-        std::cout << std::endl;*/
+        PrintMatrix(pspaceA.rho_pts, pspaceA.V1_pts, pspaceA.loops_grid, std::cout);
+        std::cout << std::endl;
     }
     
     
     // We save to a NetCDF dataset using the class defined in nc_IO
-    //const std::string path="data/ham3/"; //Choose the path for saving (include final '/')
-    //pspaceA.SaveData(GlobalAttr, path); // Call saving method
+    const string path="data/ham3/"; //Choose the path for saving (include final '/')
+    pspaceA.SaveData(GlobalAttr, path); // Call saving method
     
     // Print out numfails
     std::cout << "\n\tNUMBER OF FAILURES TO CONVERGE: " << numfails << "\n\n";
