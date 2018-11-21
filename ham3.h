@@ -79,14 +79,14 @@ class ham3_t
     // The MF values that are used in the Hamiltonian.
     // This is where the user sets the initial values of the MFs.
     
-            double  rho_a_ = 0.;
-    complex<double> u1_    = {0.,0.};
-    complex<double> u1p_s_ = {0.,0.};
-    complex<double> u1p_a_ = {0.,0.};
-    complex<double> u2A_   = {0.,0.};
-    complex<double> u2B_   = {0.,0.};
-    complex<double> u3_s_  = {0.,0.};
-    complex<double> u3_a_  = {0.,0.};
+            double  rho_a_ = -99.;
+    complex<double> u1_    = {-99.,0.};
+    complex<double> u1p_s_ = {-99.,0.};
+    complex<double> u1p_a_ = {-99.,0.};
+    complex<double> u2A_   = {-99.,0.};
+    complex<double> u2B_   = {-99.,0.};
+    complex<double> u3_s_  = {-99.,0.};
+    complex<double> u3_a_  = {-99.,0.};
     
     const double tol_ = 1.e-6; // Tolerance for the equality of the mean fields
     
@@ -102,6 +102,8 @@ class ham3_t
     double V2_  = 0.4; // We choose to use the same V2 for A- and B-emanating
     double V3_  = 0.5; // Repulsion between neighbours in c direction
     
+    
+    void resetMFs(); // Resets MFs to default starting values.
     
     void assign_rho(const double rho); // Assign rho_ and dependent variables
     void set_zerotemp();

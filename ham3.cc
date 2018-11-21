@@ -55,6 +55,19 @@ double ham3_t::ftilde(double ka, double kb, double kc)
 }
 
 
+void ham3_t::resetMFs()
+{
+    // Resets MFs to default starting values.
+    rho_a_ = 0.2;
+    u1_    = {0.,0.};
+    u1p_s_ = {0.,0.};
+    u1p_a_ = {0.2,0.};
+    u2A_   = {0.,0.};
+    u2B_   = {0.,0.};
+    u3_s_  = {0.,0.};
+    u3_a_  = {0.2,0.};
+}
+
 /* Methods that set parameters with interdependencies. */
 void ham3_t::assign_rho(const double rho)
 {
@@ -82,6 +95,7 @@ ham3_t::ham3_t(const int ka_pts, const int kb_pts, const int kc_pts)
 {
     /* Constructor implementation */
     assign_rho(rho_); // Sets initial value of 'filled_states'
+    resetMFs(); // Sets the mean fields to default value
     std::cout << "ham3_t instance created.\n";
 }
 
