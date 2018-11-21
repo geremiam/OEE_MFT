@@ -158,11 +158,11 @@ class pspaceB_t {
     
   public:
     // rho
-    const size_t rho_pts = 3; const double rho_bounds [2] = {0.1, 0.9};
+    const size_t rho_pts = 2; const double rho_bounds [2] = {0.1, 0.9};
     // g: determines V1 and V1p
-    const size_t g_pts = 3; const double V1_bounds [2] = {0.,2.0}; const double V1p_bounds [2] = {0.,1.5}; // Vary with g
+    const size_t g_pts = 2; const double V1_bounds [2] = {0.,2.0}; const double V1p_bounds [2] = {0.,1.5}; // Vary with g
     // h: determines V2 and V3
-    const size_t h_pts = 5; const double V2_bounds [2] = {0.,1.0}; const double V3_bounds  [2] = {0.,0.5}; // Vary with h
+    const size_t h_pts = 2; const double V2_bounds [2] = {0.,1.0}; const double V3_bounds  [2] = {0.,0.5}; // Vary with h
     
     const int parspace_pts = rho_pts*g_pts*h_pts;
     
@@ -336,6 +336,8 @@ int pstudyA()
         ham3.assign_rho(pspaceA.rho_grid[g]); // Assign value of rho
         ham3.V1_ = pspaceA.V1_grid[h]; // Assign value of V1
         
+        ham3.resetMFs(); // // Resets MFs to default values.
+        
         int loops=0; // Will be assigned the number of loops performed
         const bool fail = ham3.FixedPoint(&loops, with_output);
         
@@ -443,6 +445,8 @@ int pstudyB()
         ham3.assign_rho(pspaceB.rho_grid[f]); // Assign value of rho
         ham3.V1_ = pspaceB.V1_grid[g];  ham3.V1p_ = pspaceB.V1p_grid[g]; // g-dependent params
         ham3.V2_ = pspaceB.V2_grid[h];  ham3.V3_ = pspaceB.V3_grid[h]; // h-dependent params
+        
+        ham3.resetMFs(); // Resets MFs to default starting values.
         
         int loops=0; // Will be assigned the number of loops performed
         const bool fail = ham3.FixedPoint(&loops, with_output);
