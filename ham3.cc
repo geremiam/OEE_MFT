@@ -265,7 +265,7 @@ void ham3_t::ComputeMFs(double& rho_a_out, complex<double>& u1_out,
     kspace_t kspace(a_, a_, c_, ka_pts_, kb_pts_, kc_pts_, num_bands);
     
     // Step 1: diagonalize to find all the energy evals and store them in kspace
-    #pragma omp parallel default(none) shared (kspace)
+    #pragma omp parallel default(none) shared(kspace)
     {
     // array to hold Ham (local to thread)
     complex<double>*const*const ham_array = Alloc2D_z(ham_array_rows, ham_array_cols);
@@ -303,7 +303,8 @@ void ham3_t::ComputeMFs(double& rho_a_out, complex<double>& u1_out,
     complex<double> u3_a_accum  = {0.,0.};
     
     #pragma omp declare reduction(+:complex<double>:omp_out+=omp_in) // Must declare reduction on complex numbers
-    #pragma omp parallel default(none) private(mu) shared(kspace) reduction(+:rho_a_accum,u1_accum,u1p_s_accum,u1p_a_accum,u2A_accum,u2B_accum,u3_s_accum,u3_a_accum)
+    #pragma omp parallel default(none) firstprivate(mu) shared(kspace) \
+      reduction(+:rho_a_accum,u1_accum,u1p_s_accum,u1p_a_accum,u2A_accum,u2B_accum,u3_s_accum,u3_a_accum)
     {
     complex<double>*const*const ham_array = Alloc2D_z(ham_array_rows, ham_array_cols); // array to hold Ham (local to thread)
     ValInitArray(ham_array_rows*ham_array_cols, &(ham_array[0][0])); // Initialize to zero
