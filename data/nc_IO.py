@@ -4,7 +4,7 @@
 import numpy as np
 from scipy.io import netcdf
 
-def nc_read(Filename):
+def nc_read(filename, varname):
     """ Reads a simple format of NetCDF datasets with n dimensions (each having a 
     coordinate variable) and m (non-coordinate) variables. The dimension names and 
     lengths, the coordinate variables, the variable names and the variables are returned. 
@@ -12,43 +12,24 @@ def nc_read(Filename):
     adequate for very large datasets. """
     np.set_printoptions(linewidth=1000)
     
-    with netcdf.netcdf_file(Filename, 'r') as File: # Open the NetCDF file
-        # Print some relevant info
-        #print("\nAttributes: ", File.GlobalAtt)
-        #print("\nDimensions: ", File.dimensions)
-        #print("\nVariables: ", File.variables)
+    with netcdf.netcdf_file(filename, 'r') as f: # Open the NetCDF file
+        print("Dimensions of the dataset: {}".format(f.dimensions)) # Print all dims
         
-        # Print out the global attributes, assuming they are named 'GlobalAttributes'
-        try:
-            print("\nGlobal attributes:", File.GlobalAttributes)
-        except AttributeError:
-            print("\n\tEXCEPTION: No attribute named 'GlobalAttributes' found.\n")
+        dataset_var = f.variables[varname] # Get the desired variable
         
-        # Get the dimension names and lengths. Note that the dimensions are held in 
-        # ordered dictionaries, so their orders are not lost
-        dim_names = []
-        dim_lengths = []
-        for el in File.dimensions:
-            dim_names.append(el)
-            dim_lengths.append(File.dimensions[el])
+        var_dims = dataset_var.dimensions # Tuple of dimensions this var is defined on
+        print("Dimensions for this variable: {}".format(var_dims))
         
-        print("dim_names:", dim_names)
-        print("dim_lengths:", dim_lengths)
+        var = dataset_var[:].copy() # Copy the variable data into memory
+        #print("{} = {}".format(varname, var))
         
-        # Note that by default, the opened datasets are not loaded into memory.
-        # Copy (i.e. load to memory) the dataset variables as numpy arrays held in lists
-        coord_vars = []
-        var_names = []
-        vars = []
-        for el in File.variables:
-            if (el in dim_names):
-                coord_vars.append(File.variables[el][:].copy())
-            else:
-                var_names.append(el)
-                vars.append(File.variables[el][:].copy())
+        # Look for coordinate variables for the plotting dimensions
+        coord_vars = {}
+        for dimname in dataset_var.dimensions:
+            if (dimname in f.variables):
+                coord_vars[dimname] = f.variables[dimname][:].copy()
+        print("Coordinate variables found: {}".format(coord_vars))
         
-        print("coord_vars:", coord_vars)
-        print("var_names:", var_names)
-        print("vars:", vars)
+        del dataset_var # Must be removed from scope for the dataset to close
         
-    return dim_names, dim_lengths, coord_vars, var_names, vars
+    return var, var_dims, coord_vars
