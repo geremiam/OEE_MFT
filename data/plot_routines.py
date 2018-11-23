@@ -4,43 +4,39 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-def ColorPlot1(row, col, z, Labels=[], clim=[]):
-    """ Makes a colorplot of the 2D array z, with the row variable as the vertical axis 
-    and the column variable as the horizontal axis. 'row' and 'col' are the coordinate 
-    variables for the array 'z'. The entries of 'Labels' are the labels for the rows, 
-    the columns, and z, respectively. """
+def ColorPlot(fig, ax, data, Labels, horiz_extent=(), vert_extent=()):
+    """ Plots the 2D array "data" (first index along horizontal axis and second index 
+    along vertical axis). The three strings in the list "Labels" correspond to labels for 
+    the horizontal, vertical, and color axes, respectively. Axis ends can be specified as 
+    tuples (optional). """
     
-    fig, axes = plt.subplots()
+    # Check for axis extents
+    if (horiz_extent==()):
+        horiz_extent = (-0.5, data.shape[0]-0.5) # Default behaviour
+    if (vert_extent==()):
+        vert_extent = (-0.5, data.shape[1]-0.5) # Default behaviour
+    extent = horiz_extent + vert_extent
     
-    extent = [col[0], col[-1], 
-              row[0], row[-1]] # Determines the ranges of the axes
     
-    if (Labels != []):
-        axes.set_ylabel(Labels[0])
-        axes.set_xlabel(Labels[1])
+    cmaps = ['PiYG', 'PRGn', 'BrBG', 'PuOr', 'RdGy', 'RdBu', 
+             'RdYlBu', 'RdYlGn', 'Spectral', 'coolwarm', 'bwr', 'seismic']
+    cmap=cmaps[2]
     
-    cs = axes.imshow(z, extent=extent, interpolation="nearest", origin="lower", 
-                     aspect='auto')
+    # Center the colormap at zero.
+    vmax = np.amax(np.abs(data))
+    vmin = -vmax
     
-    if (clim != []): # Sets colorbar limits
-        cs.set_clim(clim)
-    cbar = fig.colorbar(cs, ax=axes)
-    if (Labels != []):
-        cbar.set_label(Labels[2])
+    # Transpose the data because imshow uses 'ij' indexing instead of 'xy'
+    data = np.transpose(data)
+    im = ax.imshow(data, cmap=cmap, aspect='auto', interpolation='nearest', 
+                   vmin=vmin, vmax=vmax,origin='lower', extent=extent)
     
-    plt.show()
-
-def ColorPlot2(row, col, z, Labels=[], clim=[]):
-    """ In development... This is similar to the previous routine, but uses pcolormesh 
-    instead of imshow. 
-    https://ocefpaf.github.io/python4oceanographers/blog/2015/01/05/pcolor/ """
+    cbar = fig.colorbar(im, ax=ax, pad=0.03)
     
-    fig, axes = plt.subplots()
+    #ax.contour(tensor, 15, colors='k', vmin=vmin, vmax=vmax,origin='lower', extent=extent)
+    #ax.contour(tensor, (0,), colors='C3', vmin=vmin, vmax=vmax, origin='lower', extent=extent, linewidths=2)
     
-    if (Labels != []):
-        axes.set_xlabel(Labels[1])
-        axes.set_ylabel(Labels[0])
-    
-    axes.pcolormesh(z)
-    
-    plt.show()
+    # Set axis labels
+    ax.set_xlabel(Labels[0])
+    ax.set_ylabel(Labels[1])
+    cbar.set_label(Labels[2])
