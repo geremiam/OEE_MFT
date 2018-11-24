@@ -158,11 +158,11 @@ class pspaceB_t {
     
   public:
     // rho
-    const size_t rho_pts = 2; const double rho_bounds [2] = {0.1, 0.9};
+    const size_t rho_pts = 3; const double rho_bounds [2] = {0.4, 0.6};
     // g: determines V1 and V1p
-    const size_t g_pts = 2; const double V1_bounds [2] = {0.,2.0}; const double V1p_bounds [2] = {0.,1.5}; // Vary with g
+    const size_t g_pts = 5; const double V1_bounds [2] = {0.,40.}; const double V1p_bounds [2] = {0.,30.}; // Vary with g
     // h: determines V2 and V3
-    const size_t h_pts = 2; const double V2_bounds [2] = {0.,1.0}; const double V3_bounds  [2] = {0.,0.5}; // Vary with h
+    const size_t h_pts = 4; const double V2_bounds [2] = {0.,5.}; const double V3_bounds  [2] = {0.,2.5}; // Vary with h
     
     const int parspace_pts = rho_pts*g_pts*h_pts;
     

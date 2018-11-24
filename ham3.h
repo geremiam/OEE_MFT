@@ -88,7 +88,7 @@ class ham3_t
     complex<double> u3_s_  = {-99.,0.};
     complex<double> u3_a_  = {-99.,0.};
     
-    const double tol_ = 1.e-6; // Tolerance for the equality of the mean fields
+    const double tol_ = 1.e-9; // Tolerance for the equality of the mean fields
     
     
     // Hamiltonian parameters that the user may want to change
