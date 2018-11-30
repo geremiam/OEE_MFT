@@ -108,7 +108,7 @@ ut_chempot: chempot_test # Runs the testing suite's executable
 
 # Executable file from linking of chempot_test.o, chempot.o, and math_routines.o
 chempot_test: chempot_test.o chempot.o math_routines.o
-	${CXX} chempot_test.o chempot.o math_routines.o -o chempot_test
+	${CXX} $(LDFLAGS) chempot_test.o chempot.o math_routines.o -o chempot_test
 
 # Creation of the chempot_test.o object file, which depends on its source file and 
 # on the chempot.h header file.

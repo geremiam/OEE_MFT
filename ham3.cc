@@ -287,8 +287,12 @@ void ham3_t::ComputeMFs(double& rho_a_out, complex<double>& u1_out,
     double mu = 666.;
     if (zerotemp_) // (elements get reordered)
         mu = FermiEnerg(num_states, filled_states, kspace.energies);
-    else
-        mu = ChemPotBisec(num_states, filled_states, kspace.energies, T_, 1.e-13);
+    else // USES OPENMP PARALLELIZATION
+    {
+        const bool show_output = false;
+        const bool usethreads = true;
+        mu = ChemPotBisec(num_states, filled_states, kspace.energies, T_, 1.e-13, show_output, usethreads);
+    }
     
     
     // Step 3: Use all the occupation numbers and the evecs to find the order parameter

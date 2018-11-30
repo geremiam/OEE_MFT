@@ -21,7 +21,9 @@ void test_ChemPot()
     const double T = 0.1;
     const double tol = 1.e-13;
     
-    double mu = ChemPotBisec(ArrLen, num_electrons, energies1, T, tol, true);
+    const bool show_output = false;
+    const bool usethreads = true;  // Bisection method can use OpenMP parallelization
+    double mu = ChemPotBisec(ArrLen, num_electrons, energies1, T, tol, show_output, usethreads);
     //double mu = ChemPotNewton(ArrLen, num_electrons, energies1, T, tol, 20, true);
     
     std::cout << std::setprecision(40) << "mu = " << mu << std::endl;

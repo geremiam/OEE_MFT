@@ -9,16 +9,20 @@
 
 // Internal subroutines
 
-double func(const int num_states, const int num_electrons, 
-            const double T, const double*const energies, const double mu)
+double func(const int num_states, const int num_electrons, const double T, 
+            const double*const energies, const double mu, const bool usethreads=false)
 {
     /* Function whose root is the physical chemical potential, needed in the numerical 
-    root solver.
+    root solver. Evaluation can be parallelized.
     func(mu) = - num_electrons + sum (nF(energies-mu))*/
     
-    double accumulator = - (double)(num_electrons);
+    double accumulator = 0.; // Accumulator is set to zero anyways before parallel section
+    #pragma omp parallel if(usethreads) default(none) reduction(+:accumulator)
+    #pragma omp for // Accumulation is shared between threads
     for (int i=0; i<num_states; ++i)
         accumulator += nF(T, energies[i] - mu); // nF() is from math_routines
+    
+    accumulator -= (double)(num_electrons); // Add (i.e. subtract) constant part
     
     return accumulator;
 }
@@ -92,7 +96,7 @@ double ChemPotNewton(const int num_states, const int num_electrons,
 
 double ChemPotBisec(const int num_states, const int num_electrons, 
                     const double*const energies, const double T, const double tol, 
-                    const bool show_output)
+                    const bool show_output, const bool usethreads)
 {
     /* The chemical potential is found using the bisection method. Note that this doesn't 
     work if num_electrons is 0 or num_states, because in that case the function has no 
@@ -116,7 +120,7 @@ double ChemPotBisec(const int num_states, const int num_electrons,
       
       const double midpoint = (a+b)/2.; // Get the midpoint between a and b
       // Find the image of the function at the midpoint
-      const double image = func(num_states, num_electrons, T, energies, midpoint);
+      const double image = func(num_states, num_electrons, T, energies, midpoint, usethreads);
       
       if (show_output)
           std::cout << "a = " << a << ", b = " << b << "\t"

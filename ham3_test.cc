@@ -49,6 +49,8 @@ void test_FixedPoint()
     const int kc_pts = 100;
     
     ham3_t ham3(ka_pts, kb_pts, kc_pts);
+    ham3.set_zerotemp(); // In this case, calculates EF from sorting
+    //ham3.set_nonzerotemp(1.e-2); // In this case, calculates mu from bisection method
     
     int num_loops;
     const bool with_output = true;
