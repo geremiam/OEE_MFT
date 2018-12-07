@@ -291,7 +291,7 @@ void ham3_t::ComputeMFs(double& rho_a_out, complex<double>& u1_out,
     {
         const bool show_output = false;
         const bool usethreads = true;
-        mu = ChemPotBisec(num_states, filled_states, kspace.energies, T_, 1.e-13, show_output, usethreads);
+        mu = ChemPotBisec(num_states, filled_states, kspace.energies, T_, show_output, usethreads);
     }
     
     
@@ -363,6 +363,9 @@ void ham3_t::ComputeMFs(double& rho_a_out, complex<double>& u1_out,
 std::string ham3_t::GetAttributes()
 {
     // Define a string of metadata
+    // Watch out: this method resets the values of the MFs to their starting values.
+    resetMFs();
+    
     const std::string Attributes = "Gyrotropic SSB (ham3)"
         ": a = "+to_string(a_)+", c = "+to_string(c_)+
         "; k-space points: "+to_string(ka_pts_)+", "+to_string(kb_pts_)+", "+to_string(kc_pts_)+
@@ -371,7 +374,15 @@ std::string ham3_t::GetAttributes()
         "; t1 = "+to_string(t1_)+", t1p = "+to_string(t1p_)+", t2A = "+to_string(t2A_)+
         "; t2B = "+to_string(t2B_)+", t3 = "+to_string(t3_)+", V1 = "+to_string(V1_)+
         "; V1p = "+to_string(V1p_)+", V2 = "+to_string(V2_)+", V3 = "+to_string(V3_)+
-        "; loops_lim = "+to_string(loops_lim_);
+        "; loops_lim = "+to_string(loops_lim_)+
+        "; Starting values of the MFs: rho_a_ = "+to_string(rho_a_)+
+        "u1_ = "+to_string(std::real(u1_))+"+i"+to_string(std::imag(u1_))+
+        "u1p_s_ = "+to_string(std::real(u1p_s_))+"+i"+to_string(std::imag(u1p_s_))+
+        "u1p_a_ = "+to_string(std::real(u1p_a_))+"+i"+to_string(std::imag(u1p_a_))+
+        "u2A_ = "+to_string(std::real(u2A_))+"+i"+to_string(std::imag(u2A_))+
+        "u2B_ = "+to_string(std::real(u2B_))+"+i"+to_string(std::imag(u2B_))+
+        "u3_s_ = "+to_string(std::real(u3_s_))+"+i"+to_string(std::imag(u3_s_))+
+        "u3_a_ = "+to_string(std::real(u3_a_))+"+i"+to_string(std::imag(u3_a_));
     
     return Attributes;
 }

@@ -95,12 +95,13 @@ double ChemPotNewton(const int num_states, const int num_electrons,
 }
 
 double ChemPotBisec(const int num_states, const int num_electrons, 
-                    const double*const energies, const double T, const double tol, 
+                    const double*const energies, const double T, 
                     const bool show_output, const bool usethreads)
 {
     /* The chemical potential is found using the bisection method. Note that this doesn't 
     work if num_electrons is 0 or num_states, because in that case the function has no 
-    root (it tends to zero asymptotically in mu). */
+    root (it tends to zero asymptotically in mu). Uses 100 times machine epsilon as 
+    relative tolerance. */
     
     // Find min and max energies
     double minE=0., maxE=0.;
@@ -123,8 +124,8 @@ double ChemPotBisec(const int num_states, const int num_electrons,
       const double image = func(num_states, num_electrons, T, energies, midpoint, usethreads);
       
       if (show_output)
-          std::cout << "a = " << a << ", b = " << b << "\t"
-                    << "midpoint = " << midpoint << ", image = " << image << std::endl;
+          std::cout << "a = " << a << ", b = " << b << ", a-b = " << a-b << "\t"
+                    << "midpoint = " << midpoint << ", image = " << image;
       
       if (image==0.)
       {
@@ -137,7 +138,10 @@ double ChemPotBisec(const int num_states, const int num_electrons,
       else if (image>0.)
         b = midpoint; // If 'image' is positive, 'midpoint' is the new 'b'
       
-      if (std::abs((b-a)/2.)<tol)
+      const double tolerance = 100. * eps_double * std::abs((a+b))/2.;//eps gives rel. tol.
+      if (show_output)
+          std::cout << "\ttolerance = " << tolerance << std::endl;
+      if (std::abs((b-a))<tolerance)
         converged = true; // Check if the half difference is below tolerance
       
     } while (!converged); // The looping stops if convergence has been reached.
