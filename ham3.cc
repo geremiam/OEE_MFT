@@ -418,7 +418,7 @@ bool ham3_t::FixedPoint(int*const num_loops_p, const bool with_output)
         
         // Past a certain number of loops, we mix in part of the previous input vals
         const int len = 16;
-        const int counter_vals [len] = {25,  50,  75,  100, 150, 200, 250, 300, 350, 400,  450,  500,  600,   700,   800,   900};
+        const int counter_vals [len] = {50,  100, 150, 200, 250, 300, 450, 500, 550, 600,  650,  700,  800,   900,   1000,  1100};
         const double  chi_vals [len] = {0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.05, 0.03, 0.01, 5.e-3, 1.e-3, 5.e-4, 1.e-5};
         // Mixing fraction chi (chi=1 corresponds to using fully new value)
         const double chi = Set_chi(counter, counter_vals, chi_vals, len, with_output);

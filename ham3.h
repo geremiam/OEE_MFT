@@ -38,7 +38,7 @@ class ham3_t
     const int ham_array_cols = num_bands; // Same as matrix order for full storage
     const int num_states = ka_pts_*kb_pts_*kc_pts_*num_bands;
     
-    const int loops_lim_ = 1000; // Limit to the number of iteration loops
+    const int loops_lim_ = 1400; // Limit to the number of iteration loops
     
     
     /* Parameters that have dependencies or are dependent on other parameters. These 
@@ -88,7 +88,7 @@ class ham3_t
     complex<double> u3_s_  = {-99.,0.};
     complex<double> u3_a_  = {-99.,0.};
     
-    const double tol_ = 1.e-9; // Tolerance for the equality of the mean fields
+    const double tol_ = 1.e-6; // Tolerance for the equality of the mean fields
     
     
     // Hamiltonian parameters that the user may want to change
@@ -109,7 +109,7 @@ class ham3_t
     void set_zerotemp();
     void set_nonzerotemp(const double T);
     
-    ham3_t(const int ka_pts=100, const int kb_pts=100, const int kc_pts=100); // Constructor declaration
+    ham3_t(const int ka_pts=62, const int kb_pts=62, const int kc_pts=62); // Constructor declaration
     ~ham3_t(); // Destructor declaration
     
     bool FixedPoint(int*const num_loops_p=NULL, const bool with_output=false);
