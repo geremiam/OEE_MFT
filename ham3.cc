@@ -122,7 +122,8 @@ void ham3_t::Assign_ham(const double ka, const double kb, const double kc, compl
     
     // The "total" hopping amplitude includes the MF contribution
     const complex<double> t1_tot    = t1_ + V1_*u1_;
-    const complex<double> t2_tot    = (t2A_ + V2_*u2A_) + (t2B_ + V2_*u2B_);
+    const complex<double> t2A_tot   = (t2A_ + V2_*u2A_);
+    const complex<double> t2B_tot   = (t2B_ + V2_*u2B_);
     const complex<double> t1p_A_tot = t1p_ + V1p_*u1p_A;
     const complex<double> t1p_B_tot = t1p_ + V1p_*u1p_B;
     const complex<double> t3_A_tot  = t3_ + V3_*u3_A;
@@ -143,7 +144,8 @@ void ham3_t::Assign_ham(const double ka, const double kb, const double kc, compl
     H[0][1] += - t1_tot * zeta(ka,kb);
     
     // Add the solenoid-like hopping
-    H[0][1] += - t2_tot * f(ka,kb,kc);
+    H[0][1] += - t2A_tot * f(ka,kb,kc);
+    H[0][1] += - t2B_tot * std::conj(f(ka,kb,kc));
     
     // Add the 'a'- and 'b'-direction hopping
     H[0][0] += -2. * std::real( t1p_A_tot * chi(ka,kb) );
@@ -285,7 +287,7 @@ void ham3_t::ComputeMFs(double& rho_a_out, complex<double>& u1_out,
     
     // Step 2: Use all energies to compute chemical potential
     double mu = 666.;
-    if (zerotemp_) // (elements get reordered)
+    if (zerotemp_) // (ELEMENTS GET REORDERED)
         mu = FermiEnerg(num_states, filled_states, kspace.energies);
     else // USES OPENMP PARALLELIZATION
     {
@@ -376,13 +378,13 @@ std::string ham3_t::GetAttributes()
         "; V1p = "+to_string(V1p_)+", V2 = "+to_string(V2_)+", V3 = "+to_string(V3_)+
         "; loops_lim = "+to_string(loops_lim_)+
         "; Starting values of the MFs: rho_a_ = "+to_string(rho_a_)+
-        "u1_ = "+to_string(std::real(u1_))+"+i"+to_string(std::imag(u1_))+
-        "u1p_s_ = "+to_string(std::real(u1p_s_))+"+i"+to_string(std::imag(u1p_s_))+
-        "u1p_a_ = "+to_string(std::real(u1p_a_))+"+i"+to_string(std::imag(u1p_a_))+
-        "u2A_ = "+to_string(std::real(u2A_))+"+i"+to_string(std::imag(u2A_))+
-        "u2B_ = "+to_string(std::real(u2B_))+"+i"+to_string(std::imag(u2B_))+
-        "u3_s_ = "+to_string(std::real(u3_s_))+"+i"+to_string(std::imag(u3_s_))+
-        "u3_a_ = "+to_string(std::real(u3_a_))+"+i"+to_string(std::imag(u3_a_));
+        ", u1_ = "+to_string(std::real(u1_))+"+i"+to_string(std::imag(u1_))+
+        ", u1p_s_ = "+to_string(std::real(u1p_s_))+"+i"+to_string(std::imag(u1p_s_))+
+        ", u1p_a_ = "+to_string(std::real(u1p_a_))+"+i"+to_string(std::imag(u1p_a_))+
+        ", u2A_ = "+to_string(std::real(u2A_))+"+i"+to_string(std::imag(u2A_))+
+        ", u2B_ = "+to_string(std::real(u2B_))+"+i"+to_string(std::imag(u2B_))+
+        ", u3_s_ = "+to_string(std::real(u3_s_))+"+i"+to_string(std::imag(u3_s_))+
+        ", u3_a_ = "+to_string(std::real(u3_a_))+"+i"+to_string(std::imag(u3_a_));
     
     return Attributes;
 }
