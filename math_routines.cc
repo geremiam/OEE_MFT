@@ -46,13 +46,17 @@ float  nF0(float const energy)
 }
 double nF(const double T, const double energy)
 {
-    /* Fermi function. Overloaded for floats. */
-    return 1./( 1. + std::exp(energy/T) );
+    // Fermi function for doubles. Use long doubles to avoid overflow.
+    const long double arg = (long double)(energy)/(long double)(T);
+    const long double ans = 1.l/( 1.l + std::exp(arg) );
+    return (double)(ans);
 }
 float nF(const float T, const float energy)
 {
-    /* Fermi function. Overloaded for doubles. */
-    return 1.f/( 1.f + std::exp(energy/T) );
+    // Fermi function for doubles. Use long doubles to avoid overflow.
+    const long double arg = (long double)(energy)/(long double)(T);
+    const long double ans = 1.l/( 1.l + std::exp(arg) );
+    return (float)(ans);
 }
 
 double FermiEnerg_cpy(const int num_states, const int filled_states, 

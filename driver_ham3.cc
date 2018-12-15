@@ -426,7 +426,7 @@ int pstudyB()
     // Declare and construct an instance of ham3_t
     ham3_t ham3(62,62,62);
     // Make any initial adjustment to the parameters
-    ham3.set_zerotemp();
+    ham3.set_nonzerotemp(1.e-3);
     
     GlobalAttr = ham3.GetAttributes(); // assign attributes to GlobalAttr
     std::cout << "\n\n\ttol = " << ham3.tol_ << "\n";//Print tolerance for equality of MFs.
