@@ -60,8 +60,8 @@ class ham3_t
     // These functions are used in the method ComputeMFs()
     double ComputeTerm_rho_a(const double*const occs, const complex<double>*const*const evecs);
     complex<double> ComputeTerm_u1   (const double ka, const double kb, const double*const occs, const complex<double>*const*const evecs);
-    complex<double> ComputeTerm_u1p_s(const double ka, const double*const occs, const complex<double>*const*const evecs);
-    complex<double> ComputeTerm_u1p_a(const double ka, const double*const occs, const complex<double>*const*const evecs);
+    complex<double> ComputeTerm_u1p_s(const double ka, const double kb, const double*const occs, const complex<double>*const*const evecs);
+    complex<double> ComputeTerm_u1p_a(const double ka, const double kb, const double*const occs, const complex<double>*const*const evecs);
     complex<double> ComputeTerm_u2A  (const double ka, const double kb, const double kc, const double*const occs, const complex<double>*const*const evecs);
     complex<double> ComputeTerm_u2B  (const double ka, const double kb, const double kc, const double*const occs, const complex<double>*const*const evecs);
     complex<double> ComputeTerm_u3_s (const double kc, const double*const occs, const complex<double>*const*const evecs);

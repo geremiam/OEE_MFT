@@ -115,9 +115,9 @@ int main()
     //pars_t_test();
     //Assign_ham_test();
     
-    test_ComputeMFs();
+    //test_ComputeMFs();
     
-    //test_FixedPoint();
+    test_FixedPoint();
     
     return 0;
 }

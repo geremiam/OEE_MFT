@@ -183,30 +183,30 @@ complex<double> ham3_t::ComputeTerm_u1(const double ka, const double kb, const d
                                                       1., 0.};
     
     complex<double> trace = TraceMF(num_bands, evecs, mat, occs);
-    trace *= polar(1.,a_*(ka+kb)/2.) 
+    trace *= 0.25 * zeta(ka, kb)
            / (double)(ka_pts_*kb_pts_*kc_pts_); // Multiply by appropriate factors
     
     return trace;
 }
-complex<double> ham3_t::ComputeTerm_u1p_s(const double ka, const double*const occs, const complex<double>*const*const evecs)
+complex<double> ham3_t::ComputeTerm_u1p_s(const double ka, const double kb, const double*const occs, const complex<double>*const*const evecs)
 {
     // Evaluates the contribution to u3_s from a single k (see notes)
     const complex<double> mat[num_bands*num_bands] = {1., 0., // Square mat, row-major storage
                                                       0., 1.};
     
     complex<double> trace = TraceMF(num_bands, evecs, mat, occs);
-    trace *= polar(1.,a_*ka) / (double)(num_states); // Multiply by appropriate factors
+    trace *= 0.5 * conj(chi(ka, kb)) / (double)(num_states); // Multiply by appropriate factors
     
     return trace;
 }
-complex<double> ham3_t::ComputeTerm_u1p_a(const double ka, const double*const occs, const complex<double>*const*const evecs)
+complex<double> ham3_t::ComputeTerm_u1p_a(const double ka, const double kb, const double*const occs, const complex<double>*const*const evecs)
 {
     // Evaluates the contribution to u3_s from a single k (see notes)
     const complex<double> mat[num_bands*num_bands] = {1., 0., // Square mat, row-major storage
                                                       0., -1.};
     
     complex<double> trace = TraceMF(num_bands, evecs, mat, occs);
-    trace *= polar(1.,a_*ka) / (double)(num_states); // Multiply by appropriate factors
+    trace *= 0.5 * conj(chi(ka, kb)) / (double)(num_states); // Multiply by appropriate factors
     
     return trace;
 }
@@ -216,7 +216,7 @@ complex<double> ham3_t::ComputeTerm_u2A(const double ka, const double kb, const 
                                                       1., 0.};
     
     complex<double> trace = TraceMF(num_bands, evecs, mat, occs);
-    trace *= polar(1.,-a_*(ka+kb)/2.+c_*kc) 
+    trace *= 0.25 * conj(f(ka, kb, kc))
            / (double)(ka_pts_*kb_pts_*kc_pts_); // Multiply by appropriate factors
     
     return trace;
@@ -227,7 +227,7 @@ complex<double> ham3_t::ComputeTerm_u2B(const double ka, const double kb, const 
                                                       1., 0.};
     
     complex<double> trace = TraceMF(num_bands, evecs, mat, occs);
-    trace *= polar(1.,+a_*(ka+kb)/2.-c_*kc) 
+    trace *= 0.25 * f(ka, kb, kc)
            / (double)(ka_pts_*kb_pts_*kc_pts_); // Multiply by appropriate factors
     
     return trace;
@@ -333,8 +333,8 @@ void ham3_t::ComputeMFs(double& rho_a_out, complex<double>& u1_out,
           
           rho_a_accum += ComputeTerm_rho_a(occs, evecs);
           u1_accum    += ComputeTerm_u1(kspace.ka_grid[i], kspace.kb_grid[j], occs, evecs);
-          u1p_s_accum += ComputeTerm_u1p_s(kspace.ka_grid[i], occs, evecs);
-          u1p_a_accum += ComputeTerm_u1p_a(kspace.ka_grid[i], occs, evecs);
+          u1p_s_accum += ComputeTerm_u1p_s(kspace.ka_grid[i], kspace.kb_grid[j], occs, evecs);
+          u1p_a_accum += ComputeTerm_u1p_a(kspace.ka_grid[i], kspace.kb_grid[j], occs, evecs);
           u2A_accum   += ComputeTerm_u2A(kspace.ka_grid[i], kspace.kb_grid[j], kspace.kc_grid[k], occs, evecs);
           u2B_accum   += ComputeTerm_u2B(kspace.ka_grid[i], kspace.kb_grid[j], kspace.kc_grid[k], occs, evecs);
           u3_s_accum  += ComputeTerm_u3_s(kspace.kc_grid[k], occs, evecs);
