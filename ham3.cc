@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <iomanip> // For the function std::setprecision()
+#include <sstream> // For stringstreams
 #include <complex> // Needed to import alloc.h
 #include "alloc.h" // Allocation/deallocation of arrays
 #include "init_routines.h" // Initialization of arrays
@@ -370,24 +371,22 @@ std::string ham3_t::GetAttributes()
     // Define a string of metadata
     // Watch out: this method resets the values of the MFs to their starting values.
     resetMFs();
+        
+    std::ostringstream strs; // Declare a stringstream to which to write the attributes
+    strs << "Gyrotropic SSB (ham3)"
+         << ": a = " << a_ << ", c = " << c_
+         << "; k-space points: " << ka_pts_ << ", " << kb_pts_ << ", " << kc_pts_
+         << "; num_bands = " << num_bands << "; rho = " << rho_
+         << "; zerotemp = " << zerotemp_ << ", T = " << T_ << "; tol = " << tol_
+         << "; t1 = " << t1_ << ", t1p = " << t1p_ << ", t2A = " << t2A_ << "; t2B = " << t2B_ << ", t3 = " << t3_ 
+         << ", V1 = " << V1_ << "; V1p = " << V1p_ << ", V2 = " << V2_ << ", V3 = " << V3_
+         << "; loops_lim = " << loops_lim_
+         << "; Starting values of the MFs: rho_a_ = " << rho_a_ << ", u1_ = " << u1_
+         << ", u1p_s_ = " << u1p_s_ << ", u1p_a_ = " << u1p_a_
+         << ", u2A_ = "   << u2A_   << ", u2B_ = "   << u2B_
+         << ", u3_s_ = "  << u3_s_  << ", u3_a_ = "  << u3_a_;
     
-    const std::string Attributes = "Gyrotropic SSB (ham3)"
-        ": a = "+to_string(a_)+", c = "+to_string(c_)+
-        "; k-space points: "+to_string(ka_pts_)+", "+to_string(kb_pts_)+", "+to_string(kc_pts_)+
-        "; num_bands = "+to_string(num_bands)+"; rho = "+to_string(rho_)+
-        "; zerotemp = "+to_string(zerotemp_)+", T = "+to_string(T_)+"; tol = "+to_string(tol_)+
-        "; t1 = "+to_string(t1_)+", t1p = "+to_string(t1p_)+", t2A = "+to_string(t2A_)+
-        "; t2B = "+to_string(t2B_)+", t3 = "+to_string(t3_)+", V1 = "+to_string(V1_)+
-        "; V1p = "+to_string(V1p_)+", V2 = "+to_string(V2_)+", V3 = "+to_string(V3_)+
-        "; loops_lim = "+to_string(loops_lim_)+
-        "; Starting values of the MFs: rho_a_ = "+to_string(rho_a_)+
-        ", u1_ = "+to_string(std::real(u1_))+"+i"+to_string(std::imag(u1_))+
-        ", u1p_s_ = "+to_string(std::real(u1p_s_))+"+i"+to_string(std::imag(u1p_s_))+
-        ", u1p_a_ = "+to_string(std::real(u1p_a_))+"+i"+to_string(std::imag(u1p_a_))+
-        ", u2A_ = "+to_string(std::real(u2A_))+"+i"+to_string(std::imag(u2A_))+
-        ", u2B_ = "+to_string(std::real(u2B_))+"+i"+to_string(std::imag(u2B_))+
-        ", u3_s_ = "+to_string(std::real(u3_s_))+"+i"+to_string(std::imag(u3_s_))+
-        ", u3_a_ = "+to_string(std::real(u3_a_))+"+i"+to_string(std::imag(u3_a_));
+    const std::string Attributes = strs.str(); // Write the stream contents to a string
     
     return Attributes;
 }
