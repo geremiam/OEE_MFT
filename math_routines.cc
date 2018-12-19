@@ -10,6 +10,14 @@ applications.
 #include <algorithm> // Useful algorithms. Here, we use std::sort()
 #include "math_routines.h" // Include header file for consistency check
 
+double log_1p_exp(const double x)
+{
+    // Calculates the function log(1+exp(x)).
+    // The function log1p takes care of x << -1.
+    // If x >> 1, then answer is approximately x; use the conditional operator for this.
+    return (x>log_max_double) ? x : log1p(exp(x));
+}
+
 void MinMaxArray(const double* const Array, const int ArrayLen, double& min, double& max)
 {
     // Routine for finding the maximum value in an Array of length 'ArrayLen'.

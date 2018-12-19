@@ -7,6 +7,14 @@ applications.
 #define MATH_ROUTINES_H
 
 #include <complex> // Includes complex numbers
+#include <limits> // To get machine precision
+
+// Natural log of the largest double
+const double log_max_double = std::log(std::numeric_limits<double>::max());
+
+
+
+double log_1p_exp(const double x);
 
 void MinMaxArray(const double* const Array, const int ArrayLen, double& min, double& max);
 
