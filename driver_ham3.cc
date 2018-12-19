@@ -471,6 +471,7 @@ int pstudyB()
         pspaceB.u3_s_grid[pspaceB.Index(f,g,h)]  = ham3.u3_s_;
         pspaceB.u3_a_grid[pspaceB.Index(f,g,h)]  = ham3.u3_a_;
         pspaceB.loops_grid[pspaceB.Index(f,g,h)] = loops; // Save the number of loops to pspaceB array.
+        pspaceB.energy_grid[pspaceB.Index(f,g,h)]= ham3.HFE_;
         
         if (with_output) std::cout << std::endl;
       }

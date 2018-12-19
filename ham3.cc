@@ -258,7 +258,7 @@ complex<double> ham3_t::ComputeTerm_u3_a(const double kc, const double*const occ
 
 
 
-void ham3_t::ComputeMFs(double& rho_a_out, complex<double>& u1_out,
+double ham3_t::ComputeMFs(double& rho_a_out, complex<double>& u1_out,
                         complex<double>& u1p_s_out, complex<double>& u1p_a_out,
                         complex<double>& u2A_out, complex<double>& u2B_out,
                         complex<double>& u3_s_out, complex<double>& u3_a_out)
@@ -358,6 +358,9 @@ void ham3_t::ComputeMFs(double& rho_a_out, complex<double>& u1_out,
     u3_a_out  = u3_a_accum;
     
     // The kspace_t destructor is called automatically.
+    
+    return Helmholtz(kspace.energies, mu, rho_a_out, u1_out, u1p_s_out, u1p_a_out, 
+                     u2A_out, u2B_out, u3_s_out, u3_a_out);
 }
 
 
@@ -407,9 +410,10 @@ bool ham3_t::FixedPoint(int*const num_loops_p, const bool with_output)
     complex<double> u2B_out   = u2B_;
     complex<double> u3_s_out  = u3_s_;
     complex<double> u3_a_out  = u3_a_;
+            double  HFE_prev  =0.; // For keeping track of free energy at previous step
     
     if (with_output)
-      std::cout << "\t" "rho_a_" "\t" "u1_" "\t" "u1p_s_" "\t" "u1p_a_" "\t" "u2A_" "\t" "u2B_" "\t" "u3_s_" "\t" "u3_a_" << std::endl;
+      std::cout << "\t" "rho_a_" "\t" "u1_" "\t" "u1p_s_" "\t" "u1p_a_" "\t" "u2A_" "\t" "u2B_" "\t" "u3_s_" "\t" "u3_a_" "\t\t" "HFE" << std::endl;
     
     int counter = 0; // Define counter for number of loops
     bool converged=false, fail=false; // Used to stop the while looping
@@ -433,15 +437,17 @@ bool ham3_t::FixedPoint(int*const num_loops_p, const bool with_output)
         u2B_   = (1.-chi)*u2B_   + chi*u2B_out;
         u3_s_  = (1.-chi)*u3_s_  + chi*u3_s_out;
         u3_a_  = (1.-chi)*u3_a_  + chi*u3_a_out; // Update mean-field values
+        HFE_prev = HFE_; // Store previous free energy in HFE_prev
         
         
         if (with_output)
           std::cout << "\ninput\t"
                     << rho_a_ << "\t" << u1_ << "\t" << u1p_s_ << "\t" << u1p_a_ << "\t" 
-                    << u2A_ << "\t" << u2B_ << "\t" << u3_s_ << "\t" << u3_a_ << std::endl;
+                    << u2A_ << "\t" << u2B_ << "\t" << u3_s_ << "\t" << u3_a_ << "\t";
         
         // Evaluate function. Output is assigned to the 'out' arguments.
-        ComputeMFs(rho_a_out, u1_out, u1p_s_out, u1p_a_out, u2A_out, u2B_out, u3_s_out, u3_a_out);
+        // The HFE for the final set of MF values is left in the attribute HFE_.
+        HFE_ = ComputeMFs(rho_a_out, u1_out, u1p_s_out, u1p_a_out, u2A_out, u2B_out, u3_s_out, u3_a_out);
         
                 double  rho_a_diff = rho_a_out - rho_a_;
         complex<double> u1_diff    = u1_out    - u1_;
@@ -453,9 +459,11 @@ bool ham3_t::FixedPoint(int*const num_loops_p, const bool with_output)
         complex<double> u3_a_diff  = u3_a_out  - u3_a_; // Differences between outputs and inputs
         
         if (with_output) // Print the differences
-          std::cout << "diff\t"
+          std::cout << HFE_ << std::endl // Output the latest free energy
+                    << "diff\t"
                     << rho_a_diff << "\t" << u1_diff << "\t" << u1p_s_diff << "\t" << u1p_a_diff << "\t" 
-                    << u2A_diff << "\t" << u2B_diff << "\t" << u3_s_diff << "\t" << u3_a_diff << std::endl;
+                    << u2A_diff << "\t" << u2B_diff << "\t" << u3_s_diff << "\t" << u3_a_diff << "\t"
+                    << HFE_-HFE_prev << std::endl; // Difference from the last HFE
         
         // Test for convergence
         converged = (abs(rho_a_diff)<tol_) && (abs(u1_diff)<tol_) && (abs(u1p_s_diff)<tol_) 
@@ -476,4 +484,120 @@ bool ham3_t::FixedPoint(int*const num_loops_p, const bool with_output)
         std::cout << "OUPS 1: This option shouldn't have occurred! (B)\n";
     
     return fail;
+}
+
+
+
+// **************************************************************************************
+// ROUTINES FOR CALCULATING THE FREE ENERGY
+double ham3_t::Helmholtz(const double*const energies, const double mu,
+                         const double rho_a_out, const complex<double> u1_out, const complex<double> u1p_s_out, const complex<double> u1p_a_out,
+                         const complex<double> u2A_out, const complex<double> u2B_out, const complex<double> u3_s_out, const complex<double> u3_a_out)
+{
+    // The Helmholtz FE normalized according to the NUMBER OF ATOMS
+    // Should be use to compare states of a fixed particle number
+    // Second term is + mu N (properly normalized).
+    const double ans = Omega_trial(energies,mu,rho_a_out,u1_out,u1p_s_out,u1p_a_out,u2A_out,u2B_out,u3_s_out,u3_a_out) + mu*rho_;
+    return ans;
+}
+
+double ham3_t::Omega_trial(const double*const energies, const double mu,
+                           const double rho_a_out, const complex<double> u1_out, const complex<double> u1p_s_out, const complex<double> u1p_a_out,
+                           const complex<double> u2A_out, const complex<double> u2B_out, const complex<double> u3_s_out, const complex<double> u3_a_out)
+{
+    // The (GC) free energy normalized according to the NUMBER OF ATOMS
+    // Each component is already normalized.
+    const double ans = Omega_MF(energies, mu)
+                     + mean_Hint(rho_a_out,u1_out,u1p_s_out,u1p_a_out,u2A_out,u2B_out,u3_s_out,u3_a_out)
+                     - mean_Hint_MF(rho_a_out,u1_out,u1p_s_out,u1p_a_out,u2A_out,u2B_out,u3_s_out,u3_a_out);
+    return ans;
+}
+
+double ham3_t::Omega_MF(const double*const energies, const double mu)
+{
+    // (GC) free energy of the MF Hamiltonian. 
+    // Normalized according to the NUMBER OF ATOMS
+    // It's calculated differently at zero and nonzero temperatures.
+    double accumulator = 0.;
+    
+    if (zerotemp_)
+    {
+      for (int i=0; i<num_states; ++i)
+        if (energies[i]<=mu)
+          accumulator += (energies[i] - mu);
+    }
+    
+    else
+      for (int i=0; i<num_states; ++i)
+        accumulator += - T_ * log_1p_exp(-(energies[i] - mu)/T_);
+    
+    // Normalize by the number of atoms
+    accumulator /= (double)(2*ka_pts_*kb_pts_*kc_pts_);
+    
+    return accumulator;
+}
+
+double ham3_t::mean_Hint(const double rho_a_out, const complex<double> u1_out, const complex<double> u1p_s_out, const complex<double> u1p_a_out,
+                         const complex<double> u2A_out, const complex<double> u2B_out, const complex<double> u3_s_out, const complex<double> u3_a_out)
+{
+    // Expectation value of the full interaction term in the Hamiltonian
+    // Normalized according to the NUMBER OF ATOMS
+    
+    // For convenience, define
+    const double rho_A_out = rho_ + rho_a_out;
+    const double rho_B_out = rho_ - rho_a_out;
+    
+    const complex<double> u1p_A_out = u1p_s_out + u1p_a_out;
+    const complex<double> u1p_B_out = u1p_s_out - u1p_a_out;
+    
+    const complex<double> u3_A_out = u3_s_out + u3_a_out;
+    const complex<double> u3_B_out = u3_s_out - u3_a_out;
+    
+    double ans = 0.;
+    
+    // NOTE: norm() is the MODULUS SQUARED, for some reason.
+    ans += 0.5*(V3_+2.*V1p_) * ( std::norm(rho_A_out) + std::norm(rho_B_out) ); // Density terms
+    ans += 2. *(V1_+2.*V2_)  * rho_A_out * rho_B_out;
+    
+    ans += - 2.*V1_ * std::norm(u1_out);
+    ans += - 2.*V2_ * ( std::norm(u2A_out) + std::norm(u2B_out) );
+    ans += -    V1p_* ( std::norm(u1p_A_out) + std::norm(u1p_B_out) );
+    ans += - 0.5*V3_* ( std::norm(u3_A_out)  + std::norm(u3_B_out)  );
+    
+    return ans;
+}
+
+double ham3_t::mean_Hint_MF(const double rho_a_out, const complex<double> u1_out, const complex<double> u1p_s_out, const complex<double> u1p_a_out,
+                            const complex<double> u2A_out, const complex<double> u2B_out, const complex<double> u3_s_out, const complex<double> u3_a_out)
+{
+    // Expectation value of the M-F interaction term in the Hamiltonian.
+    // Normalized according to the NUMBER OF ATOMS
+    
+    // For convenience, define
+    const double rho_A     = rho_ + rho_a_;
+    const double rho_B     = rho_ - rho_a_;
+    const double rho_A_out = rho_ + rho_a_out;
+    const double rho_B_out = rho_ - rho_a_out;
+    
+    const complex<double> u1p_A     = u1p_s_    + u1p_a_;
+    const complex<double> u1p_B     = u1p_s_    - u1p_a_;
+    const complex<double> u1p_A_out = u1p_s_out + u1p_a_out;
+    const complex<double> u1p_B_out = u1p_s_out - u1p_a_out;
+    
+    const complex<double> u3_A     = u3_s_    + u3_a_;
+    const complex<double> u3_B     = u3_s_    - u3_a_;
+    const complex<double> u3_A_out = u3_s_out + u3_a_out;
+    const complex<double> u3_B_out = u3_s_out - u3_a_out;
+    
+    double ans = 0.;
+    
+    ans += 2.*(V1_+2.*V2_) * (rho_A*rho_B_out + rho_B*rho_A_out); // Density terms
+    ans +=   (2.*V1p_+V3_) * (rho_A*rho_A_out + rho_B*rho_B_out);
+    
+    ans += -4.*V1_ * real( u1_ * conj(u1_out) ); // Exchange terms
+    ans += -4.*V2_ * real( u2A_  * conj(u2A_out)    +  u2B_  * conj(u2B_out)   );
+    ans += -2.*V1p_* real( u1p_A * conj(u1p_A_out)  +  u1p_B * conj(u1p_B_out) );
+    ans += -   V3_ * real( u3_A  * conj(u3_A_out)   +  u3_B  * conj(u3_B_out)  );
+    
+    return ans;
 }

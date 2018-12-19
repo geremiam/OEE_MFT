@@ -69,8 +69,22 @@ class ham3_t
     
     void Assign_ham(const double ka, const double kb, const double kc, complex<double>*const*const ham_array);
     
-    void ComputeMFs(double& rho_a_out, complex<double>& u1_out, complex<double>& u1p_s_out, complex<double>& u1p_a_out,
-                    complex<double>& u2A_out, complex<double>& u2B_out,complex<double>& u3_s_out, complex<double>& u3_a_out);
+    double ComputeMFs(double& rho_a_out, complex<double>& u1_out, complex<double>& u1p_s_out, complex<double>& u1p_a_out,
+                      complex<double>& u2A_out, complex<double>& u2B_out,complex<double>& u3_s_out, complex<double>& u3_a_out);
+    
+    
+    
+    double Helmholtz(const double*const energies, const double mu, 
+                     const double rho_a_out, const complex<double> u1_out, const complex<double> u1p_s_out, const complex<double> u1p_a_out,
+                     const complex<double> u2A_out, const complex<double> u2B_out, const complex<double> u3_s_out, const complex<double> u3_a_out);
+    double Omega_trial(const double*const energies, const double mu,
+                       const double rho_a_out, const complex<double> u1_out, const complex<double> u1p_s_out, const complex<double> u1p_a_out,
+                       const complex<double> u2A_out, const complex<double> u2B_out, const complex<double> u3_s_out, const complex<double> u3_a_out);
+    double Omega_MF(const double*const energies, const double mu);
+    double mean_Hint(const double rho_a_out, const complex<double> u1_out, const complex<double> u1p_s_out, const complex<double> u1p_a_out,
+                     const complex<double> u2A_out, const complex<double> u2B_out, const complex<double> u3_s_out, const complex<double> u3_a_out);
+    double mean_Hint_MF(const double rho_a_out, const complex<double> u1_out, const complex<double> u1p_s_out, const complex<double> u1p_a_out,
+                        const complex<double> u2A_out, const complex<double> u2B_out, const complex<double> u3_s_out, const complex<double> u3_a_out);
     
   public:
     
@@ -87,6 +101,7 @@ class ham3_t
     complex<double> u2B_   = {-99.,0.};
     complex<double> u3_s_  = {-99.,0.};
     complex<double> u3_a_  = {-99.,0.};
+            double  HFE_   = -99.; // For storing the free energy
     
     const double tol_ = 1.e-6; // Tolerance for the equality of the mean fields
     
