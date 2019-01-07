@@ -51,40 +51,40 @@ class ham3_t
     
     
     // Functions useful for computing the Hamiltonian
-    double              zeta(double ka, double kb);
-    complex<double> chi(double ka, double kb);
-    complex<double>   f(double ka, double kb, double kc);
-    double            ftilde(double ka, double kb, double kc);
+    double         zeta(double ka, double kb) const;
+    complex<double> chi(double ka, double kb) const;
+    complex<double> f(double ka, double kb, double kc) const;
+    double          ftilde(double ka, double kb, double kc) const;
     
     
     // These functions are used in the method ComputeMFs()
-    double ComputeTerm_rho_a(const double*const occs, const complex<double>*const*const evecs);
-    complex<double> ComputeTerm_u1   (const double ka, const double kb, const double*const occs, const complex<double>*const*const evecs);
-    complex<double> ComputeTerm_u1p_s(const double ka, const double kb, const double*const occs, const complex<double>*const*const evecs);
-    complex<double> ComputeTerm_u1p_a(const double ka, const double kb, const double*const occs, const complex<double>*const*const evecs);
-    complex<double> ComputeTerm_u2A  (const double ka, const double kb, const double kc, const double*const occs, const complex<double>*const*const evecs);
-    complex<double> ComputeTerm_u2B  (const double ka, const double kb, const double kc, const double*const occs, const complex<double>*const*const evecs);
-    complex<double> ComputeTerm_u3_s (const double kc, const double*const occs, const complex<double>*const*const evecs);
-    complex<double> ComputeTerm_u3_a (const double kc, const double*const occs, const complex<double>*const*const evecs);
+    double ComputeTerm_rho_a(const double*const occs, const complex<double>*const*const evecs) const;
+    complex<double> ComputeTerm_u1   (const double ka, const double kb, const double*const occs, const complex<double>*const*const evecs) const;
+    complex<double> ComputeTerm_u1p_s(const double ka, const double kb, const double*const occs, const complex<double>*const*const evecs) const;
+    complex<double> ComputeTerm_u1p_a(const double ka, const double kb, const double*const occs, const complex<double>*const*const evecs) const;
+    complex<double> ComputeTerm_u2A  (const double ka, const double kb, const double kc, const double*const occs, const complex<double>*const*const evecs) const;
+    complex<double> ComputeTerm_u2B  (const double ka, const double kb, const double kc, const double*const occs, const complex<double>*const*const evecs) const;
+    complex<double> ComputeTerm_u3_s (const double kc, const double*const occs, const complex<double>*const*const evecs) const;
+    complex<double> ComputeTerm_u3_a (const double kc, const double*const occs, const complex<double>*const*const evecs) const;
     
-    void Assign_ham(const double ka, const double kb, const double kc, complex<double>*const*const ham_array);
+    void Assign_ham(const double ka, const double kb, const double kc, complex<double>*const*const ham_array) const;
     
     double ComputeMFs(double& rho_a_out, complex<double>& u1_out, complex<double>& u1p_s_out, complex<double>& u1p_a_out,
-                      complex<double>& u2A_out, complex<double>& u2B_out,complex<double>& u3_s_out, complex<double>& u3_a_out);
+                      complex<double>& u2A_out, complex<double>& u2B_out,complex<double>& u3_s_out, complex<double>& u3_a_out) const;
     
     
-    
+    // ROUTINES FOR CALCULATING THE FREE ENERGY
     double Helmholtz(const double*const energies, const double mu, 
                      const double rho_a_out, const complex<double> u1_out, const complex<double> u1p_s_out, const complex<double> u1p_a_out,
-                     const complex<double> u2A_out, const complex<double> u2B_out, const complex<double> u3_s_out, const complex<double> u3_a_out);
+                     const complex<double> u2A_out, const complex<double> u2B_out, const complex<double> u3_s_out, const complex<double> u3_a_out) const;
     double Omega_trial(const double*const energies, const double mu,
                        const double rho_a_out, const complex<double> u1_out, const complex<double> u1p_s_out, const complex<double> u1p_a_out,
-                       const complex<double> u2A_out, const complex<double> u2B_out, const complex<double> u3_s_out, const complex<double> u3_a_out);
-    double Omega_MF(const double*const energies, const double mu);
+                       const complex<double> u2A_out, const complex<double> u2B_out, const complex<double> u3_s_out, const complex<double> u3_a_out) const;
+    double Omega_MF(const double*const energies, const double mu) const;
     double mean_Hint(const double rho_a_out, const complex<double> u1_out, const complex<double> u1p_s_out, const complex<double> u1p_a_out,
-                     const complex<double> u2A_out, const complex<double> u2B_out, const complex<double> u3_s_out, const complex<double> u3_a_out);
+                     const complex<double> u2A_out, const complex<double> u2B_out, const complex<double> u3_s_out, const complex<double> u3_a_out) const;
     double mean_Hint_MF(const double rho_a_out, const complex<double> u1_out, const complex<double> u1p_s_out, const complex<double> u1p_a_out,
-                        const complex<double> u2A_out, const complex<double> u2B_out, const complex<double> u3_s_out, const complex<double> u3_a_out);
+                        const complex<double> u2A_out, const complex<double> u2B_out, const complex<double> u3_s_out, const complex<double> u3_a_out) const;
     
   public:
     

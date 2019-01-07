@@ -36,21 +36,21 @@ double Set_chi(const int counter, const int*const counter_vals, const double*con
 
 
 /* Useful functions of momentum. */
-double ham3_t::zeta(double ka, double kb)
+double ham3_t::zeta(double ka, double kb) const
 {
     return 4.*cos(a_*ka/2.)*cos(a_*kb/2.);
 }
-complex<double> ham3_t::chi(double ka, double kb)
+complex<double> ham3_t::chi(double ka, double kb) const
 {
     return polar(1.,-a_*ka) + polar(1.,-a_*kb);
 }
-complex<double> ham3_t::f(double ka, double kb, double kc)
+complex<double> ham3_t::f(double ka, double kb, double kc) const
 {
     const complex<double> ans( 4.*cos(a_*ka/2.)*cos(a_*kb/2.)*cos(c_*kc), 
                                     4.*sin(a_*ka/2.)*sin(a_*kb/2.)*sin(c_*kc) );
     return ans;
 }
-double ham3_t::ftilde(double ka, double kb, double kc)
+double ham3_t::ftilde(double ka, double kb, double kc) const
 {
     return 8. * cos(a_*ka/2.)*cos(a_*kb/2.)*cos(c_*kc);
 }
@@ -107,7 +107,7 @@ ham3_t::~ham3_t()
 }
 
 /* Assigns Hamiltonian */
-void ham3_t::Assign_ham(const double ka, const double kb, const double kc, complex<double>*const*const ham_array)
+void ham3_t::Assign_ham(const double ka, const double kb, const double kc, complex<double>*const*const ham_array) const
 {
     /* Given the arguments momentum as well as member parameters, calculate the 2*2
     k-space Hamiltonian and assign it to ham_array in full storage layout. The diag 
@@ -162,7 +162,7 @@ void ham3_t::Assign_ham(const double ka, const double kb, const double kc, compl
 }
 
 /* Methods for computing mean fields */
-double ham3_t::ComputeTerm_rho_a(const double*const occs, const complex<double>*const*const evecs)
+double ham3_t::ComputeTerm_rho_a(const double*const occs, const complex<double>*const*const evecs) const
 {
     // Evaluates the contribution to rho_a from a single k (see notes)
     const complex<double> mat[num_bands*num_bands] = {1., 0., // Square mat, row-major storage
@@ -177,7 +177,7 @@ double ham3_t::ComputeTerm_rho_a(const double*const occs, const complex<double>*
     
     return std::real(trace);
 }
-complex<double> ham3_t::ComputeTerm_u1(const double ka, const double kb, const double*const occs, const complex<double>*const*const evecs)
+complex<double> ham3_t::ComputeTerm_u1(const double ka, const double kb, const double*const occs, const complex<double>*const*const evecs) const
 {
     // Evaluates the contribution to u3_s from a single k (see notes)
     const complex<double> mat[num_bands*num_bands] = {0., 0., // Square mat, row-major storage
@@ -189,7 +189,7 @@ complex<double> ham3_t::ComputeTerm_u1(const double ka, const double kb, const d
     
     return trace;
 }
-complex<double> ham3_t::ComputeTerm_u1p_s(const double ka, const double kb, const double*const occs, const complex<double>*const*const evecs)
+complex<double> ham3_t::ComputeTerm_u1p_s(const double ka, const double kb, const double*const occs, const complex<double>*const*const evecs) const
 {
     // Evaluates the contribution to u3_s from a single k (see notes)
     const complex<double> mat[num_bands*num_bands] = {1., 0., // Square mat, row-major storage
@@ -200,7 +200,7 @@ complex<double> ham3_t::ComputeTerm_u1p_s(const double ka, const double kb, cons
     
     return trace;
 }
-complex<double> ham3_t::ComputeTerm_u1p_a(const double ka, const double kb, const double*const occs, const complex<double>*const*const evecs)
+complex<double> ham3_t::ComputeTerm_u1p_a(const double ka, const double kb, const double*const occs, const complex<double>*const*const evecs) const
 {
     // Evaluates the contribution to u3_s from a single k (see notes)
     const complex<double> mat[num_bands*num_bands] = {1., 0., // Square mat, row-major storage
@@ -211,7 +211,7 @@ complex<double> ham3_t::ComputeTerm_u1p_a(const double ka, const double kb, cons
     
     return trace;
 }
-complex<double> ham3_t::ComputeTerm_u2A(const double ka, const double kb, const double kc, const double*const occs, const complex<double>*const*const evecs)
+complex<double> ham3_t::ComputeTerm_u2A(const double ka,const double kb,const double kc,const double*const occs,const complex<double>*const*const evecs)const
 {
     const complex<double> mat[num_bands*num_bands] = {0., 0., // Square mat, row-major storage
                                                       1., 0.};
@@ -222,7 +222,7 @@ complex<double> ham3_t::ComputeTerm_u2A(const double ka, const double kb, const 
     
     return trace;
 }
-complex<double> ham3_t::ComputeTerm_u2B(const double ka, const double kb, const double kc, const double*const occs, const complex<double>*const*const evecs)
+complex<double> ham3_t::ComputeTerm_u2B(const double ka,const double kb,const double kc,const double*const occs,const complex<double>*const*const evecs)const
 {
     const complex<double> mat[num_bands*num_bands] = {0., 0., // Square mat, row-major storage
                                                       1., 0.};
@@ -233,7 +233,7 @@ complex<double> ham3_t::ComputeTerm_u2B(const double ka, const double kb, const 
     
     return trace;
 }
-complex<double> ham3_t::ComputeTerm_u3_s(const double kc, const double*const occs, const complex<double>*const*const evecs)
+complex<double> ham3_t::ComputeTerm_u3_s(const double kc, const double*const occs, const complex<double>*const*const evecs) const
 {
     // Evaluates the contribution to u3_s from a single k (see notes)
     const complex<double> mat[num_bands*num_bands] = {1., 0., // Square mat, row-major storage
@@ -244,7 +244,7 @@ complex<double> ham3_t::ComputeTerm_u3_s(const double kc, const double*const occ
     
     return trace;
 }
-complex<double> ham3_t::ComputeTerm_u3_a(const double kc, const double*const occs, const complex<double>*const*const evecs)
+complex<double> ham3_t::ComputeTerm_u3_a(const double kc, const double*const occs, const complex<double>*const*const evecs) const
 {
     // Evaluates the contribution to u3_s from a single k (see notes)
     const complex<double> mat[num_bands*num_bands] = {1., 0., // Square mat, row-major storage
@@ -259,10 +259,8 @@ complex<double> ham3_t::ComputeTerm_u3_a(const double kc, const double*const occ
 
 
 
-double ham3_t::ComputeMFs(double& rho_a_out, complex<double>& u1_out,
-                        complex<double>& u1p_s_out, complex<double>& u1p_a_out,
-                        complex<double>& u2A_out, complex<double>& u2B_out,
-                        complex<double>& u3_s_out, complex<double>& u3_a_out)
+double ham3_t::ComputeMFs(double& rho_a_out, complex<double>& u1_out, complex<double>& u1p_s_out, complex<double>& u1p_a_out,
+                          complex<double>& u2A_out, complex<double>& u2B_out, complex<double>& u3_s_out, complex<double>& u3_a_out) const
 {
     // Declare (and construct) an instance of kspace_t.
     kspace_t kspace(a_, a_, c_, ka_pts_, kb_pts_, kc_pts_, num_bands);
@@ -491,7 +489,7 @@ bool ham3_t::FixedPoint(int*const num_loops_p, const bool with_output)
 // ROUTINES FOR CALCULATING THE FREE ENERGY
 double ham3_t::Helmholtz(const double*const energies, const double mu,
                          const double rho_a_out, const complex<double> u1_out, const complex<double> u1p_s_out, const complex<double> u1p_a_out,
-                         const complex<double> u2A_out, const complex<double> u2B_out, const complex<double> u3_s_out, const complex<double> u3_a_out)
+                         const complex<double> u2A_out, const complex<double> u2B_out, const complex<double> u3_s_out, const complex<double> u3_a_out) const
 {
     // The Helmholtz FE normalized according to the NUMBER OF ATOMS
     // Should be use to compare states of a fixed particle number
@@ -502,7 +500,7 @@ double ham3_t::Helmholtz(const double*const energies, const double mu,
 
 double ham3_t::Omega_trial(const double*const energies, const double mu,
                            const double rho_a_out, const complex<double> u1_out, const complex<double> u1p_s_out, const complex<double> u1p_a_out,
-                           const complex<double> u2A_out, const complex<double> u2B_out, const complex<double> u3_s_out, const complex<double> u3_a_out)
+                           const complex<double> u2A_out, const complex<double> u2B_out, const complex<double> u3_s_out, const complex<double> u3_a_out) const
 {
     // The (GC) free energy normalized according to the NUMBER OF ATOMS
     // Each component is already normalized.
@@ -512,7 +510,7 @@ double ham3_t::Omega_trial(const double*const energies, const double mu,
     return ans;
 }
 
-double ham3_t::Omega_MF(const double*const energies, const double mu)
+double ham3_t::Omega_MF(const double*const energies, const double mu) const
 {
     // (GC) free energy of the MF Hamiltonian. 
     // Normalized according to the NUMBER OF ATOMS
@@ -537,7 +535,7 @@ double ham3_t::Omega_MF(const double*const energies, const double mu)
 }
 
 double ham3_t::mean_Hint(const double rho_a_out, const complex<double> u1_out, const complex<double> u1p_s_out, const complex<double> u1p_a_out,
-                         const complex<double> u2A_out, const complex<double> u2B_out, const complex<double> u3_s_out, const complex<double> u3_a_out)
+                         const complex<double> u2A_out, const complex<double> u2B_out, const complex<double> u3_s_out, const complex<double> u3_a_out) const
 {
     // Expectation value of the full interaction term in the Hamiltonian
     // Normalized according to the NUMBER OF ATOMS
@@ -567,7 +565,7 @@ double ham3_t::mean_Hint(const double rho_a_out, const complex<double> u1_out, c
 }
 
 double ham3_t::mean_Hint_MF(const double rho_a_out, const complex<double> u1_out, const complex<double> u1p_s_out, const complex<double> u1p_a_out,
-                            const complex<double> u2A_out, const complex<double> u2B_out, const complex<double> u3_s_out, const complex<double> u3_a_out)
+                            const complex<double> u2A_out, const complex<double> u2B_out, const complex<double> u3_s_out, const complex<double> u3_a_out) const
 {
     // Expectation value of the M-F interaction term in the Hamiltonian.
     // Normalized according to the NUMBER OF ATOMS
