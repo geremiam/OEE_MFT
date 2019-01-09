@@ -59,14 +59,14 @@ double ham3_t::ftilde(double ka, double kb, double kc) const
 void ham3_t::resetMFs()
 {
     // Resets MFs to default starting values.
-    rho_a_ = 0.2;
+    rho_a_ = -0.1;
     u1_    = {0.,0.};
     u1p_s_ = {0.,0.};
-    u1p_a_ = {0.2,0.};
+    u1p_a_ = {0.1,0.};
     u2A_   = {0.,0.};
     u2B_   = {0.,0.};
     u3_s_  = {0.,0.};
-    u3_a_  = {0.2,0.};
+    u3_a_  = {0.1,0.};
 }
 
 /* Methods that set parameters with interdependencies. */

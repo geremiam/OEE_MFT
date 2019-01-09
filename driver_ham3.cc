@@ -162,7 +162,7 @@ class pspaceB_t {
     // g: determines V1 and V1p
     const size_t g_pts = 20; const double V1_bounds [2] = {0.,40.}; const double V1p_bounds [2] = {0.,30.}; // Vary with g
     // h: determines V2 and V3
-    const size_t h_pts = 15; const double V2_bounds [2] = {0.,5.}; const double V3_bounds  [2] = {0.,2.5}; // Vary with h
+    const size_t h_pts = 15; const double V2_bounds [2] = {0.,6.}; const double V3_bounds  [2] = {0.,8.}; // Vary with h
     
     const int parspace_pts = rho_pts*g_pts*h_pts;
     
@@ -437,9 +437,9 @@ int pstudyB()
       for (int h=0; h<pspaceB.h_pts; ++h)
       {
         if (with_output) // Print current params
-          std::cout << "\n\nrho = " << pspaceB.rho_grid[f] << ", "
-                    << "(V1 = " << pspaceB.V1_grid[g] << ", V1p = " << pspaceB.V1p_grid[g] << "), "
-                    << "(V2 = " << pspaceB.V2_grid[h] << ", V3 = " << pspaceB.V3_grid[h] << ")\n";
+          std::cout << "\n\nrho = " << pspaceB.rho_grid[f] << "; "
+                    << "g = " << g << " (V1 = " << pspaceB.V1_grid[g] << ", V1p = " << pspaceB.V1p_grid[g] << "); "
+                    << "h = " << h << " (V2 = " << pspaceB.V2_grid[h] << ", V3 = " << pspaceB.V3_grid[h] << ")\n";
         
         // Adjust phase space parameters
         ham3.assign_rho(pspaceB.rho_grid[f]); // Assign value of rho
