@@ -2,9 +2,10 @@
 """ Various routines for plotting specific data formats. """
 
 import matplotlib.pyplot as plt
+from matplotlib.colors import SymLogNorm
 import numpy as np
 
-def ColorPlot(fig, ax, data, Labels, horiz_extent=(), vert_extent=()):
+def ColorPlot(fig, ax, data, Labels, horiz_extent=(), vert_extent=(), logscale=False):
     """ Plots the 2D array "data" (first index along horizontal axis and second index 
     along vertical axis). The three strings in the list "Labels" correspond to labels for 
     the horizontal, vertical, and color axes, respectively. Axis ends can be specified as 
@@ -26,10 +27,15 @@ def ColorPlot(fig, ax, data, Labels, horiz_extent=(), vert_extent=()):
     vmax = np.amax(np.abs(data))
     vmin = -vmax
     
+    if (logscale):
+        norm = SymLogNorm(1.e-6,vmin=vmin,vmax=vmax)
+    else:
+        norm = None
+    
     # Transpose the data because imshow uses 'ij' indexing instead of 'xy'
     data = np.transpose(data)
     im = ax.imshow(data, cmap=cmap, aspect='auto', interpolation='nearest', 
-                   vmin=vmin, vmax=vmax,origin='lower', extent=extent)
+                   vmin=vmin, vmax=vmax,origin='lower', extent=extent, norm=norm)
     
     cbar = fig.colorbar(im, ax=ax, pad=0.03)
     
