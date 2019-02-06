@@ -1,12 +1,13 @@
-// ham3.h
+// ham4.h
 /* Description */
-#ifndef HAM3SOURCE_H
-#define HAM3SOURCE_H
+#ifndef HAM4SOURCE_H
+#define HAM4SOURCE_H
 
 #include <complex>
+#include <cmath> // For the constant M_PI
 using std::complex;
 
-class ham3_t
+class ham4_t
 {
   /* Class for holding the Hamiltonian parameters. Parameters than are not likely to be 
   changed in a parameter study are made private (and const). Parameters that may be 
@@ -16,24 +17,36 @@ class ham3_t
   private:
     
     // Private copy constructor (prohibits copy creation)
-    ham3_t(const ham3_t&);
+    ham4_t(const ham4_t&);
     // Private assignment operator (prohibits assignment)
-    const ham3_t& operator=(const ham3_t&);
+    const ham4_t& operator=(const ham4_t&);
     
-  //public:
+  public:
     
     /* Parameters that the user doesn't need to modify after instantiation. */
     
     const double a_ = 1.; // a- and b-axis length
     const double c_ = 1.; // c-axis length
     
-    /* Parameters for the momentum space grid. Assigned in the constructor. */
+    // Parameters for the momentum space grid. Assigned in the constructor.
+    // Sets the number of momentum points in the REDUCED BZ
     const int ka_pts_; // Useful to allow the user to set these for convergence studies
     const int kb_pts_;
     const int kc_pts_;
+    const int states_per_cell = 2; // Number of states in an (original) unit cell
+    static const int num_harmonics = 4; // Number of harmonics considered.
     
-    /* Size of the Hamiltonian, or equivalently number of bands */
-    const int num_bands = 2; // The number of bands, i.e. the order of the matrix for each k
+    const double Qa [num_harmonics] = {0., M_PI/a_, 0.,      M_PI/a_};
+    const double Qb [num_harmonics] = {0., 0.,      M_PI/a_, M_PI/a_};
+    const double Qc [num_harmonics] = {0., 0.,      0.,      0.};
+    
+    const int addition_table [num_harmonics][num_harmonics]={{0, 1, 2, 3},
+                                                             {1, 0, 3, 2},
+                                                             {2, 3, 0, 1},
+                                                             {3, 2, 1, 0}};
+    
+    // Size of the Hamiltonian, or equivalently number of bands
+    const int num_bands = states_per_cell * num_harmonics; // The number of bands, i.e. the order of the matrix for each k
     const int ham_array_rows = num_bands; // Same as matrix order for full storage
     const int ham_array_cols = num_bands; // Same as matrix order for full storage
     const int num_states = ka_pts_*kb_pts_*kc_pts_*num_bands;
@@ -49,59 +62,37 @@ class ham3_t
     bool zerotemp_ = true; // Sets whether the temperature is zero or not
     double T_ = 0.; // Sets the temperature. Irrelevant when zerotemp_ is true.
     
+    // Function for performing the direct product in the indices Q and alpha.
+    int idx(const int Q, const int alpha) const;
     
     // Functions useful for computing the Hamiltonian
-    double         zeta(double ka, double kb) const;
-    complex<double> chi(double ka, double kb) const;
+    double          zeta(double ka, double kb) const;
     complex<double> f(double ka, double kb, double kc) const;
-    double          ftilde(double ka, double kb, double kc) const;
     
     
     // These functions are used in the method ComputeMFs()
-    double ComputeTerm_rho_a(const double*const occs, const complex<double>*const*const evecs) const;
-    complex<double> ComputeTerm_u1   (const double ka, const double kb, const double*const occs, const complex<double>*const*const evecs) const;
-    complex<double> ComputeTerm_u1p_s(const double ka, const double kb, const double*const occs, const complex<double>*const*const evecs) const;
-    complex<double> ComputeTerm_u1p_a(const double ka, const double kb, const double*const occs, const complex<double>*const*const evecs) const;
-    complex<double> ComputeTerm_u2A  (const double ka, const double kb, const double kc, const double*const occs, const complex<double>*const*const evecs) const;
-    complex<double> ComputeTerm_u2B  (const double ka, const double kb, const double kc, const double*const occs, const complex<double>*const*const evecs) const;
-    complex<double> ComputeTerm_u3_s (const double kc, const double*const occs, const complex<double>*const*const evecs) const;
-    complex<double> ComputeTerm_u3_a (const double kc, const double*const occs, const complex<double>*const*const evecs) const;
+    void AddContribution_rho_s(const double*const occs, const complex<double>*const*const evecs, double*const rho_s) const;
+    void AddContribution_rho_a(const double*const occs, const complex<double>*const*const evecs, double*const rho_a) const;
     
+    void Assign_h(double ka, double kb, double kc, complex<double>*const h) const;
+    void Assign_V(const int Q, complex<double>*const V) const;
+    void Assign_V_manual(const int Q, complex<double>*const V) const;
     void Assign_ham(const double ka, const double kb, const double kc, complex<double>*const*const ham_array) const;
     
-    double ComputeMFs(double& rho_a_out, complex<double>& u1_out, complex<double>& u1p_s_out, complex<double>& u1p_a_out,
-                      complex<double>& u2A_out, complex<double>& u2B_out,complex<double>& u3_s_out, complex<double>& u3_a_out) const;
+    double ComputeMFs(double*const rho_s_out, double*const rho_a_out) const;
     
     
-    // ROUTINES FOR CALCULATING THE FREE ENERGY
-    double Helmholtz(const double*const energies, const double mu, 
-                     const double rho_a_out, const complex<double> u1_out, const complex<double> u1p_s_out, const complex<double> u1p_a_out,
-                     const complex<double> u2A_out, const complex<double> u2B_out, const complex<double> u3_s_out, const complex<double> u3_a_out) const;
-    double Omega_trial(const double*const energies, const double mu,
-                       const double rho_a_out, const complex<double> u1_out, const complex<double> u1p_s_out, const complex<double> u1p_a_out,
-                       const complex<double> u2A_out, const complex<double> u2B_out, const complex<double> u3_s_out, const complex<double> u3_a_out) const;
-    double Omega_MF(const double*const energies, const double mu) const;
-    double mean_Hint(const double rho_a_out, const complex<double> u1_out, const complex<double> u1p_s_out, const complex<double> u1p_a_out,
-                     const complex<double> u2A_out, const complex<double> u2B_out, const complex<double> u3_s_out, const complex<double> u3_a_out) const;
-    double mean_Hint_MF(const double rho_a_out, const complex<double> u1_out, const complex<double> u1p_s_out, const complex<double> u1p_a_out,
-                        const complex<double> u2A_out, const complex<double> u2B_out, const complex<double> u3_s_out, const complex<double> u3_a_out) const;
-    
-  public:
+  //public:
     
     /* Settings for the iterative search */
     
     // The MF values that are used in the Hamiltonian.
     // This is where the user sets the initial values of the MFs.
     
-            double  rho_a_ = -99.;
-    complex<double> u1_    = {-99.,0.};
-    complex<double> u1p_s_ = {-99.,0.};
-    complex<double> u1p_a_ = {-99.,0.};
-    complex<double> u2A_   = {-99.,0.};
-    complex<double> u2B_   = {-99.,0.};
-    complex<double> u3_s_  = {-99.,0.};
-    complex<double> u3_a_  = {-99.,0.};
-            double  HFE_   = -99.; // For storing the free energy
+    double rho_A_ [num_harmonics] = {1.,1.,1.,1.};//{0.};
+    double rho_B_ [num_harmonics] = {0.};
+    
+    double HFE_ = -99.; // For storing the free energy
     
     const double tol_ = 1.e-6; // Tolerance for the equality of the mean fields
     
@@ -118,14 +109,14 @@ class ham3_t
     double V3_  = 0.5; // Repulsion between neighbours in c direction
     
     
-    void resetMFs(); // Resets MFs to default starting values.
+    //void resetMFs(); // Resets MFs to default starting values.
     
     void assign_rho(const double rho); // Assign rho_ and dependent variables
     void set_zerotemp();
     void set_nonzerotemp(const double T);
     
-    ham3_t(const int ka_pts=62, const int kb_pts=62, const int kc_pts=62); // Constructor declaration
-    ~ham3_t(); // Destructor declaration
+    ham4_t(const int ka_pts=62, const int kb_pts=62, const int kc_pts=62); // Constructor declaration
+    ~ham4_t(); // Destructor declaration
     
     bool FixedPoint(int*const num_loops_p=NULL, const bool with_output=false);
     
