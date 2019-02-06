@@ -280,7 +280,33 @@ ham3_clean:
 	rm -f ham3_test.o ham3.o IO.o alloc.o init_routines.o math_routines.o chempot.o kspace.o diag_routines.o ham3_test
 
 # #######################################################################################
+# MODULE HAM4
 
+# ham4.o object file depends on header file, source file, and all included header 
+# files
+ham4.o: ham4.cc ham4.h alloc.h init_routines.h math_routines.h chempot.h kspace.h diag_routines.h
+	${CXX} $(CXXFLAGS) $(INC_FLAGS) -c ham4.cc -o ham4.o
+
+## ut_ham4: Runs the testing suite for the module ham4
+.PHONY: ut_ham4
+ut_ham4: ham4_test # Runs the testing suite's executable
+	./ham4_test
+
+# Testing suite executable depends on ham4_test.o, ham4.o, and the other 
+# modules used in the source code.
+ham4_test: ham4_test.o ham4.o IO.o alloc.o init_routines.o math_routines.o chempot.o kspace.o diag_routines.o
+	${CXX} $(LDFLAGS) -o ham4_test ham4_test.o IO.o ham4.o alloc.o init_routines.o math_routines.o chempot.o kspace.o diag_routines.o $(LDLIBS)
+
+# ham4_test.o object file depends on source file and IO.h header
+ham4_test.o: ham4_test.cc ham4.h alloc.h IO.h
+	${CXX} $(CXXFLAGS) -c ham4_test.cc -o ham4_test.o
+
+# Deletion of the object files and executable files pertaining to this unit test.
+.PHONY: ham4_clean
+ham4_clean:
+	rm -f ham4_test.o ham4.o IO.o alloc.o init_routines.o math_routines.o chempot.o kspace.o diag_routines.o ham4_test
+
+# #######################################################################################
 
 ## clean: Removes module object files as well as driver object files and executables
 .PHONY: clean
@@ -297,7 +323,8 @@ ut_clean: ut_alloc_clean \
           kspace_clean \
           ut_nc_IO_clean \
           IO_clean \
-          ham3_clean
+          ham3_clean \
+          ham4_clean
 
 ## help: Shows targets and their descriptions
 .PHONY: help
