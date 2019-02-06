@@ -10,6 +10,16 @@ applications.
 #include <algorithm> // Useful algorithms. Here, we use std::sort()
 #include "math_routines.h" // Include header file for consistency check
 
+int idx_composite(const int m, const int n, const int i, const int j)
+{
+    // Returns the single-integer index resulting from the composition of two indices. 
+    // m is the range of i; n in the range of j. j varies faster than i.
+    // Can be used for the index corresponding to the direct product of two spaces, 
+    // or to index a matrix held in a 1D array.
+    return n*i + j;
+}
+
+
 double log_1p_exp(const double x)
 {
     // Calculates the function log(1+exp(x)).

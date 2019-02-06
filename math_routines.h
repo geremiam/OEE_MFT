@@ -13,6 +13,7 @@ applications.
 const double log_max_double = std::log(std::numeric_limits<double>::max());
 
 
+int idx_composite(const int m, const int n, const int i, const int j);
 
 double log_1p_exp(const double x);
 
