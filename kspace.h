@@ -5,6 +5,8 @@ object files.*/
 #ifndef KSPACE_H
 #define KSPACE_H
 
+#include <complex>
+
 class kspace_t
 {
 private:
@@ -25,6 +27,7 @@ private:
     const double c_;
     
     const bool with_output_; // Whether or not to silence diagnostic output
+    const bool with_evecs_; // Whether or not to reserve memory for evecs
 public:
     double*const ka_grid; // ka coordinate variable
     double*const kb_grid; // kb coordinate variable
@@ -32,14 +35,17 @@ public:
     /* The energies are held in a 1D array with the understanding that from slowest 
     varying to fastest varying, the indices are those for ka, kb, kc, and band.*/
     double*const energies; // energy variable
+    std::complex<double>* evecs=NULL; // Pointer to evecs. Only allocated if asked for.
     
     // Constructor declaration
-    kspace_t(const double a, const double b, const double c, 
-                   const int ka_pts, const int kb_pts, const int kc_pts, 
-                   const int bands_num, const bool with_output=false);
+    kspace_t(const double a, const double b, const double c, const int ka_pts, const int kb_pts, const int kc_pts, 
+             const int bands_num, const bool with_output=false, const bool with_evecs=false);
     ~kspace_t(); // Destructor declaration
     
+    // For indexing the evals
     int index(const int ka_ind, const int kb_ind, const int kc_ind, const int band_int);
+    // For indexing the evecs
+    int evec_index(const int ka_ind, const int kb_ind, const int kc_ind, const int row, const int col);
 };
 
 #endif

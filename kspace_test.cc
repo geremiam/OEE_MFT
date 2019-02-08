@@ -6,8 +6,10 @@ void kspace_t_test()
 {
     const double a=1., b=1., c=1.;
     const int ka_pts=2, kb_pts=4, kc_pts = 6, bands_num=2;
+    const bool with_output=false;
+    const bool with_evecs=true;
     
-    kspace_t Inst1(a, b, c, ka_pts, kb_pts, kc_pts, bands_num, true);
+    kspace_t Inst1(a, b, c, ka_pts, kb_pts, kc_pts, bands_num, with_output, with_evecs);
     
     /*
     std::cout << "Inst1.ka_pts_ = " << Inst1.ka_pts_ << std::endl;
@@ -34,6 +36,9 @@ void kspace_t_test()
     // Assign values to energies
     for (int i=0 ; i<ka_pts*kb_pts*kc_pts*bands_num; ++i)
       Inst1.energies[i] = (double)(i);
+    // Assign values to evecs
+    for (int i=0; i<ka_pts*kb_pts*kc_pts*bands_num*bands_num; ++i)
+      Inst1.evecs[i] = {(double)(i), 0.1*(double)(i)};
     
     // Print them out using the 'index()' function
     std::cout << "Inst1.energies = " << std::endl;
@@ -45,6 +50,7 @@ void kspace_t_test()
         {
           for (int l=0; l<bands_num; ++l)
             std::cout << Inst1.energies[Inst1.index(i,j,k,l)] << " ";
+            //std::cout << Inst1.evecs[Inst1.evec_index(i,j,k,l,1)] << " ";
           std::cout << "\t";
         }
         std::cout << "\n";

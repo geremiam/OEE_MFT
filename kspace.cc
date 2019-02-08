@@ -19,14 +19,13 @@ void MonkhorstPack(const double a, const int num_pts, double*const k_grid)
 }
 
 // Constructor implementation
-kspace_t::kspace_t(const double a, const double b, const double c, 
-                   const int ka_pts, const int kb_pts, const int kc_pts, 
-                   const int bands_num, const bool with_output)
+kspace_t::kspace_t(const double a, const double b, const double c, const int ka_pts, const int kb_pts, const int kc_pts, 
+                   const int bands_num, const bool with_output, const bool with_evecs)
     :a_(a), ka_pts_(ka_pts), ka_grid(new double [ka_pts]), 
     b_(b), kb_pts_(kb_pts), kb_grid(new double [kb_pts]), 
     c_(c), kc_pts_(kc_pts), kc_grid(new double [kc_pts]), 
     bands_num_(bands_num), energies(new double [ka_pts*kb_pts*kc_pts*bands_num]),
-    with_output_(with_output)
+    with_output_(with_output), with_evecs_(with_evecs)
 {
     if (with_output) std::cout << "kspace_t instance created.\n";
     MonkhorstPack(a, ka_pts, ka_grid); // Assign MK momentum values along each axis
@@ -34,6 +33,12 @@ kspace_t::kspace_t(const double a, const double b, const double c,
     MonkhorstPack(c, kc_pts, kc_grid);
     // The energies grid is initialized to zero
     ValInitArray(ka_pts*kb_pts*kc_pts*bands_num, energies, 0.);
+    
+    if (with_evecs)
+      {
+      evecs = new std::complex<double> [ka_pts*kb_pts*kc_pts*bands_num*bands_num];
+      ValInitArray(ka_pts*kb_pts*kc_pts*bands_num*bands_num, evecs, {0.,0.});
+      }
 }
 
 // Destructor implementation
@@ -43,6 +48,8 @@ kspace_t::~kspace_t()
     delete [] kb_grid;
     delete [] kc_grid;
     delete [] energies;
+    if (with_evecs_)
+      delete [] evecs;
     if (with_output_) std::cout << "kspace_t instance deleted.\n";
 }
 
@@ -54,4 +61,15 @@ int kspace_t::index(const int ka_ind, const int kb_ind, const int kc_ind, const 
            bands_num_*kc_ind + 
            bands_num_*kc_pts_*kb_ind + 
            bands_num_*kc_pts_*kb_pts_*ka_ind;
+}
+
+int kspace_t::evec_index(const int ka_ind, const int kb_ind, const int kc_ind, const int row, const int col)
+{
+    /* Given indices for the momenta and bands, returns the corresponding index to be 
+    used in the array "evecs". */
+    return col + 
+           bands_num_*row + 
+           bands_num_*bands_num_*kc_ind + 
+           bands_num_*bands_num_*kc_pts_*kb_ind + 
+           bands_num_*bands_num_*kc_pts_*kb_pts_*ka_ind;
 }
