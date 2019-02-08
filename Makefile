@@ -12,8 +12,8 @@ LDFLAGS=-L${LAPACKE_LIB} -L${NETCDF_LIB} -fopenmp
 # Flags for linking with libraries (place after all object files)
 LDLIBS=-llapacke -lnetcdf
 # List of object files and header files belonging to modules
-OBJECTS=alloc.o init_routines.o chempot.o math_routines.o diag_routines.o kspace.o nc_IO.o IO.o
-HEADERS=alloc.h init_routines.h chempot.h math_routines.h diag_routines.h kspace.h nc_IO.h IO.h
+OBJECTS=alloc.o init_routines.o chempot.o math_routines.o misc_routines.o diag_routines.o kspace.o nc_IO.o IO.o
+HEADERS=alloc.h init_routines.h chempot.h math_routines.h misc_routines.h diag_routines.h kspace.h nc_IO.h IO.h
 
 
 ## all: Default target; empty
@@ -147,6 +147,34 @@ math_routines_test.o: math_routines_test.cc math_routines.h
 .PHONY: ut_math_routines_clean
 ut_math_routines_clean:
 	rm -f math_routines_test.o math_routines.o math_routines_test
+
+# #######################################################################################
+# MODULE MISC_ROUTINES
+
+# Creation of the misc_routines.o object file, which depends on the module's header file 
+# and its source file
+misc_routines.o: misc_routines.cc misc_routines.h
+	${CXX} $(CXXFLAGS) -c misc_routines.cc -o misc_routines.o
+
+## ut_misc_routines: Runs the testing suite for the module misc_routines
+.PHONY: ut_misc_routines
+ut_misc_routines: misc_routines_test # Runs the testing suite's executable
+	./misc_routines_test
+
+# Linking of the misc_routines_test.o object and misc_routines.o object files to create 
+# the executable file.
+misc_routines_test: misc_routines_test.o misc_routines.o
+	${CXX} misc_routines_test.o misc_routines.o -o misc_routines_test
+
+# Creation of the misc_routines_test.o object file, which depends on its source file and 
+# on the misc_routines.h header file.
+misc_routines_test.o: misc_routines_test.cc misc_routines.h
+	${CXX} $(CXXFLAGS) -c misc_routines_test.cc -o misc_routines_test.o
+
+# Deletion of the object files and executable files pertaining to this unit test.
+.PHONY: misc_routines_clean
+misc_routines_clean:
+	rm -f misc_routines_test.o misc_routines.o misc_routines_test
 
 # #######################################################################################
 # MODULE DIAG_ROUTINES
@@ -284,7 +312,7 @@ ham3_clean:
 
 # ham4.o object file depends on header file, source file, and all included header 
 # files
-ham4.o: ham4.cc ham4.h alloc.h init_routines.h math_routines.h chempot.h kspace.h diag_routines.h
+ham4.o: ham4.cc ham4.h alloc.h init_routines.h math_routines.h misc_routines.h chempot.h kspace.h diag_routines.h
 	${CXX} $(CXXFLAGS) $(INC_FLAGS) -c ham4.cc -o ham4.o
 
 ## ut_ham4: Runs the testing suite for the module ham4
@@ -294,8 +322,8 @@ ut_ham4: ham4_test # Runs the testing suite's executable
 
 # Testing suite executable depends on ham4_test.o, ham4.o, and the other 
 # modules used in the source code.
-ham4_test: ham4_test.o ham4.o IO.o alloc.o init_routines.o math_routines.o chempot.o kspace.o diag_routines.o
-	${CXX} $(LDFLAGS) -o ham4_test ham4_test.o IO.o ham4.o alloc.o init_routines.o math_routines.o chempot.o kspace.o diag_routines.o $(LDLIBS)
+ham4_test: ham4_test.o ham4.o IO.o alloc.o init_routines.o math_routines.o misc_routines.o chempot.o kspace.o diag_routines.o
+	${CXX} $(LDFLAGS) -o ham4_test ham4_test.o IO.o ham4.o alloc.o init_routines.o math_routines.o misc_routines.o chempot.o kspace.o diag_routines.o $(LDLIBS)
 
 # ham4_test.o object file depends on source file and IO.h header
 ham4_test.o: ham4_test.cc ham4.h alloc.h IO.h
@@ -304,7 +332,7 @@ ham4_test.o: ham4_test.cc ham4.h alloc.h IO.h
 # Deletion of the object files and executable files pertaining to this unit test.
 .PHONY: ham4_clean
 ham4_clean:
-	rm -f ham4_test.o ham4.o IO.o alloc.o init_routines.o math_routines.o chempot.o kspace.o diag_routines.o ham4_test
+	rm -f ham4_test.o ham4.o IO.o alloc.o init_routines.o math_routines.o misc_routines.o chempot.o kspace.o diag_routines.o ham4_test
 
 # #######################################################################################
 
@@ -319,6 +347,7 @@ ut_clean: ut_alloc_clean \
           ut_init_routines_clean \
           chempot_clean \
           ut_math_routines_clean \
+          misc_routines_clean \
           ut_diag_routines_clean \
           kspace_clean \
           ut_nc_IO_clean \
