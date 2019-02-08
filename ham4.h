@@ -35,7 +35,9 @@ class ham4_t
     const int kc_pts_;
     const int states_per_cell = 2; // Number of states in an (original) unit cell
     static const int num_harmonics = 4; // Number of harmonics considered.
+    const int num_unit_cells = ka_pts_*kb_pts_*kc_pts_*num_harmonics; // The number of (original) unit cells
     
+    // We assume we are only working with harmonics given by G/2.
     const double Qa [num_harmonics] = {0., M_PI/a_, 0.,      M_PI/a_};
     const double Qb [num_harmonics] = {0., 0.,      M_PI/a_, M_PI/a_};
     const double Qc [num_harmonics] = {0., 0.,      0.,      0.};
@@ -71,8 +73,7 @@ class ham4_t
     
     
     // These functions are used in the method ComputeMFs()
-    void AddContribution_rho_s(const double*const occs, const complex<double>*const*const evecs, double*const rho_s) const;
-    void AddContribution_rho_a(const double*const occs, const complex<double>*const*const evecs, double*const rho_a) const;
+    void AddContribution_rho(const double*const occs, const complex<double>*const*const evecs, double*const rho_A, double*const rho_B) const;
     
     void Assign_h(double ka, double kb, double kc, complex<double>*const h) const;
     void Assign_V(const int Q, complex<double>*const V) const;
@@ -89,8 +90,9 @@ class ham4_t
     // The MF values that are used in the Hamiltonian.
     // This is where the user sets the initial values of the MFs.
     
-    double rho_A_ [num_harmonics] = {1.,1.,1.,1.};//{0.};
-    double rho_B_ [num_harmonics] = {0.};
+    // Because each harmonic is given by some G/2, the densities are all real.
+    double rho_s_ [num_harmonics] = {0.2, 0.2, 0.2, 0.2};
+    double rho_a_ [num_harmonics] = {0.1, 0.1, 0.1, 0.1};//{0.2, 0.2, 0.2, 0.2};
     
     double HFE_ = -99.; // For storing the free energy
     

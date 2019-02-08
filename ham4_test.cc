@@ -11,7 +11,7 @@ void Assign_ham_test()
 {
     std::complex<double>** matrix = Alloc2D_z(8, 8);
     std::cout << "\nmatrix = " << std::endl;
-    PrintMatrix(2,2,matrix, std::cout);
+    PrintMatrix(8,8,matrix, std::cout);
     std::cout << std::endl;
     
     const int ka_pts = 10;
@@ -43,9 +43,55 @@ void Assign_ham_test()
     Dealloc2D(matrix);
 }
 
+void test_ComputeMFs()
+{
+    const int ka_pts = 62;
+    const int kb_pts = 62;
+    const int kc_pts = 62;
+    
+    ham4_t ham4(ka_pts, kb_pts, kc_pts);
+    ham4.set_nonzerotemp(1.e-1);
+    
+    std::cout << "num_states: " << ham4.num_states << std::endl;
+    std::cout << "filled_states: " << ham4.filled_states << std::endl;
+    
+    double rho_s_out [4] = {0.};
+    double rho_a_out [4] = {0.};
+    
+    ham4.ComputeMFs(rho_s_out, rho_a_out);
+    
+    for (int i=0; i<4; ++i)
+    {
+      std::cout << "rho_s_out[" << i << "] = " << rho_s_out[i] << "\t"
+                << "rho_a_out[" << i << "] = " << rho_a_out[i] << std::endl;
+    }
+}
+
+void test_FixedPoint()
+{
+    const int ka_pts = 62;
+    const int kb_pts = 62;
+    const int kc_pts = 62;
+    
+    ham4_t ham4(ka_pts, kb_pts, kc_pts);
+    ham4.set_zerotemp(); // In this case, calculates EF from sorting
+    //ham4.set_nonzerotemp(1.e-2); // In this case, calculates mu from bisection method
+    
+    int num_loops;
+    const bool with_output = true;
+    
+    ham4.FixedPoint(&num_loops, with_output);
+    
+    std::cout << "num_loops = " << num_loops << std::endl;
+}
+
 int main()
 {
-    Assign_ham_test();
+    //Assign_ham_test();
+    
+    //test_ComputeMFs();
+    
+    test_FixedPoint();
     
     return 0;
 }

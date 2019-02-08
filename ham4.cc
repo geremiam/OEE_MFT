@@ -8,6 +8,7 @@
 #include "alloc.h" // Allocation/deallocation of arrays
 #include "init_routines.h" // Initialization of arrays
 #include "math_routines.h" // Various math functions
+#include "misc_routines.h"
 #include "chempot.h"
 #include "kspace.h" // Defines a class for holding a band structure
 #include "diag_routines.h" // Routines for finding evals and evecs
@@ -93,14 +94,13 @@ ham4_t::~ham4_t()
     std::cout << "ham4_t instance deleted.\n";
 }
 
-
+// Methods for assigning the Hamiltonian
 void ham4_t::Assign_h(double ka, double kb, double kc, complex<double>*const h) const
 {
     // With this convention, it is not necessary to use momenta inside the FBZ.
     //ka = FBZ(ka, a_);
     //kb = FBZ(kb, a_);
     //kc = FBZ(kc, c_);
-    std::cout << "(ka,kb,kc) = (" << ka << ", " << kb << ", " << kc << ")" << std::endl;
     // Assign to h
     h[0] = -2.*t1p_ * (cos(a_*ka) + cos(a_*kb)) - 2.*t3_ * cos(c_*kc);
     h[1] = //(- t1_ * zeta(ka,kb) - t2A_ * f(ka,kb,kc) - t2B_ * std::conj(f(ka,kb,kc))) * polar(1.,-a_*(ka+kb)/2.);
@@ -116,7 +116,6 @@ void ham4_t::Assign_V(const int Q, complex<double>*const V) const
     const double qa = Qa[Q];
     const double qb = Qb[Q];
     const double qc = Qc[Q];
-    std::cout << "Q = (" << Qa[Q] << ", " << Qb[Q] << ", " << Qc[Q] << ")" << std::endl;
     // Assign to V
     V[0] = 2.*V1p_ * (cos(a_*qa) + cos(a_*qb)) + 2.*V3_ * cos(c_*qc);
     V[1] = (V1_ + 2.*V2_*cos(c_*qc)) * (1. + polar(1.,-a_*qa) + polar(1.,-a_*qb) + polar(1.,-a_*qa-a_*qb));
@@ -154,7 +153,7 @@ void ham4_t::Assign_V_manual(const int Q, complex<double>*const V) const
     V[3] = V[0];
 }
 
-/* Assigns Hamiltonian */
+// Assigns Hamiltonian
 void ham4_t::Assign_ham(const double ka, const double kb, const double kc, complex<double>*const*const ham_array) const
 {
     /* Given the arguments momentum as well as member parameters, calculate the 2*2
@@ -173,7 +172,6 @@ void ham4_t::Assign_ham(const double ka, const double kb, const double kc, compl
     complex<double> h[states_per_cell*states_per_cell]={0.};
     for (int Q=0; Q<num_harmonics; ++Q)
     {
-      //std::cout << "Q = (" << Qa[Q] << ", " << Qb[Q] << ", " << Qc[Q] << ")" << std::endl;
       Assign_h(ka+Qa[Q], kb+Qb[Q], kc+Qc[Q], h); // Assign the 2*2 kinetic part of the Hamiltonian
       H[idx(Q,0)][idx(Q,0)] += h[0];
       H[idx(Q,0)][idx(Q,1)] += h[1];
@@ -190,10 +188,12 @@ void ham4_t::Assign_ham(const double ka, const double kb, const double kc, compl
     complex<double> V[states_per_cell*states_per_cell]={0.};
     for (int Q=0; Q<num_harmonics; ++Q)
     {
+        // For convenience, assign 
+        const double rho_A = rho_s_[Q] + rho_a_ [Q];
+        const double rho_B = rho_s_[Q] - rho_a_ [Q];
         Assign_V(Q, V);// The matrix V, which depends on Q, gets assigned
-        std::cout << "V = " << V[0] << "  " << V[1] << "  " << V[2] << "  " << V[3] << std::endl;
-        rhotilde_A[Q] = V[0]*rho_A_[Q] + V[1]*rho_B_[Q];// V[0,0]*rho_A_[Q] + V[0,1]*rho_B_[Q];
-        rhotilde_B[Q] = V[2]*rho_A_[Q] + V[3]*rho_B_[Q];// V[1,0]*rho_A_[Q] + V[1,1]*rho_B_[Q];
+        rhotilde_A[Q] = V[0]*rho_A + V[1]*rho_B;// V[0,0]*rho_A_[Q] + V[0,1]*rho_B_[Q];
+        rhotilde_B[Q] = V[2]*rho_A + V[3]*rho_B;// V[1,0]*rho_A_[Q] + V[1,1]*rho_B_[Q];
     }
     
     // Add the density terms to the Hamiltonian
@@ -208,22 +208,34 @@ void ham4_t::Assign_ham(const double ka, const double kb, const double kc, compl
 }
 
 
-/* Methods for computing mean fields */
-void ham4_t::AddContribution_rho_s(const double*const occs, const complex<double>*const*const evecs, double*const rho_s) const
+// Methods for computing mean fields
+void ham4_t::AddContribution_rho(const double*const occs, const complex<double>*const*const evecs, double*const rho_A, double*const rho_B) const
 {
-    // Evaluates the contribution to rho_s from a single k (see notes) and adds it to rho_s
-    for (int Q=0; Q<num_harmonics; ++Q)
-        rho_s[Q] += 0.;
+    // Evaluates the contribution to rho_A and rho_B from a single k (see notes) and adds 
+    // it to the arrays "rho_A" and "rho_B".
+    
+    for (int Q=0; Q<num_harmonics; ++Q) // Loop over the harmonics i.e. the components of rho_A and rho_B
+    {
+      complex<double> temp_A = {0.,0.}; // These will be used in the summation.
+      complex<double> temp_B = {0.,0.}; // Initialize to zero
+      
+      for (int beta=0; beta<states_per_cell; ++beta) // summation loop
+        for (int P=0; P<num_harmonics; ++P)          // summation loop
+          for (int R=0; R<num_harmonics; ++R)        // summation loop
+          {
+            const int QplusR = addition_table[Q][R];
+            
+            temp_A += conj(evecs[idx(R,0)][idx(P,beta)]) * evecs[idx(QplusR,0)][idx(P,beta)] * occs[idx(P,beta)];
+            temp_B += conj(evecs[idx(R,1)][idx(P,beta)]) * evecs[idx(QplusR,1)][idx(P,beta)] * occs[idx(P,beta)];
+          }
+      if (abs(std::imag(temp_A))>1.e-16)
+        std::cout << "WARNING: nonzero imaginary part: temp_A = " << temp_A << std::endl;
+      if (abs(std::imag(temp_B))>1.e-16)
+        std::cout << "WARNING: nonzero imaginary part: temp_B = " << temp_B << std::endl;
+      rho_A[Q] += std::real(temp_A) / (double)(num_unit_cells);
+      rho_B[Q] += std::real(temp_B) / (double)(num_unit_cells);
+    }
 }
-void ham4_t::AddContribution_rho_a(const double*const occs, const complex<double>*const*const evecs, double*const rho_a) const
-{
-    // Evaluates the contribution to rho_a from a single k (see notes) and adds it to rho_a
-    for (int Q=0; Q<num_harmonics; ++Q)
-        rho_a[Q] += 0.;
-}
-
-
-
 
 
 double ham4_t::ComputeMFs(double*const rho_s_out, double*const rho_a_out) const
@@ -261,21 +273,21 @@ double ham4_t::ComputeMFs(double*const rho_s_out, double*const rho_a_out) const
         mu = ChemPotBisec(num_states, filled_states, kspace.energies, T_, show_output, usethreads);
     }
     
-    
+    std::cout << "\tCheckpoint 1" << std::endl;
     // Step 3: Use all the occupation numbers and the evecs to find the order parameter
     // Probably best to diagonalize a second time to avoid storing the evecs
-    double rho_s_accum [num_harmonics] = {0.}; // IMPORTANT: MUST BE INITIALIZED TO ZERO
-    double rho_a_accum [num_harmonics] = {0.}; // IMPORTANT: MUST BE INITIALIZED TO ZERO
+    double rho_A_accum [num_harmonics] = {0.}; // IMPORTANT: MUST BE INITIALIZED TO ZERO
+    double rho_B_accum [num_harmonics] = {0.}; // IMPORTANT: MUST BE INITIALIZED TO ZERO
     
-    #pragma omp parallel default(none) firstprivate(mu) shared(kspace) reduction(+:rho_s_accum,rho_a_accum)
+    #pragma omp parallel default(none) firstprivate(mu) shared(kspace, std::cout) reduction(+:rho_A_accum,rho_B_accum)
     {
     complex<double>*const*const ham_array = Alloc2D_z(ham_array_rows, ham_array_cols); // array to hold Ham (local to thread)
-    ValInitArray(ham_array_rows*ham_array_cols, &(ham_array[0][0])); // Initialize to zero
-    complex<double>*const*const evecs = Alloc2D_z(num_bands, num_bands); // Array to hold evecs (local to each thread)
-    ValInitArray(num_bands*num_bands, &(evecs[0][0])); // Initialize to zero
+    complex<double>*const*const     evecs = Alloc2D_z(num_bands, num_bands); // Array to hold evecs (local to each thread)
     double*const evals = new double [num_bands]; // Array to hold evals in second loop (local to thread)
+    double*const  occs = new double [num_bands]; // Array to hold occupations (local to thread)
+    ValInitArray(ham_array_rows*ham_array_cols, &(ham_array[0][0])); // Initialize to zero
+    ValInitArray(num_bands*num_bands, &(evecs[0][0])); // Initialize to zero
     ValInitArray(num_bands, evals); // Initialize to zero
-    double*const occs = new double [num_bands]; // Array to hold occupations (local to thread)
     ValInitArray(num_bands, occs); // Initialize to zero
     
     #pragma omp for collapse(3)
@@ -283,13 +295,13 @@ double ham4_t::ComputeMFs(double*const rho_s_out, double*const rho_a_out) const
       for (int j=0; j<kb_pts_; ++j)
         for (int k=0; k<kc_pts_; ++k)
         {
+          //std::cout << "i,j,k = " << i << "," << j << "," << k << std::endl;
           Assign_ham(kspace.ka_grid[i], kspace.kb_grid[j], kspace.kc_grid[k], ham_array);
           simple_zheev(num_bands, &(ham_array[0][0]), evals, true, &(evecs[0][0]));
           // Calculate occupations from energies, mu, and temperature
           Occupations(num_bands, mu, evals, occs, zerotemp_, T_);
           
-          AddContribution_rho_s(occs, evecs, rho_s_accum);
-          AddContribution_rho_a(occs, evecs, rho_a_accum);
+          AddContribution_rho(occs, evecs, rho_A_accum, rho_B_accum);
         }
     delete [] occs; // Deallocate memory for arrays. 
     delete [] evals;
@@ -301,8 +313,8 @@ double ham4_t::ComputeMFs(double*const rho_s_out, double*const rho_a_out) const
     
     for (int Q=0; Q<num_harmonics; ++Q)
     {
-        rho_s_out[Q] = rho_s_accum[Q];
-        rho_a_out[Q] = rho_a_accum[Q];
+        rho_s_out[Q] = 0.5 * (rho_A_accum[Q] + rho_B_accum[Q]);
+        rho_a_out[Q] = 0.5 * (rho_A_accum[Q] - rho_B_accum[Q]);
     }
     
     // The kspace_t destructor is called automatically.
@@ -337,28 +349,24 @@ std::string ham4_t::GetAttributes()
     return Attributes;
 }
 */
-/*
+
 bool ham4_t::FixedPoint(int*const num_loops_p, const bool with_output)
 {
     // Performs the iterative self-consistent search using the parameters from ham4. 
-    // The initial values of mag and rhoI are used as the starting values for the search; 
-    // the end values are also output to mag and rhoI.
+    // The initial values of the MF attributes are used as the starting values for the 
+    // search; the end values are also stored in these same MF attributes.
     if (with_output) // Format display output and set precision
         std::cout << std::scientific << std::showpos << std::setprecision(2);
     
-    // Declare output variables and *initialize them to input values*.
-            double  rho_a_out = rho_a_;
-    complex<double> u1_out    = u1_;
-    complex<double> u1p_s_out = u1p_s_;
-    complex<double> u1p_a_out = u1p_a_;
-    complex<double> u2A_out   = u2A_;
-    complex<double> u2B_out   = u2B_;
-    complex<double> u3_s_out  = u3_s_;
-    complex<double> u3_a_out  = u3_a_;
-            double  HFE_prev  =0.; // For keeping track of free energy at previous step
+    // Declare output variables and INITIALIZE THEM TO INPUT VALUES
+    double rho_s_out [num_harmonics];
+    double rho_a_out [num_harmonics];
+    copy_array(num_harmonics, rho_s_, rho_s_out); // Copy rho_s_ into rho_s_out
+    copy_array(num_harmonics, rho_a_, rho_a_out); // Copy rho_a_ into rho_a_out
+    double HFE_prev = 0.; // For keeping track of free energy at previous step
     
     if (with_output)
-      std::cout << "\t" "rho_a_" "\t" "u1_" "\t" "u1p_s_" "\t" "u1p_a_" "\t" "u2A_" "\t" "u2B_" "\t" "u3_s_" "\t" "u3_a_" "\t\t" "HFE" << std::endl;
+      std::cout << "\t" "rho_s_" "\t" "rho_a_" << std::endl;
     
     int counter = 0; // Define counter for number of loops
     bool converged=false, fail=false; // Used to stop the while looping
@@ -374,47 +382,48 @@ bool ham4_t::FixedPoint(int*const num_loops_p, const bool with_output)
         // Mixing fraction chi (chi=1 corresponds to using fully new value)
         const double chi = Set_chi(counter, counter_vals, chi_vals, len, with_output);
         
-        rho_a_ = (1.-chi)*rho_a_ + chi*rho_a_out;
-        u1_    = (1.-chi)*u1_    + chi*u1_out;
-        u1p_s_ = (1.-chi)*u1p_s_ + chi*u1p_s_out;
-        u1p_a_ = (1.-chi)*u1p_a_ + chi*u1p_a_out;
-        u2A_   = (1.-chi)*u2A_   + chi*u2A_out;
-        u2B_   = (1.-chi)*u2B_   + chi*u2B_out;
-        u3_s_  = (1.-chi)*u3_s_  + chi*u3_s_out;
-        u3_a_  = (1.-chi)*u3_a_  + chi*u3_a_out; // Update mean-field values
+        for (int Q=0; Q<num_harmonics; ++Q) // Update mean-field values
+        {
+            rho_s_[Q] = (1.-chi)*rho_s_[Q] + chi*rho_s_out[Q];
+            rho_a_[Q] = (1.-chi)*rho_a_[Q] + chi*rho_a_out[Q];
+        }
         HFE_prev = HFE_; // Store previous free energy in HFE_prev
         
         
         if (with_output)
-          std::cout << "\ninput\t"
-                    << rho_a_ << "\t" << u1_ << "\t" << u1p_s_ << "\t" << u1p_a_ << "\t" 
-                    << u2A_ << "\t" << u2B_ << "\t" << u3_s_ << "\t" << u3_a_ << "\t";
+        {
+          std::cout << "\ninput\t";
+          for (int Q=0; Q<num_harmonics; ++Q)
+            std::cout << rho_s_[Q] << "\t";
+          for (int Q=0; Q<num_harmonics; ++Q)
+            std::cout << rho_a_[Q] << "\t";
+          std::cout << std::endl;
+        }
         
-        // Evaluate function. Output is assigned to the 'out' arguments.
+        // Compute MFs. Output is assigned to the 'out' arguments.
         // The HFE for the final set of MF values is left in the attribute HFE_.
-        HFE_ = ComputeMFs(rho_a_out, u1_out, u1p_s_out, u1p_a_out, u2A_out, u2B_out, u3_s_out, u3_a_out);
+        HFE_ = ComputeMFs(rho_s_out, rho_a_out);
         
-                double  rho_a_diff = rho_a_out - rho_a_;
-        complex<double> u1_diff    = u1_out    - u1_;
-        complex<double> u1p_s_diff = u1p_s_out - u1p_s_;
-        complex<double> u1p_a_diff = u1p_a_out - u1p_a_;
-        complex<double> u2A_diff   = u2A_out   - u2A_;
-        complex<double> u2B_diff   = u2B_out   - u2B_;
-        complex<double> u3_s_diff  = u3_s_out  - u3_s_;
-        complex<double> u3_a_diff  = u3_a_out  - u3_a_; // Differences between outputs and inputs
+        double rho_s_diff [num_harmonics]; // Declare arrays to store the changes in MF
+        double rho_a_diff [num_harmonics];
+        for (int Q=0; Q<num_harmonics; ++Q) // Differences between outputs and inputs
+        {
+            rho_s_diff[Q] = rho_s_out[Q] - rho_s_[Q];
+            rho_a_diff[Q] = rho_a_out[Q] - rho_a_[Q];
+        }
         
         if (with_output) // Print the differences
-          std::cout << HFE_ << std::endl // Output the latest free energy
-                    << "diff\t"
-                    << rho_a_diff << "\t" << u1_diff << "\t" << u1p_s_diff << "\t" << u1p_a_diff << "\t" 
-                    << u2A_diff << "\t" << u2B_diff << "\t" << u3_s_diff << "\t" << u3_a_diff << "\t"
-                    << HFE_-HFE_prev << std::endl; // Difference from the last HFE
+        {
+          std::cout << "diff\t";
+          for (int Q=0; Q<num_harmonics; ++Q)
+            std::cout << rho_s_diff[Q] << "\t";
+          for (int Q=0; Q<num_harmonics; ++Q)
+            std::cout << rho_a_diff[Q] << "\t";
+          std::cout << std::endl;
+        }
         
         // Test for convergence
-        converged = (abs(rho_a_diff)<tol_) && (abs(u1_diff)<tol_) && (abs(u1p_s_diff)<tol_) 
-                 && (abs(u1p_a_diff)<tol_) && (abs(u2A_diff)<tol_) && (abs(u2B_diff)<tol_)
-                 && (abs(u3_s_diff)<tol_) && (abs(u3_a_diff)<tol_);
-        
+        converged = check_bound_array(num_harmonics, tol_, rho_s_diff) && check_bound_array(num_harmonics, tol_, rho_a_diff);
         fail = (!converged) && (counter>loops_lim_); // Must come after converged line
         
     } while (!converged && !fail);
@@ -430,7 +439,7 @@ bool ham4_t::FixedPoint(int*const num_loops_p, const bool with_output)
     
     return fail;
 }
-*/
+
 /*
 
 // **************************************************************************************
