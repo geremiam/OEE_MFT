@@ -3,7 +3,10 @@
 #include <complex>
 #include <iostream>
 #include "alloc.h" // Include header for consistency check
+using std::complex;
 
+
+// Allocation of 3D arrays ********************
 
 double*** Alloc3D_d(const int Dim0Len, const int Dim1Len, const int Dim2Len)
 {
@@ -92,6 +95,97 @@ void Dealloc3D(float const *const *const *const Array, const int Dim0Len)
     for (int i=0; i<Dim0Len; ++i) delete [] Array[i];
     delete Array;
 }
+
+complex<double>*** Alloc3D_z(const int Dim0Len, const int Dim1Len, const int Dim2Len)
+{
+    /* Allocates memory contiguously for a 3d array (size Dim0Len*Dim1Len*Dim2Len) of 
+       doubles, in row-major layout (i.e. the last index changes fastest). */
+    
+    // The array is pointed to by a double***.
+    complex<double>*** Array = new complex<double>** [Dim0Len];
+    
+    // Each row gets an array of pointers.
+    for (int i=0; i<Dim0Len; ++i) Array[i] = new complex<double>* [Dim1Len];
+    
+    // Memory for the entire array is reserved at the first element.
+    Array[0][0] = new complex<double> [Dim0Len*Dim1Len*Dim2Len];
+    
+    // The pointers for rows and columns are assigned to the appropriate location in the grid.
+    // First row:
+    for (int j=1; j<Dim1Len; ++j)
+    {
+        Array[0][j] = &Array[0][0][j*Dim2Len];
+    }
+    
+    // Other rows:
+    for (int i=1; i<Dim0Len; ++i)
+    {
+        for (int j=0; j<Dim1Len; ++j)
+        {
+            Array[i][j] = &Array[0][0][i*Dim1Len*Dim2Len + j*Dim2Len];
+        }
+    }
+    
+    // The three-dimensional array is returned.
+    return Array;
+}
+void Dealloc3D(complex<double> const *const *const *const Array, const int Dim0Len)
+{
+    /* Deallocates memory allocated by Allocate3dArray(), i.e. for a contiguously stored 
+       3d array (size Dim0Len*Dim1Len*Dim2Len) of doubles in row-major layout (i.e. the 
+       last index changes fastest). The memory is deallocated in the order opposite to 
+       its allocation. */
+    delete [] Array[0][0];
+    for (int i=0; i<Dim0Len; ++i) delete [] Array[i];
+    delete Array;
+}
+
+complex<float>*** Alloc3D_c(const int Dim0Len, const int Dim1Len, const int Dim2Len)
+{
+    /* Allocates memory contiguously for a 3d array (size Dim0Len*Dim1Len*Dim2Len) of 
+       doubles, in row-major layout (i.e. the last index changes fastest). */
+    
+    // The array is pointed to by a double***.
+    complex<float>*** Array = new complex<float>** [Dim0Len];
+    
+    // Each row gets an array of pointers.
+    for (int i=0; i<Dim0Len; ++i) Array[i] = new complex<float>* [Dim1Len];
+    
+    // Memory for the entire array is reserved at the first element.
+    Array[0][0] = new complex<float> [Dim0Len*Dim1Len*Dim2Len];
+    
+    // The pointers for rows and columns are assigned to the appropriate location in the grid.
+    // First row:
+    for (int j=1; j<Dim1Len; ++j)
+    {
+        Array[0][j] = &Array[0][0][j*Dim2Len];
+    }
+    
+    // Other rows:
+    for (int i=1; i<Dim0Len; ++i)
+    {
+        for (int j=0; j<Dim1Len; ++j)
+        {
+            Array[i][j] = &Array[0][0][i*Dim1Len*Dim2Len + j*Dim2Len];
+        }
+    }
+    
+    // The three-dimensional array is returned.
+    return Array;
+}
+void Dealloc3D(complex<float> const *const *const *const Array, const int Dim0Len)
+{
+    /* Deallocates memory allocated by Allocate3dArray(), i.e. for a contiguously stored 
+       3d array (size Dim0Len*Dim1Len*Dim2Len) of doubles in row-major layout (i.e. the 
+       last index changes fastest). The memory is deallocated in the order opposite to 
+       its allocation. */
+    delete [] Array[0][0];
+    for (int i=0; i<Dim0Len; ++i) delete [] Array[i];
+    delete Array;
+}
+
+
+// Allocation of 2D arrays ********************
 
 double** Alloc2D_d(const int NumRows, const int NumCols)
 {
