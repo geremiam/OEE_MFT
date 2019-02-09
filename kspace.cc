@@ -4,6 +4,7 @@
 #include <iostream>
 #include <complex> // Needed to import alloc_dealloc.h
 #include <cmath> // For constant M_PI
+#include "alloc.h" // For allocation of multidimensional arrays
 #include "init_routines.h" // Initialization of arrays
 #include "kspace.h" // Include header file for consistency check
 
@@ -34,11 +35,11 @@ kspace_t::kspace_t(const double a, const double b, const double c, const int ka_
     // The energies grid is initialized to zero
     ValInitArray(ka_pts*kb_pts*kc_pts*bands_num, energies, 0.);
     
-    if (with_evecs)
-      {
-      evecs = new std::complex<double> [ka_pts*kb_pts*kc_pts*bands_num*bands_num];
-      ValInitArray(ka_pts*kb_pts*kc_pts*bands_num*bands_num, evecs, {0.,0.});
-      }
+    if (with_evecs) // It is convenient for evecs to be a 3D array.
+    {
+      evecs = Alloc3D_z(ka_pts*kb_pts*kc_pts, bands_num, bands_num);
+      ValInitArray(ka_pts*kb_pts*kc_pts*bands_num*bands_num, &(evecs[0][0][0]), {0.,0.});
+    }
 }
 
 // Destructor implementation
@@ -49,11 +50,11 @@ kspace_t::~kspace_t()
     delete [] kc_grid;
     delete [] energies;
     if (with_evecs_)
-      delete [] evecs;
+      Dealloc3D(evecs, ka_pts_*kb_pts_*kc_pts_);
     if (with_output_) std::cout << "kspace_t instance deleted.\n";
 }
 
-int kspace_t::index(const int ka_ind, const int kb_ind, const int kc_ind, const int band_int)
+int kspace_t::index(const int ka_ind, const int kb_ind, const int kc_ind, const int band_int) const
 {
     /* Given indices for the momenta and bands, returns the corresponding index to be 
     used in the array "energies". */
@@ -63,13 +64,11 @@ int kspace_t::index(const int ka_ind, const int kb_ind, const int kc_ind, const 
            bands_num_*kc_pts_*kb_pts_*ka_ind;
 }
 
-int kspace_t::evec_index(const int ka_ind, const int kb_ind, const int kc_ind, const int row, const int col)
+int kspace_t::k_ind(const int ka_ind, const int kb_ind, const int kc_ind) const
 {
-    /* Given indices for the momenta and bands, returns the corresponding index to be 
-    used in the array "evecs". */
-    return col + 
-           bands_num_*row + 
-           bands_num_*bands_num_*kc_ind + 
-           bands_num_*bands_num_*kc_pts_*kb_ind + 
-           bands_num_*bands_num_*kc_pts_*kb_pts_*ka_ind;
+    // Return the global momentum index from the indices along each axis. To be used 
+    // with "evecs".
+    return kc_ind + 
+           kc_pts_*kb_ind + 
+           kc_pts_*kb_pts_*ka_ind;
 }

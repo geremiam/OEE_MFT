@@ -35,7 +35,8 @@ public:
     /* The energies are held in a 1D array with the understanding that from slowest 
     varying to fastest varying, the indices are those for ka, kb, kc, and band.*/
     double*const energies; // energy variable
-    std::complex<double>* evecs=NULL; // Pointer to evecs. Only allocated if asked for.
+    // Pointer for 3D array for evecs. Only allocated if asked for.
+    std::complex<double>*const*const* evecs=NULL;
     
     // Constructor declaration
     kspace_t(const double a, const double b, const double c, const int ka_pts, const int kb_pts, const int kc_pts, 
@@ -43,9 +44,9 @@ public:
     ~kspace_t(); // Destructor declaration
     
     // For indexing the evals
-    int index(const int ka_ind, const int kb_ind, const int kc_ind, const int band_int);
-    // For indexing the evecs
-    int evec_index(const int ka_ind, const int kb_ind, const int kc_ind, const int row, const int col);
+    int index(const int ka_ind, const int kb_ind, const int kc_ind, const int band_int) const;
+    // Return the global momentum index from the indices along each axis
+    int k_ind(const int ka_ind, const int kb_ind, const int kc_ind) const;
 };
 
 #endif

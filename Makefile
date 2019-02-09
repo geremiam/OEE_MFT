@@ -207,7 +207,7 @@ ut_diag_routines_clean:
 # MODULE KSPACE
 
 # kspace.o object file depends on header file, source file, and all included header files
-kspace.o: kspace.cc kspace.h init_routines.h
+kspace.o: kspace.cc kspace.h init_routines.h alloc.h
 	${CXX} $(CXXFLAGS) -c kspace.cc -o kspace.o
 
 ## ut_kspace: Runs the testing suite for the module kspace
@@ -217,8 +217,8 @@ ut_kspace: kspace_test # Runs the testing suite's executable
 
 # Testing suite executable depends on kspace_test.o, kspace.o, and the other modules used 
 # in the source code.
-kspace_test: kspace_test.o kspace.o init_routines.o
-	${CXX} kspace_test.o kspace.o init_routines.o -o kspace_test
+kspace_test: kspace_test.o kspace.o init_routines.o alloc.o
+	${CXX} kspace_test.o kspace.o init_routines.o alloc.o -o kspace_test
 
 # kspace_test.o object file depends on source file and kspace.h header
 kspace_test.o: kspace_test.cc kspace.h
@@ -227,7 +227,7 @@ kspace_test.o: kspace_test.cc kspace.h
 # Deletion of the object files and executable files pertaining to this unit test.
 .PHONY: kspace_clean
 kspace_clean:
-	rm -f init_routines.o kspace_test.o kspace.o kspace_test
+	rm -f init_routines.o alloc.o kspace_test.o kspace.o kspace_test
 
 # #######################################################################################
 # MODULE NC_IO
