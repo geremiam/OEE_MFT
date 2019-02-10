@@ -333,7 +333,7 @@ double ham4_t::ComputeMFs_old(double*const rho_s_out, double*const rho_a_out) co
 double ham4_t::ComputeMFs    (double*const rho_s_out, double*const rho_a_out) const
 {
     // Declare (and construct) an instance of kspace_t.
-    const bool with_output=false, const bool with_evecs=true
+    const bool with_output=false; const bool with_evecs=true;
     kspace_t kspace(a_, a_, c_, ka_pts_, kb_pts_, kc_pts_, num_bands, with_output, with_evecs);
     
     // Step 1: diagonalize to find all the energy evals and evecs and store them in kspace
