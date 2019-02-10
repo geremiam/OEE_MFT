@@ -58,10 +58,14 @@ void test_ComputeMFs()
     double rho_s_out [4] = {0.};
     double rho_a_out [4] = {0.};
     
-    ham4.ComputeMFs(rho_s_out, rho_a_out);
+    ham4.ComputeMFs_old(rho_s_out, rho_a_out);
+    for (int i=0; i<4; ++i) {
+      std::cout << "rho_s_out[" << i << "] = " << rho_s_out[i] << "\t"
+                << "rho_a_out[" << i << "] = " << rho_a_out[i] << std::endl;
+    }
     
-    for (int i=0; i<4; ++i)
-    {
+    ham4.ComputeMFs(rho_s_out, rho_a_out);
+    for (int i=0; i<4; ++i) {
       std::cout << "rho_s_out[" << i << "] = " << rho_s_out[i] << "\t"
                 << "rho_a_out[" << i << "] = " << rho_a_out[i] << std::endl;
     }

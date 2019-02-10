@@ -80,7 +80,8 @@ class ham4_t
     void Assign_V_manual(const int Q, complex<double>*const V) const;
     void Assign_ham(const double ka, const double kb, const double kc, complex<double>*const*const ham_array) const;
     
-    double ComputeMFs(double*const rho_s_out, double*const rho_a_out) const;
+    double ComputeMFs_old(double*const rho_s_out, double*const rho_a_out) const;
+    double ComputeMFs    (double*const rho_s_out, double*const rho_a_out) const;
     
     
   //public:
@@ -111,7 +112,7 @@ class ham4_t
     double V3_  = 0.5; // Repulsion between neighbours in c direction
     
     
-    //void resetMFs(); // Resets MFs to default starting values.
+    void resetMFs(); // Resets MFs to default starting values.
     
     void assign_rho(const double rho); // Assign rho_ and dependent variables
     void set_zerotemp();

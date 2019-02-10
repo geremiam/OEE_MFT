@@ -56,6 +56,14 @@ int ham4_t::idx(const int Q, const int alpha) const
     return idx_composite(num_harmonics, states_per_cell, Q, alpha);
 }
 
+void ham4_t::resetMFs()
+{
+    // Resets MFs to default starting values.
+    rho_s_[0] = 0.2;    rho_a_[0] = 0.1;
+    rho_s_[1] = 0.2;    rho_a_[1] = 0.1;
+    rho_s_[2] = 0.2;    rho_a_[2] = 0.1;
+    rho_s_[3] = 0.2;    rho_a_[3] = 0.1;
+}
 
 /* Methods that set parameters with interdependencies. */
 void ham4_t::assign_rho(const double rho)
@@ -84,7 +92,7 @@ ham4_t::ham4_t(const int ka_pts, const int kb_pts, const int kc_pts)
 {
     /* Constructor implementation */
     assign_rho(rho_); // Sets initial value of 'filled_states'
-    //resetMFs(); // Sets the mean fields to default value
+    resetMFs(); // Sets the mean fields to default value
     std::cout << "ham4_t instance created.\n";
 }
 
@@ -228,9 +236,9 @@ void ham4_t::AddContribution_rho(const double*const occs, const complex<double>*
             temp_A += conj(evecs[idx(R,0)][idx(P,beta)]) * evecs[idx(QplusR,0)][idx(P,beta)] * occs[idx(P,beta)];
             temp_B += conj(evecs[idx(R,1)][idx(P,beta)]) * evecs[idx(QplusR,1)][idx(P,beta)] * occs[idx(P,beta)];
           }
-      if (abs(std::imag(temp_A))>1.e-16)
+      if (abs(std::imag(temp_A))>1.e-15)
         std::cout << "WARNING: nonzero imaginary part: temp_A = " << temp_A << std::endl;
-      if (abs(std::imag(temp_B))>1.e-16)
+      if (abs(std::imag(temp_B))>1.e-15)
         std::cout << "WARNING: nonzero imaginary part: temp_B = " << temp_B << std::endl;
       rho_A[Q] += std::real(temp_A) / (double)(num_unit_cells);
       rho_B[Q] += std::real(temp_B) / (double)(num_unit_cells);
@@ -238,7 +246,7 @@ void ham4_t::AddContribution_rho(const double*const occs, const complex<double>*
 }
 
 
-double ham4_t::ComputeMFs(double*const rho_s_out, double*const rho_a_out) const
+double ham4_t::ComputeMFs_old(double*const rho_s_out, double*const rho_a_out) const
 {
     // Declare (and construct) an instance of kspace_t.
     kspace_t kspace(a_, a_, c_, ka_pts_, kb_pts_, kc_pts_, num_bands);
@@ -273,7 +281,7 @@ double ham4_t::ComputeMFs(double*const rho_s_out, double*const rho_a_out) const
         mu = ChemPotBisec(num_states, filled_states, kspace.energies, T_, show_output, usethreads);
     }
     
-    std::cout << "\tCheckpoint 1" << std::endl;
+    //std::cout << "\tCheckpoint 1" << std::endl;
     // Step 3: Use all the occupation numbers and the evecs to find the order parameter
     // Probably best to diagonalize a second time to avoid storing the evecs
     double rho_A_accum [num_harmonics] = {0.}; // IMPORTANT: MUST BE INITIALIZED TO ZERO
@@ -322,8 +330,81 @@ double ham4_t::ComputeMFs(double*const rho_s_out, double*const rho_a_out) const
     return 0.; // Should return the Helmholtz free energy
 }
 
+double ham4_t::ComputeMFs    (double*const rho_s_out, double*const rho_a_out) const
+{
+    // Declare (and construct) an instance of kspace_t.
+    const bool with_output=false, const bool with_evecs=true
+    kspace_t kspace(a_, a_, c_, ka_pts_, kb_pts_, kc_pts_, num_bands, with_output, with_evecs);
+    
+    // Step 1: diagonalize to find all the energy evals and evecs and store them in kspace
+    #pragma omp parallel default(none) shared(kspace)
+    {
+    // array to hold Ham (local to thread)
+    complex<double>*const*const ham_array = Alloc2D_z(ham_array_rows, ham_array_cols);
+    ValInitArray(ham_array_rows*ham_array_cols, &(ham_array[0][0])); //Initialize to zero
+    #pragma omp for collapse(3)
+    // Given the parameters, diagonalize the Hamiltonian at each grid point
+    for (int i=0; i<ka_pts_; ++i)
+      for (int j=0; j<kb_pts_; ++j)
+        for (int k=0; k<kc_pts_; ++k)
+        {
+          Assign_ham(kspace.ka_grid[i], kspace.kb_grid[j], kspace.kc_grid[k], ham_array);
+          const int evals_ind = kspace.index(i, j, k, 0); // Last index is the band index
+          const int     k_ind = kspace.k_ind(i, j, k);
+          simple_zheev(num_bands, &(ham_array[0][0]), &(kspace.energies[evals_ind]), true, &(kspace.evecs[k_ind][0][0]));
+        }
+    Dealloc2D(ham_array);
+    }
+    
+    // Step 2: Use all energies to compute chemical potential
+    double mu = 666.;
+    if (zerotemp_) // Array kspace.energies is left unchanged.
+        mu = FermiEnerg_cpy(num_states, filled_states, kspace.energies);
+    else // USES OPENMP PARALLELIZATION
+    {
+        const bool show_output = false;
+        const bool usethreads = true;
+        mu = ChemPotBisec(num_states, filled_states, kspace.energies, T_, show_output, usethreads);
+    }
+    
+    //std::cout << "\tCheckpoint 1" << std::endl;
+    // Step 3: Use all the occupation numbers and the evecs to find the order parameter
+    // Probably best to diagonalize a second time to avoid storing the evecs
+    double rho_A_accum [num_harmonics] = {0.}; // IMPORTANT: MUST BE INITIALIZED TO ZERO
+    double rho_B_accum [num_harmonics] = {0.}; // IMPORTANT: MUST BE INITIALIZED TO ZERO
+    
+    #pragma omp parallel default(none) firstprivate(mu) shared(kspace, std::cout) reduction(+:rho_A_accum,rho_B_accum)
+    {
+    double*const  occs = new double [num_bands]; // Array to hold occupations (local to thread)
+    ValInitArray(num_bands, occs); // Initialize to zero
+    
+    #pragma omp for collapse(3)
+    for (int i=0; i<ka_pts_; ++i)
+      for (int j=0; j<kb_pts_; ++j)
+        for (int k=0; k<kc_pts_; ++k)
+        {
+          // Calculate occupations from energies, mu, and temperature
+          const int evals_ind = kspace.index(i, j, k, 0); // Last index is the band index
+          const int     k_ind = kspace.k_ind(i, j, k);
+          Occupations(num_bands, mu, &(kspace.energies[evals_ind]), occs, zerotemp_, T_);
+          AddContribution_rho(occs, kspace.evecs[k_ind], rho_A_accum, rho_B_accum);
+        }
+    delete [] occs; // Deallocate memory for arrays. 
+    }
+    
+    // Assign the results to the output arrays
+    for (int Q=0; Q<num_harmonics; ++Q)
+    {
+        rho_s_out[Q] = 0.5 * (rho_A_accum[Q] + rho_B_accum[Q]);
+        rho_a_out[Q] = 0.5 * (rho_A_accum[Q] - rho_B_accum[Q]);
+    }
+    
+    // The kspace_t destructor is called automatically.
+    return 0.; // Should return the Helmholtz free energy
+}
 
-/*
+
+
 std::string ham4_t::GetAttributes()
 {
     // Define a string of metadata
@@ -331,24 +412,32 @@ std::string ham4_t::GetAttributes()
     resetMFs();
         
     std::ostringstream strs; // Declare a stringstream to which to write the attributes
-    strs << "Gyrotropic SSB (ham4)"
+    /*strs << "Gyrotropic SSB (ham4)"
          << ": a = " << a_ << ", c = " << c_
          << "; k-space points: " << ka_pts_ << ", " << kb_pts_ << ", " << kc_pts_
          << "; num_bands = " << num_bands << "; rho = " << rho_
          << "; zerotemp = " << zerotemp_ << ", T = " << T_ << "; tol = " << tol_
          << "; t1 = " << t1_ << ", t1p = " << t1p_ << ", t2A = " << t2A_ << "; t2B = " << t2B_ << ", t3 = " << t3_ 
          << ", V1 = " << V1_ << "; V1p = " << V1p_ << ", V2 = " << V2_ << ", V3 = " << V3_
-         << "; loops_lim = " << loops_lim_
-         << "; Starting values of the MFs: rho_a_ = " << rho_a_ << ", u1_ = " << u1_
-         << ", u1p_s_ = " << u1p_s_ << ", u1p_a_ = " << u1p_a_
-         << ", u2A_ = "   << u2A_   << ", u2B_ = "   << u2B_
-         << ", u3_s_ = "  << u3_s_  << ", u3_a_ = "  << u3_a_;
+         << "; loops_lim = " << loops_lim_;*/
+    strs << "Gyrotropic SSB (ham4)"
+         << "\na = " << a_ << ", c = " << c_
+         << "\nk-space points: " << ka_pts_ << "," << kb_pts_ << "," << kc_pts_ << "; num_bands = " << num_bands
+         << "\nzerotemp = " << zerotemp_ << ", T = " << T_ 
+         << "\ntol = " << tol_ << ", loops_lim = " << loops_lim_
+         << "\nrho = " << rho_
+         << "\nt1 = " << t1_ << ", t1p = " << t1p_ << ", t2A = " << t2A_ << ", t2B = " << t2B_ << ", t3 = " << t3_ 
+         << "\nV1 = " << V1_ << "; V1p = " << V1p_ << ", V2 = " << V2_ << ", V3 = " << V3_;
     
+    strs << "\nList of harmonics: ";
+    for (int Q=0; Q<num_harmonics; ++Q)
+      strs << "Q" << Q << " = (" << Qa[Q] << ", " << Qb[Q] << ", " << Qc[Q] << ")" << std::endl;
+        
     const std::string Attributes = strs.str(); // Write the stream contents to a string
     
     return Attributes;
 }
-*/
+
 
 bool ham4_t::FixedPoint(int*const num_loops_p, const bool with_output)
 {
@@ -356,7 +445,7 @@ bool ham4_t::FixedPoint(int*const num_loops_p, const bool with_output)
     // The initial values of the MF attributes are used as the starting values for the 
     // search; the end values are also stored in these same MF attributes.
     if (with_output) // Format display output and set precision
-        std::cout << std::scientific << std::showpos << std::setprecision(2);
+        std::cout << std::scientific << std::showpos;// << std::setprecision(4);
     
     // Declare output variables and INITIALIZE THEM TO INPUT VALUES
     double rho_s_out [num_harmonics];
@@ -392,7 +481,7 @@ bool ham4_t::FixedPoint(int*const num_loops_p, const bool with_output)
         
         if (with_output)
         {
-          std::cout << "\ninput\t";
+          std::cout << counter << "\ninput\t";
           for (int Q=0; Q<num_harmonics; ++Q)
             std::cout << rho_s_[Q] << "\t";
           for (int Q=0; Q<num_harmonics; ++Q)
@@ -422,8 +511,9 @@ bool ham4_t::FixedPoint(int*const num_loops_p, const bool with_output)
           std::cout << std::endl;
         }
         
-        // Test for convergence
-        converged = check_bound_array(num_harmonics, tol_, rho_s_diff) && check_bound_array(num_harmonics, tol_, rho_a_diff);
+        // Test for convergence. The density (first element of rho_s_diff) is ignored.
+        converged = check_bound_array(num_harmonics-1, tol_, rho_s_diff+1) 
+                 && check_bound_array(num_harmonics, tol_, rho_a_diff);
         fail = (!converged) && (counter>loops_lim_); // Must come after converged line
         
     } while (!converged && !fail);
