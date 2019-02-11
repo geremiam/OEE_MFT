@@ -53,7 +53,7 @@ class ham4_t
     const int ham_array_cols = num_bands; // Same as matrix order for full storage
     const int num_states = ka_pts_*kb_pts_*kc_pts_*num_bands;
     
-    const int loops_lim_ = 1400; // Limit to the number of iteration loops
+    const int loops_lim_ = 300; // Limit to the number of iteration loops
     
     
     /* Parameters that have dependencies or are dependent on other parameters. These 
@@ -92,12 +92,12 @@ class ham4_t
     // This is where the user sets the initial values of the MFs.
     
     // Because each harmonic is given by some G/2, the densities are all real.
-    double rho_s_ [num_harmonics] = {0.2, 0.2, 0.2, 0.2};
-    double rho_a_ [num_harmonics] = {0.1, 0.1, 0.1, 0.1};//{0.2, 0.2, 0.2, 0.2};
+    double rho_s_ [num_harmonics] = {0.};
+    double rho_a_ [num_harmonics] = {0.};
     
     double HFE_ = -99.; // For storing the free energy
     
-    const double tol_ = 1.e-6; // Tolerance for the equality of the mean fields
+    const double tol_ = 4.e-6; // Tolerance for the equality of the mean fields
     
     
     // Hamiltonian parameters that the user may want to change
