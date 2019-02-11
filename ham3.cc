@@ -21,16 +21,20 @@ using std::abs;
 double Set_chi(const int counter, const int*const counter_vals, const double*const chi_vals, const int len, const bool with_output=false)
 {
     /* When 'counter' reaches one of the values in 'counter_values', the corresponding 
-    entry of 'chi_values' is returned. */
+    entry of 'chi_values' is returned. Values in counter_vals must be strictly increasing.*/
     double chi = 1.; // Starting value should be 1.
     for (int i=0; i<len; ++i)
+    {
+        if (counter>=counter_vals[i]) 
+            chi = chi_vals[i];
         if (counter==counter_vals[i]) 
         {
-            chi = chi_vals[i];
             if (with_output)
                 std::cout << "\n\t Counter has reached " << counter
                           << ".\tchi = " << chi << "\n\n";
         }
+    }
+    
     return chi;
 }
 
