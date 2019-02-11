@@ -21,6 +21,23 @@ HEADERS=alloc.h init_routines.h chempot.h math_routines.h misc_routines.h diag_r
 all: help
 
 # #######################################################################################
+# DRIVER_HAM4
+
+## driver_ham4: Builds the final executable for driver_ham4
+# Linking of the object files into the final executable. Depends on all .o files.
+driver_ham4: driver_ham4.o ham4.o $(OBJECTS)
+	${CXX} $(LDFLAGS) -o driver_ham4 driver_ham4.o ham4.o $(OBJECTS) $(LDLIBS)
+
+# Creation of the driver_ham4.o object file, which depends on the header files
+driver_ham4.o: driver_ham4.cc ham4.h $(HEADERS)
+	${CXX} $(CXXFLAGS) $(INC_FLAGS) -c -o driver_ham4.o driver_ham4.cc
+
+# Deletion of the object file and executable file for this driver
+.PHONY: driver_ham4_clean
+driver_ham4_clean:
+	rm -f driver_ham4 driver_ham4.o ham4.o
+
+# #######################################################################################
 # DRIVER_HAM3
 
 ## driver_ham3: Builds the final executable for driver_ham3
@@ -338,7 +355,7 @@ ham4_clean:
 
 ## clean: Removes module object files as well as driver object files and executables
 .PHONY: clean
-clean: driver_ham3_clean
+clean: driver_ham3_clean driver_ham4_clean
 	rm -f $(OBJECTS)
 
 ## ut_clean: Runs clean rules for all unit tests
