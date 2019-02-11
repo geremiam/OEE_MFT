@@ -287,7 +287,7 @@ double ham4_t::ComputeMFs_old(double*const rho_s_out, double*const rho_a_out) co
     double rho_A_accum [num_harmonics] = {0.}; // IMPORTANT: MUST BE INITIALIZED TO ZERO
     double rho_B_accum [num_harmonics] = {0.}; // IMPORTANT: MUST BE INITIALIZED TO ZERO
     
-    #pragma omp parallel default(none) firstprivate(mu) shared(kspace, std::cout) reduction(+:rho_A_accum,rho_B_accum)
+    #pragma omp parallel default(none) firstprivate(mu) shared(kspace) reduction(+:rho_A_accum[0:num_harmonics], rho_B_accum[0:num_harmonics])
     {
     complex<double>*const*const ham_array = Alloc2D_z(ham_array_rows, ham_array_cols); // array to hold Ham (local to thread)
     complex<double>*const*const     evecs = Alloc2D_z(num_bands, num_bands); // Array to hold evecs (local to each thread)
@@ -373,7 +373,9 @@ double ham4_t::ComputeMFs    (double*const rho_s_out, double*const rho_a_out) co
     double rho_A_accum [num_harmonics] = {0.}; // IMPORTANT: MUST BE INITIALIZED TO ZERO
     double rho_B_accum [num_harmonics] = {0.}; // IMPORTANT: MUST BE INITIALIZED TO ZERO
     
-    #pragma omp parallel default(none) firstprivate(mu) shared(kspace, std::cout) reduction(+:rho_A_accum,rho_B_accum)
+    // https://www.nersc.gov/assets/OMP-common-core-SC17.pdf for reduction on array sections
+    // https://www.archer.ac.uk/training/virtual/2017-09-27-OpenMP4/OpenMP45VT.pdf
+    #pragma omp parallel default(none) firstprivate(mu) shared(kspace) reduction(+:rho_A_accum[0:num_harmonics], rho_B_accum[0:num_harmonics])
     {
     double*const  occs = new double [num_bands]; // Array to hold occupations (local to thread)
     ValInitArray(num_bands, occs); // Initialize to zero
@@ -445,7 +447,7 @@ bool ham4_t::FixedPoint(int*const num_loops_p, const bool with_output)
     // The initial values of the MF attributes are used as the starting values for the 
     // search; the end values are also stored in these same MF attributes.
     if (with_output) // Format display output and set precision
-        std::cout << std::scientific << std::showpos;// << std::setprecision(4);
+        std::cout << std::scientific << std::showpos << std::setprecision(2);
     
     // Declare output variables and INITIALIZE THEM TO INPUT VALUES
     double rho_s_out [num_harmonics];
