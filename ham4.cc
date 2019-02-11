@@ -40,19 +40,6 @@ double Set_chi(const int counter, const int*const counter_vals, const double*con
 }
 
 
-/* Useful functions of momentum. */
-double ham4_t::zeta(double ka, double kb) const
-{
-    return 4.*cos(a_*ka/2.)*cos(a_*kb/2.);
-}
-complex<double> ham4_t::f(double ka, double kb, double kc) const
-{
-    const complex<double> ans( 4.*cos(a_*ka/2.)*cos(a_*kb/2.)*cos(c_*kc), 
-                               4.*sin(a_*ka/2.)*sin(a_*kb/2.)*sin(c_*kc) );
-    return ans;
-}
-
-
 int ham4_t::idx(const int Q, const int alpha) const
 {
     // Gives the appropriate index in the direct product between Q and alpha.
@@ -134,7 +121,7 @@ void ham4_t::Assign_V(const int Q, complex<double>*const V) const
     V[2] = std::conj(V[1]);
     V[3] = V[0];
 }
-void ham4_t::Assign_V_manual(const int Q, complex<double>*const V) const
+/*void ham4_t::Assign_V_manual(const int Q, complex<double>*const V) const
 {
     // Manually computed assignment formulas for V. Assigns the matrix to V with 
     // qa = Qa[Q], qb = Qb[Q], etc.
@@ -163,7 +150,7 @@ void ham4_t::Assign_V_manual(const int Q, complex<double>*const V) const
     
     V[2] = std::conj(V[1]);
     V[3] = V[0];
-}
+}*/
 
 // Assigns Hamiltonian
 void ham4_t::Assign_ham(const double ka, const double kb, const double kc, complex<double>*const*const ham_array) const
@@ -461,7 +448,7 @@ bool ham4_t::FixedPoint(int*const num_loops_p, const bool with_output)
     double HFE_prev = 0.; // For keeping track of free energy at previous step
     
     if (with_output)
-      std::cout << "\t" "rho_s_" "\t" "rho_a_" << std::endl;
+      std::cout << "\t" "rho_s_" "\t\t" "rho_a_" << std::endl;
     
     int counter = 0; // Define counter for number of loops
     bool converged=false, fail=false; // Used to stop the while looping
@@ -489,9 +476,10 @@ bool ham4_t::FixedPoint(int*const num_loops_p, const bool with_output)
         {
           std::cout << counter << "  chi = " << chi << "\ninput\t";
           for (int Q=0; Q<num_harmonics; ++Q)
+          {
             std::cout << rho_s_[Q] << "\t";
-          for (int Q=0; Q<num_harmonics; ++Q)
             std::cout << rho_a_[Q] << "\t";
+          }
           std::cout << std::endl;
         }
         
@@ -511,9 +499,10 @@ bool ham4_t::FixedPoint(int*const num_loops_p, const bool with_output)
         {
           std::cout << "diff\t";
           for (int Q=0; Q<num_harmonics; ++Q)
+          {
             std::cout << rho_s_diff[Q] << "\t";
-          for (int Q=0; Q<num_harmonics; ++Q)
             std::cout << rho_a_diff[Q] << "\t";
+          }
           std::cout << std::endl;
         }
         

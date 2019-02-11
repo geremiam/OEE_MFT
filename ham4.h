@@ -1,5 +1,9 @@
 // ham4.h
-/* Description */
+/* Description.
+   Here is what the user needs to change upon changing the harmonics: 
+   (1) the arrays Qa, Qb, and Qc;
+   (2) the array addition_table; 
+   (3) the implementation of Assign_V_manual. */
 #ifndef HAM4SOURCE_H
 #define HAM4SOURCE_H
 
@@ -39,8 +43,8 @@ class ham4_t
     
     // We assume we are only working with harmonics given by G/2.
     const double Qa [num_harmonics] = {0., M_PI/a_, 0.,      M_PI/a_};
-    const double Qb [num_harmonics] = {0., 0.,      M_PI/a_, M_PI/a_};
-    const double Qc [num_harmonics] = {0., 0.,      0.,      0.};
+    const double Qb [num_harmonics] = {0., M_PI/a_, 0.,      M_PI/a_};
+    const double Qc [num_harmonics] = {0., 0.,      M_PI/c_, M_PI/c_};
     
     const int addition_table [num_harmonics][num_harmonics]={{0, 1, 2, 3},
                                                              {1, 0, 3, 2},
@@ -67,17 +71,13 @@ class ham4_t
     // Function for performing the direct product in the indices Q and alpha.
     int idx(const int Q, const int alpha) const;
     
-    // Functions useful for computing the Hamiltonian
-    double          zeta(double ka, double kb) const;
-    complex<double> f(double ka, double kb, double kc) const;
-    
     
     // These functions are used in the method ComputeMFs()
     void AddContribution_rho(const double*const occs, const complex<double>*const*const evecs, double*const rho_A, double*const rho_B) const;
     
     void Assign_h(double ka, double kb, double kc, complex<double>*const h) const;
     void Assign_V(const int Q, complex<double>*const V) const;
-    void Assign_V_manual(const int Q, complex<double>*const V) const;
+    //void Assign_V_manual(const int Q, complex<double>*const V) const;
     void Assign_ham(const double ka, const double kb, const double kc, complex<double>*const*const ham_array) const;
     
     double ComputeMFs_old(double*const rho_s_out, double*const rho_a_out) const;
