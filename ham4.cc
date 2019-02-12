@@ -405,21 +405,12 @@ double ham4_t::ComputeMFs    (double*const rho_s_out, double*const rho_a_out) co
 
 
 std::string ham4_t::GetAttributes()
-
 {
     // Define a string of metadata
     // Watch out: this method resets the values of the MFs to their starting values.
     resetMFs();
         
     std::ostringstream strs; // Declare a stringstream to which to write the attributes
-    /*strs << "Gyrotropic SSB (ham4)"
-         << ": a = " << a_ << ", c = " << c_
-         << "; k-space points: " << ka_pts_ << ", " << kb_pts_ << ", " << kc_pts_
-         << "; num_bands = " << num_bands << "; rho = " << rho_
-         << "; zerotemp = " << zerotemp_ << ", T = " << T_ << "; tol = " << tol_
-         << "; t1 = " << t1_ << ", t1p = " << t1p_ << ", t2A = " << t2A_ << "; t2B = " << t2B_ << ", t3 = " << t3_ 
-         << ", V1 = " << V1_ << "; V1p = " << V1p_ << ", V2 = " << V2_ << ", V3 = " << V3_
-         << "; loops_lim = " << loops_lim_;*/
     strs << "Gyrotropic SSB (ham4)"
          << "\na = " << a_ << ", c = " << c_
          << "\nk-space points: " << ka_pts_ << "," << kb_pts_ << "," << kc_pts_ << "; num_bands = " << num_bands
@@ -431,7 +422,11 @@ std::string ham4_t::GetAttributes()
     
     strs << "\nList of harmonics: ";
     for (int Q=0; Q<num_harmonics; ++Q)
-      strs << "Q" << Q << " = (" << Qa[Q] << ", " << Qb[Q] << ", " << Qc[Q] << ")" << std::endl;
+        strs << std::endl << "Q" << Q << " = (" << Qa[Q] << ", " << Qb[Q] << ", " << Qc[Q] << ")";
+    
+    strs << "\nStarting values of the MFs: ";
+    for (int Q=0; Q<num_harmonics; ++Q)
+        strs << std::endl << "rho_s[" << Q << "] = " << rho_s_[Q] << ", rho_a[" << Q << "] = " << rho_a_[Q];
         
     const std::string Attributes = strs.str(); // Write the stream contents to a string
     
