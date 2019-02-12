@@ -231,8 +231,10 @@ void ham4_t::AddContribution_rho(const double*const occs, const complex<double>*
         std::cout << "WARNING: nonzero imaginary part: temp_A = " << temp_A << std::endl;
       if (abs(std::imag(temp_B))>1.e-15)
         std::cout << "WARNING: nonzero imaginary part: temp_B = " << temp_B << std::endl;
-      rho_A[Q] += std::real(temp_A) / (double)(num_unit_cells);
-      rho_B[Q] += std::real(temp_B) / (double)(num_unit_cells);
+      // Normalize by the number of unit cells, plus an extra factor of num_harmonics 
+      // accounting for the fact that we are summing over the FULL BZ instead of the RBZ.
+      rho_A[Q] += std::real(temp_A) / (double)(num_unit_cells*num_harmonics);
+      rho_B[Q] += std::real(temp_B) / (double)(num_unit_cells*num_harmonics);
     }
 }
 
@@ -240,6 +242,8 @@ void ham4_t::AddContribution_rho(const double*const occs, const complex<double>*
 double ham4_t::ComputeMFs_old(double*const rho_s_out, double*const rho_a_out) const
 {
     // Declare (and construct) an instance of kspace_t.
+    // *** The sum can be over the full BZ (instead of the RBZ) as long as this is 
+    // compensated for in the calculation of the MFS. ***
     kspace_t kspace(a_, a_, c_, ka_pts_, kb_pts_, kc_pts_, num_bands);
     
     // Step 1: diagonalize to find all the energy evals and store them in kspace
@@ -324,6 +328,8 @@ double ham4_t::ComputeMFs_old(double*const rho_s_out, double*const rho_a_out) co
 double ham4_t::ComputeMFs    (double*const rho_s_out, double*const rho_a_out) const
 {
     // Declare (and construct) an instance of kspace_t.
+    // *** The sum can be over the full BZ (instead of the RBZ) as long as this is 
+    // compensated for in the calculation of the MFS. ***
     const bool with_output=false; const bool with_evecs=true;
     kspace_t kspace(a_, a_, c_, ka_pts_, kb_pts_, kc_pts_, num_bands, with_output, with_evecs);
     
@@ -399,6 +405,7 @@ double ham4_t::ComputeMFs    (double*const rho_s_out, double*const rho_a_out) co
 
 
 std::string ham4_t::GetAttributes()
+
 {
     // Define a string of metadata
     // Watch out: this method resets the values of the MFs to their starting values.

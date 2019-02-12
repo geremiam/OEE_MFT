@@ -33,13 +33,13 @@ class ham4_t
     const double c_ = 1.; // c-axis length
     
     // Parameters for the momentum space grid. Assigned in the constructor.
-    // Sets the number of momentum points in the REDUCED BZ
+    // Sets the number of momentum points IN THE FULL BZ
     const int ka_pts_; // Useful to allow the user to set these for convergence studies
     const int kb_pts_;
     const int kc_pts_;
     const int states_per_cell = 2; // Number of states in an (original) unit cell
     static const int num_harmonics = 4; // Number of harmonics considered.
-    const int num_unit_cells = ka_pts_*kb_pts_*kc_pts_*num_harmonics; // The number of (original) unit cells
+    const int num_unit_cells = ka_pts_*kb_pts_*kc_pts_; // The number of (original) unit cells
     
     // We assume we are only working with harmonics given by G/2.
     const double Qa [num_harmonics] = {0., M_PI/a_, 0.,      M_PI/a_};
@@ -55,7 +55,7 @@ class ham4_t
     const int num_bands = states_per_cell * num_harmonics; // The number of bands, i.e. the order of the matrix for each k
     const int ham_array_rows = num_bands; // Same as matrix order for full storage
     const int ham_array_cols = num_bands; // Same as matrix order for full storage
-    const int num_states = ka_pts_*kb_pts_*kc_pts_*num_bands;
+    const int num_states = num_unit_cells * states_per_cell;
     
     const int loops_lim_ = 300; // Limit to the number of iteration loops
     
