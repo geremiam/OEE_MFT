@@ -447,6 +447,9 @@ bool ham4_t::FixedPoint(int*const num_loops_p, const bool with_output)
     if (with_output) // Format display output and set precision
         std::cout << std::scientific << std::showpos;
     
+    // Manually set rho_s_[0] to rho_, so the starting value for this "MF" is correct.
+    rho_s_[0] = rho_;
+    
     // Declare output variables and INITIALIZE THEM TO INPUT VALUES
     double rho_s_out [num_harmonics];
     double rho_a_out [num_harmonics];
@@ -476,7 +479,6 @@ bool ham4_t::FixedPoint(int*const num_loops_p, const bool with_output)
             rho_s_[Q] = (1.-chi)*rho_s_[Q] + chi*rho_s_out[Q];
             rho_a_[Q] = (1.-chi)*rho_a_[Q] + chi*rho_a_out[Q];
         }
-        rho_s_[0] = rho_; // Manually set rho_s_[Q] to rho_
         HFE_prev = HFE_; // Store previous free energy in HFE_prev
         
         
