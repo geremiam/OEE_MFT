@@ -243,7 +243,7 @@ double ham4_t::ComputeMFs_old(double*const rho_s_out, double*const rho_a_out) co
 {
     // Declare (and construct) an instance of kspace_t.
     // *** The sum can be over the full BZ (instead of the RBZ) as long as this is 
-    // compensated for in the calculation of the MFS. ***
+    // compensated for in the calculation of the MFS and of the chemical potential. ***
     kspace_t kspace(a_, a_, c_, ka_pts_, kb_pts_, kc_pts_, num_bands);
     
     // Step 1: diagonalize to find all the energy evals and store them in kspace
@@ -266,17 +266,20 @@ double ham4_t::ComputeMFs_old(double*const rho_s_out, double*const rho_a_out) co
     }
     
     // Step 2: Use all energies to compute chemical potential
+    // WE MUST CORRECT FOR THE OVERCOUNTED BZ INTEGRATION BY INCREASING num_states AND 
+    // filled_states BY A FACTOR OF num_harmonics. OTHERWISE, ONLY PART OF THE kspace IS
+    // USED TO CALCULATE mu.
     double mu = 666.;
     if (zerotemp_) // (ELEMENTS GET REORDERED)
-        mu = FermiEnerg(num_states, filled_states, kspace.energies);
+        mu = FermiEnerg(num_states*num_harmonics, filled_states*num_harmonics, kspace.energies);
     else // USES OPENMP PARALLELIZATION
     {
         const bool show_output = false;
         const bool usethreads = true;
-        mu = ChemPotBisec(num_states, filled_states, kspace.energies, T_, show_output, usethreads);
+        mu = ChemPotBisec(num_states*num_harmonics, filled_states*num_harmonics, kspace.energies, T_, show_output, usethreads);
     }
     
-    //std::cout << "\tCheckpoint 1" << std::endl;
+    
     // Step 3: Use all the occupation numbers and the evecs to find the order parameter
     // Probably best to diagonalize a second time to avoid storing the evecs
     double rho_A_accum [num_harmonics] = {0.}; // IMPORTANT: MUST BE INITIALIZED TO ZERO
@@ -298,7 +301,6 @@ double ham4_t::ComputeMFs_old(double*const rho_s_out, double*const rho_a_out) co
       for (int j=0; j<kb_pts_; ++j)
         for (int k=0; k<kc_pts_; ++k)
         {
-          //std::cout << "i,j,k = " << i << "," << j << "," << k << std::endl;
           Assign_ham(kspace.ka_grid[i], kspace.kb_grid[j], kspace.kc_grid[k], ham_array);
           simple_zheev(num_bands, &(ham_array[0][0]), evals, true, &(evecs[0][0]));
           // Calculate occupations from energies, mu, and temperature
@@ -329,7 +331,7 @@ double ham4_t::ComputeMFs    (double*const rho_s_out, double*const rho_a_out) co
 {
     // Declare (and construct) an instance of kspace_t.
     // *** The sum can be over the full BZ (instead of the RBZ) as long as this is 
-    // compensated for in the calculation of the MFS. ***
+    // compensated for in the calculation of the MFS and of the chemical potential. ***
     const bool with_output=false; const bool with_evecs=true;
     kspace_t kspace(a_, a_, c_, ka_pts_, kb_pts_, kc_pts_, num_bands, with_output, with_evecs);
     
@@ -354,17 +356,20 @@ double ham4_t::ComputeMFs    (double*const rho_s_out, double*const rho_a_out) co
     }
     
     // Step 2: Use all energies to compute chemical potential
+    // WE MUST CORRECT FOR THE OVERCOUNTED BZ INTEGRATION BY INCREASING num_states AND 
+    // filled_states BY A FACTOR OF num_harmonics. OTHERWISE, ONLY PART OF THE kspace IS
+    // USED TO CALCULATE mu.
     double mu = 666.;
     if (zerotemp_) // Array kspace.energies is left unchanged.
-        mu = FermiEnerg_cpy(num_states, filled_states, kspace.energies);
+        mu = FermiEnerg_cpy(num_states*num_harmonics, filled_states*num_harmonics, kspace.energies);
     else // USES OPENMP PARALLELIZATION
     {
         const bool show_output = false;
         const bool usethreads = true;
-        mu = ChemPotBisec(num_states, filled_states, kspace.energies, T_, show_output, usethreads);
+        mu = ChemPotBisec(num_states*num_harmonics, filled_states*num_harmonics, kspace.energies, T_, show_output, usethreads);
     }
     
-    //std::cout << "\tCheckpoint 1" << std::endl;
+    
     // Step 3: Use all the occupation numbers and the evecs to find the order parameter
     // Probably best to diagonalize a second time to avoid storing the evecs
     double rho_A_accum [num_harmonics] = {0.}; // IMPORTANT: MUST BE INITIALIZED TO ZERO
@@ -558,7 +563,7 @@ double ham4_t::Omega_trial(const double*const energies, const double mu,
 double ham4_t::Omega_MF(const double*const energies, const double mu) const
 {
     // (GC) free energy of the MF Hamiltonian. 
-    // Normalized according to the NUMBER OF ATOMS
+    // Normalized according to the NUMBER OF (ORIGINAL) UNIT CELLS
     // It's calculated differently at zero and nonzero temperatures.
     double accumulator = 0.;
     
@@ -573,8 +578,8 @@ double ham4_t::Omega_MF(const double*const energies, const double mu) const
       for (int i=0; i<num_states; ++i)
         accumulator += - T_ * log_1p_exp(-(energies[i] - mu)/T_);
     
-    // Normalize by the number of atoms
-    accumulator /= (double)(2*ka_pts_*kb_pts_*kc_pts_);
+    // Normalize by the number of unit cells. Also correct for summing over the full BZ.
+    accumulator /= (double)(num_unit_cells*num_harmonics);
     
     return accumulator;
 }
