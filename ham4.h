@@ -124,6 +124,13 @@ class ham4_t
     bool FixedPoint(int*const num_loops_p=NULL, const bool with_output=false);
     
     std::string GetAttributes();
+    
+    // ROUTINES FOR CALCULATING THE FREE ENERGY
+    double Helmholtz  (const double*const energies, const double mu, const double*const rho_s_out, const double*const rho_a_out) const;
+    double Omega_trial(const double*const energies, const double mu, const double*const rho_s_out, const double*const rho_a_out) const;
+    double Omega_MF   (const double*const energies, const double mu) const;
+    double mean_V   (const double*const rho_s_out, const double*const rho_a_out) const;
+    double mean_V_MF(const double*const rho_s_out, const double*const rho_a_out) const;
 };
 
 #endif

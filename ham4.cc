@@ -324,7 +324,7 @@ double ham4_t::ComputeMFs_old(double*const rho_s_out, double*const rho_a_out) co
     
     // The kspace_t destructor is called automatically.
     
-    return 0.; // Should return the Helmholtz free energy
+    return Helmholtz(kspace.energies, mu, rho_s_out, rho_a_out);
 }
 
 double ham4_t::ComputeMFs    (double*const rho_s_out, double*const rho_a_out) const
@@ -404,7 +404,7 @@ double ham4_t::ComputeMFs    (double*const rho_s_out, double*const rho_a_out) co
     }
     
     // The kspace_t destructor is called automatically.
-    return 0.; // Should return the Helmholtz free energy
+    return Helmholtz(kspace.energies, mu, rho_s_out, rho_a_out);
 }
 
 
@@ -490,12 +490,14 @@ bool ham4_t::FixedPoint(int*const num_loops_p, const bool with_output)
             std::cout << rho_s_[Q] << "\t";
             std::cout << rho_a_[Q] << "\t";
           }
-          std::cout << std::endl;
         }
         
         // Compute MFs. Output is assigned to the 'out' arguments.
         // The HFE for the final set of MF values is left in the attribute HFE_.
         HFE_ = ComputeMFs(rho_s_out, rho_a_out);
+        
+        if (with_output)
+          std::cout << "|  " << HFE_ << std::endl;
         
         double rho_s_diff [num_harmonics]; // Declare arrays to store the changes in MF
         double rho_a_diff [num_harmonics];
@@ -513,7 +515,7 @@ bool ham4_t::FixedPoint(int*const num_loops_p, const bool with_output)
             std::cout << rho_s_diff[Q] << "\t";
             std::cout << rho_a_diff[Q] << "\t";
           }
-          std::cout << std::endl;
+          std::cout << "|  " << HFE_-HFE_prev << std::endl;
         }
         
         // Test for convergence. The density (first element of rho_s_diff) is ignored.
@@ -535,30 +537,27 @@ bool ham4_t::FixedPoint(int*const num_loops_p, const bool with_output)
     return fail;
 }
 
-/*
 
 // **************************************************************************************
 // ROUTINES FOR CALCULATING THE FREE ENERGY
-double ham4_t::Helmholtz(const double*const energies, const double mu,
-                         const double rho_a_out, const complex<double> u1_out, const complex<double> u1p_s_out, const complex<double> u1p_a_out,
-                         const complex<double> u2A_out, const complex<double> u2B_out, const complex<double> u3_s_out, const complex<double> u3_a_out) const
+
+double ham4_t::Helmholtz(const double*const energies, const double mu, const double*const rho_s_out, const double*const rho_a_out) const
 {
-    // The Helmholtz FE normalized according to the NUMBER OF ATOMS
-    // Should be use to compare states of a fixed particle number
-    // Second term is + mu N (properly normalized).
-    const double ans = Omega_trial(energies,mu,rho_a_out,u1_out,u1p_s_out,u1p_a_out,u2A_out,u2B_out,u3_s_out,u3_a_out) + mu*rho_;
+    // The Helmholtz FE normalized according to the NUMBER OF (ORIGINAL) UNIT CELLS
+    // Should be used to compare states of a fixed particle number
+    // Second term is + mu n (properly normalized).
+    // We use the "real" density rho_s_[0] instead of the target density rho_. These may 
+    // be different because of filled_states gets rounded to an int.
+    const double ans = Omega_trial(energies,mu,rho_s_out,rho_a_out) + mu*rho_s_[0]*states_per_cell;
     return ans;
 }
 
-double ham4_t::Omega_trial(const double*const energies, const double mu,
-                           const double rho_a_out, const complex<double> u1_out, const complex<double> u1p_s_out, const complex<double> u1p_a_out,
-                           const complex<double> u2A_out, const complex<double> u2B_out, const complex<double> u3_s_out, const complex<double> u3_a_out) const
+double ham4_t::Omega_trial(const double*const energies, const double mu, const double*const rho_s_out, const double*const rho_a_out) const
 {
-    // The (GC) free energy normalized according to the NUMBER OF ATOMS
-    // Each component is already normalized.
-    const double ans = Omega_MF(energies, mu)
-                     + mean_Hint(rho_a_out,u1_out,u1p_s_out,u1p_a_out,u2A_out,u2B_out,u3_s_out,u3_a_out)
-                     - mean_Hint_MF(rho_a_out,u1_out,u1p_s_out,u1p_a_out,u2A_out,u2B_out,u3_s_out,u3_a_out);
+    // The (GC) free energy normalized according to the NUMBER OF (ORIGINAL) UNIT CELLS
+    // Each term is already normalized.
+    const double ans = Omega_MF (energies, mu) + mean_V   (rho_s_out, rho_a_out)
+                                               - mean_V_MF(rho_s_out, rho_a_out);
     return ans;
 }
 
@@ -570,14 +569,14 @@ double ham4_t::Omega_MF(const double*const energies, const double mu) const
     double accumulator = 0.;
     
     if (zerotemp_)
-    {
-      for (int i=0; i<num_states; ++i)
+    { // Remember that there are num_states*num_harmonics energies in kspace.
+      for (int i=0; i<num_states*num_harmonics; ++i)
         if (energies[i]<=mu)
           accumulator += (energies[i] - mu);
     }
     
-    else
-      for (int i=0; i<num_states; ++i)
+    else // Remember that there are num_states*num_harmonics energies in kspace.
+      for (int i=0; i<num_states*num_harmonics; ++i)
         accumulator += - T_ * log_1p_exp(-(energies[i] - mu)/T_);
     
     // Normalize by the number of unit cells. Also correct for summing over the full BZ.
@@ -586,68 +585,71 @@ double ham4_t::Omega_MF(const double*const energies, const double mu) const
     return accumulator;
 }
 
-double ham4_t::mean_Hint(const double rho_a_out, const complex<double> u1_out, const complex<double> u1p_s_out, const complex<double> u1p_a_out,
-                         const complex<double> u2A_out, const complex<double> u2B_out, const complex<double> u3_s_out, const complex<double> u3_a_out) const
+double ham4_t::mean_V(const double*const rho_s_out, const double*const rho_a_out) const
 {
     // Expectation value of the full interaction term in the Hamiltonian
-    // Normalized according to the NUMBER OF ATOMS
+    // Normalized according to the NUMBER OF (ORIGINAL) UNIT CELLS
+    
+    // FIRST TERM ***********************************************************************
     
     // For convenience, define
-    const double rho_A_out = rho_ + rho_a_out;
-    const double rho_B_out = rho_ - rho_a_out;
+    double rho_A_out [num_harmonics];
+    double rho_B_out [num_harmonics];
+    for (int Q=0; Q<num_harmonics; ++Q) {
+        rho_A_out[Q] = rho_s_out[Q] + rho_a_out[Q];
+        rho_B_out[Q] = rho_s_out[Q] - rho_a_out[Q];
+    }
     
-    const complex<double> u1p_A_out = u1p_s_out + u1p_a_out;
-    const complex<double> u1p_B_out = u1p_s_out - u1p_a_out;
+    complex<double> term1 = {0.,0.}; // Variable to accumulate on.
+    complex<double> V[states_per_cell*states_per_cell]={0.}; // Declare the array V, to be evaluated for every Q.
+    for (int Q=0; Q<num_harmonics; ++Q) {
+      Assign_V(Q, V); // The matrix V, which depends on Q, gets assigned
+      term1 += 0.5 * (V[0] * std::conj(rho_A_out[Q]) * rho_A_out[Q] + V[1] * std::conj(rho_A_out[Q]) * rho_B_out[Q]
+                    + V[2] * std::conj(rho_B_out[Q]) * rho_A_out[Q] + V[3] * std::conj(rho_B_out[Q]) * rho_B_out[Q]);
+    }
     
-    const complex<double> u3_A_out = u3_s_out + u3_a_out;
-    const complex<double> u3_B_out = u3_s_out - u3_a_out;
+    if (abs(std::imag(term1))>1.e-15)
+        std::cout << "WARNING: nonzero imaginary part: term1 = " << term1 << std::endl;
     
-    double ans = 0.;
+    // SECOND TERM **********************************************************************
     
-    // NOTE: norm() is the MODULUS SQUARED, for some reason.
-    ans += 0.5*(V3_+2.*V1p_) * ( std::norm(rho_A_out) + std::norm(rho_B_out) ); // Density terms
-    ans += 2. *(V1_+2.*V2_)  * rho_A_out * rho_B_out;
+    //complex<double> term2 = {0.,0.}; // Variable to accumulate on.
     
-    ans += - 2.*V1_ * std::norm(u1_out);
-    ans += - 2.*V2_ * ( std::norm(u2A_out) + std::norm(u2B_out) );
-    ans += -    V1p_* ( std::norm(u1p_A_out) + std::norm(u1p_B_out) );
-    ans += - 0.5*V3_* ( std::norm(u3_A_out)  + std::norm(u3_B_out)  );
-    
-    return ans;
+    return std::real(term1);// + std::real(term2);
 }
 
-double ham4_t::mean_Hint_MF(const double rho_a_out, const complex<double> u1_out, const complex<double> u1p_s_out, const complex<double> u1p_a_out,
-                            const complex<double> u2A_out, const complex<double> u2B_out, const complex<double> u3_s_out, const complex<double> u3_a_out) const
+double ham4_t::mean_V_MF(const double*const rho_s_out, const double*const rho_a_out) const
 {
     // Expectation value of the M-F interaction term in the Hamiltonian.
-    // Normalized according to the NUMBER OF ATOMS
+    // Normalized according to the NUMBER OF (ORIGINAL) UNIT CELLS
     
     // For convenience, define
-    const double rho_A     = rho_ + rho_a_;
-    const double rho_B     = rho_ - rho_a_;
-    const double rho_A_out = rho_ + rho_a_out;
-    const double rho_B_out = rho_ - rho_a_out;
+    double rho_A [num_harmonics];
+    double rho_B [num_harmonics];
+    double rho_A_out [num_harmonics];
+    double rho_B_out [num_harmonics];
     
-    const complex<double> u1p_A     = u1p_s_    + u1p_a_;
-    const complex<double> u1p_B     = u1p_s_    - u1p_a_;
-    const complex<double> u1p_A_out = u1p_s_out + u1p_a_out;
-    const complex<double> u1p_B_out = u1p_s_out - u1p_a_out;
+    for (int Q=0; Q<num_harmonics; ++Q) // Assign them values from rho_s_ and rho_a_
+    {
+        rho_A[Q]     = rho_s_[Q]    + rho_a_[Q];
+        rho_B[Q]     = rho_s_[Q]    - rho_a_[Q];
+        rho_A_out[Q] = rho_s_out[Q] + rho_a_out[Q];
+        rho_B_out[Q] = rho_s_out[Q] - rho_a_out[Q];
+    }
     
-    const complex<double> u3_A     = u3_s_    + u3_a_;
-    const complex<double> u3_B     = u3_s_    - u3_a_;
-    const complex<double> u3_A_out = u3_s_out + u3_a_out;
-    const complex<double> u3_B_out = u3_s_out - u3_a_out;
+    complex<double> ans = {0.,0.}; // Variable for the summation
     
-    double ans = 0.;
+    // Declare the array V, to be evaluated for every Q.
+    complex<double> V[states_per_cell*states_per_cell]={0.};
+    for (int Q=0; Q<num_harmonics; ++Q)
+    {
+        Assign_V(Q, V);// The matrix V, which depends on Q, gets assigned
+        ans += V[0] * std::conj(rho_A[Q]) * rho_A_out[Q] + V[1] * std::conj(rho_A[Q]) * rho_B_out[Q]
+             + V[2] * std::conj(rho_B[Q]) * rho_A_out[Q] + V[3] * std::conj(rho_B[Q]) * rho_B_out[Q];
+    }
     
-    ans += 2.*(V1_+2.*V2_) * (rho_A*rho_B_out + rho_B*rho_A_out); // Density terms
-    ans +=   (2.*V1p_+V3_) * (rho_A*rho_A_out + rho_B*rho_B_out);
+    if (abs(std::imag(ans))>1.e-15)
+        std::cout << "WARNING: nonzero imaginary part: ans = " << ans << std::endl;
     
-    ans += -4.*V1_ * real( u1_ * conj(u1_out) ); // Exchange terms
-    ans += -4.*V2_ * real( u2A_  * conj(u2A_out)    +  u2B_  * conj(u2B_out)   );
-    ans += -2.*V1p_* real( u1p_A * conj(u1p_A_out)  +  u1p_B * conj(u1p_B_out) );
-    ans += -   V3_ * real( u3_A  * conj(u3_A_out)   +  u3_B  * conj(u3_B_out)  );
-    
-    return ans;
+    return std::real(ans);
 }
-*/
