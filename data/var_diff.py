@@ -1,22 +1,24 @@
-# data_anal.py
-""" The following are specified as command-line arguments: (1) the path to the NetCDF 
-dataset, (2) the name of the variable to be plotted, and (3) the indices to be plotted 
-for each of the variable's dimensions. (To specify which two dimensions to plot against, 
-enter '-1' instead of an index.) """
+# var_diff.py
+""" Plots the difference between the specified variable comparing two datasets. 
+The first and second arguments are the two datasets, the third is the variable name, and 
+the fourth are the slices to plot (plotting dimensions are specified with -1). """
 
-from sys import argv # argv is the list of space-separated arguments from command prompt.
+
+from sys import argv
 import numpy as np
 import matplotlib.pyplot as plt
 
-import plot_routines # Routine for plotting data
-import nc_IO # Routine for reading data from a NetCDF file
+import plot_routines
+import nc_IO
 
 if __name__ == "__main__":
+    print("var[dataset2] - var[dataset1]")
     
     # Unpack the argv list
-    filename = argv[1] # Element 1 is dataset name (a string)
-    varname  = argv[2] # Element 2 is variable name (a string)
-    dims = argv[3:] # Subsequent elements are slices to plot. Build a list.
+    filename1 = argv[1] # Element 1 is dataset 1 (a string)
+    filename2 = argv[2] # Element 2 is dataset 2 (a string)
+    varname  = argv[3] # Element 3 is variable name (a string)
+    dims = argv[4:] # Subsequent elements are slices to plot. Build a list.
     for idx, val in enumerate(dims): # Make the list elements integers
         dims[idx] = int(val)
     
@@ -25,7 +27,8 @@ if __name__ == "__main__":
         print("\tWARNING: NUMBER OF PLOTTING DIMENSIONS SHOULD BE 2")
     
     
-    var, var_dims, coord_vars = nc_IO.nc_read_var(filename, varname) # Get data
+    var1, var_dims,  coord_vars  = nc_IO.nc_read_var(filename1, varname) # Variable from dataset 1
+    var2, var_dims2, coord_vars2 = nc_IO.nc_read_var(filename2, varname) # Variable from dataset 2
     # "var" is the variable
     # "var_dims" is a tuple with the dims on which the var is defined
     # "coord_vars" is a dictionary containing coordinate variables related to these dims (if applicable)
@@ -67,5 +70,5 @@ if __name__ == "__main__":
         vert_extent = () # Leads to default behaviour
     
     fig, ax = plt.subplots()
-    plot_routines.ColorPlot(fig, ax, var[tup], Labels, horiz_extent, vert_extent)
+    plot_routines.ColorPlot(fig, ax, var2[tup]-var1[tup], Labels, horiz_extent, vert_extent, logscale=False)
     plt.show()

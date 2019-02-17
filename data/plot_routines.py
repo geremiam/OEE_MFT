@@ -37,7 +37,7 @@ def ColorPlot(fig, ax, data, Labels, horiz_extent=(), vert_extent=(), logscale=F
     im = ax.imshow(data, cmap=cmap, aspect='auto', interpolation='nearest', 
                    vmin=vmin, vmax=vmax,origin='lower', extent=extent, norm=norm)
     
-    cbar = fig.colorbar(im, ax=ax, pad=0.03)
+    cbar = fig.colorbar(im, ax=ax, format='%g', pad=0.03)
     
     #ax.contour(tensor, 15, colors='k', vmin=vmin, vmax=vmax,origin='lower', extent=extent)
     #ax.contour(tensor, (0,), colors='C3', vmin=vmin, vmax=vmax, origin='lower', extent=extent, linewidths=2)
