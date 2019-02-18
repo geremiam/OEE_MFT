@@ -50,10 +50,14 @@ int ham4_t::idx(const int Q, const int alpha) const
 void ham4_t::resetMFs()
 {
     // Resets MFs to default starting values.
-    rho_s_[0] = 0.2;    rho_a_[0] = 0.1;
-    rho_s_[1] = 0.2;    rho_a_[1] = 0.1;
-    rho_s_[2] = 0.0;    rho_a_[2] = 0.1;
-    rho_s_[3] = 0.2;    rho_a_[3] = 0.1;
+    rho_s_[0] = 0.2;
+    rho_a_[0] = 0.1;
+    rho_s_[1] = 0.2;
+    rho_a_[1] = 0.1;
+    rho_s_[2] = 0.0;
+    rho_a_[2] = 0.1;
+    rho_s_[3] = 0.2;
+    rho_a_[3] = 0.1;
 }
 
 /* Methods that set parameters with interdependencies. */

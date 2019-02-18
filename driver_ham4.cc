@@ -25,14 +25,14 @@ class pspaceA_t {
     
   public:
     // rho
-    const size_t rho_pts = 2;
-    const double rho_bounds [2] = {0.5, 0.7};
+    const size_t rho_pts = 5;
+    const double rho_bounds [2] = {0.4, 0.6};
     // g: determines all the interaction strengths
-    const size_t g_pts = 2;
-    const double V1_bounds  [2] = {0.,10.};
-    const double V1p_bounds [2] = {0.,5.};
-    const double V2_bounds  [2] = {0.,5.};
-    const double V3_bounds  [2] = {0.,5.};
+    const size_t g_pts = 11;
+    const double V1_bounds  [2] = {0.,5.0};
+    const double V1p_bounds [2] = {0.,2.5};
+    const double V2_bounds  [2] = {0.,2.5};
+    const double V3_bounds  [2] = {0.,2.5};
     
     const int parspace_pts = rho_pts*g_pts;
     
@@ -327,6 +327,7 @@ int pstudyA()
     
     // Make any initial adjustment to the parameters
     ham4.set_nonzerotemp(1.e-3);
+    //ham4.set_zerotemp();
     
     const string GlobalAttr = ham4.GetAttributes(); // assign attributes to GlobalAttr
     std::cout << "\n\n\ttol = " << ham4.tol_ << "\n";//Print tolerance for equality of MFs.

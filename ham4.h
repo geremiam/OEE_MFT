@@ -57,7 +57,7 @@ class ham4_t
     const int ham_array_cols = num_bands; // Same as matrix order for full storage
     const int num_states = num_unit_cells * states_per_cell;
     
-    const int loops_lim_ = 300; // Limit to the number of iteration loops
+    const int loops_lim_ = 200; // Limit to the number of iteration loops
     
     
     /* Parameters that have dependencies or are dependent on other parameters. These 
