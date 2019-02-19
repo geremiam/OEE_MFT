@@ -80,8 +80,8 @@ class ham4_t
     //void Assign_V_manual(const int Q, complex<double>*const V) const;
     void Assign_ham(const double ka, const double kb, const double kc, complex<double>*const*const ham_array) const;
     
-    double ComputeMFs_old(double*const rho_s_out, double*const rho_a_out) const;
-    double ComputeMFs    (double*const rho_s_out, double*const rho_a_out) const;
+    void ComputeMFs_old(double*const rho_s_out, double*const rho_a_out, double*const HFE_p=NULL, double*const mu_p=NULL) const;
+    void ComputeMFs    (double*const rho_s_out, double*const rho_a_out, double*const HFE_p=NULL, double*const mu_p=NULL) const;
     
     
   //public:
@@ -96,6 +96,7 @@ class ham4_t
     double rho_a_ [num_harmonics] = {0.};
     
     double HFE_ = -99.; // For storing the free energy
+    double mu_  = -9.;  // For storing the chemical potential
     
     const double tol_ = 4.e-6; // Tolerance for the equality of the mean fields
     

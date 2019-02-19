@@ -538,6 +538,7 @@ int pstudyA()
         }
         pspaceA.loops_grid[pspaceA.Index(f,g)] = loops; // Save the number of loops to pspaceA array.
         pspaceA.energy_grid[pspaceA.Index(f,g)]= ham4.HFE_;
+        pspaceA.mu_grid[pspaceA.Index(f,g)]    = ham4.mu_;
         
         if (with_output) std::cout << std::endl;
       }
@@ -609,6 +610,7 @@ int pstudyAA()
         }
         pspaceAA.loops_grid[pspaceAA.Index(f,g)] = loops; // Save the number of loops to pspaceAA array.
         pspaceAA.energy_grid[pspaceAA.Index(f,g)]= ham4.HFE_;
+        pspaceAA.mu_grid[pspaceAA.Index(f,g)]    = ham4.mu_;
         
         if (with_output) std::cout << std::endl;
       }
@@ -678,6 +680,7 @@ int pstudyB()
         }
         pspaceB.loops_grid[pspaceB.Index(f,g,h)] = loops; // Save the number of loops to pspaceB array.
         pspaceB.energy_grid[pspaceB.Index(f,g,h)]= ham4.HFE_;
+        pspaceB.mu_grid[pspaceB.Index(f,g,h)]    = ham4.mu_;
         
         if (with_output) std::cout << std::endl;
       }

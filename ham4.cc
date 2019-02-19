@@ -243,7 +243,7 @@ void ham4_t::AddContribution_rho(const double*const occs, const complex<double>*
 }
 
 
-double ham4_t::ComputeMFs_old(double*const rho_s_out, double*const rho_a_out) const
+void ham4_t::ComputeMFs_old(double*const rho_s_out, double*const rho_a_out, double*const HFE_p, double*const mu_p) const
 {
     // Declare (and construct) an instance of kspace_t.
     // *** The sum can be over the full BZ (instead of the RBZ) as long as this is 
@@ -328,10 +328,13 @@ double ham4_t::ComputeMFs_old(double*const rho_s_out, double*const rho_a_out) co
     
     // The kspace_t destructor is called automatically.
     
-    return Helmholtz(kspace.energies, mu, rho_s_out, rho_a_out);
+    if (HFE_p!=NULL)
+      *HFE_p = Helmholtz(kspace.energies, mu, rho_s_out, rho_a_out);
+    if (mu_p!=NULL)
+      *mu_p  = mu;
 }
 
-double ham4_t::ComputeMFs    (double*const rho_s_out, double*const rho_a_out) const
+void ham4_t::ComputeMFs    (double*const rho_s_out, double*const rho_a_out, double*const HFE_p, double*const mu_p) const
 {
     // Declare (and construct) an instance of kspace_t.
     // *** The sum can be over the full BZ (instead of the RBZ) as long as this is 
@@ -408,7 +411,10 @@ double ham4_t::ComputeMFs    (double*const rho_s_out, double*const rho_a_out) co
     }
     
     // The kspace_t destructor is called automatically.
-    return Helmholtz(kspace.energies, mu, rho_s_out, rho_a_out);
+    if (HFE_p!=NULL) // The free energy is assigned to HFE_p
+      *HFE_p = Helmholtz(kspace.energies, mu, rho_s_out, rho_a_out);
+    if (mu_p!=NULL) // The chemical potential is assigned to mu_p
+      *mu_p  = mu;
 }
 
 
@@ -497,8 +503,9 @@ bool ham4_t::FixedPoint(int*const num_loops_p, const bool with_output)
         }
         
         // Compute MFs. Output is assigned to the 'out' arguments.
-        // The HFE for the final set of MF values is left in the attribute HFE_.
-        HFE_ = ComputeMFs(rho_s_out, rho_a_out);
+        // The HFE for the final set of MF values is assigned to the attribute HFE_.
+        // Likewise, the final chemical potential is assigned to mu_.
+        ComputeMFs(rho_s_out, rho_a_out, &HFE_, &mu_);
         
         if (with_output)
           std::cout << "|  " << HFE_ << std::endl;
