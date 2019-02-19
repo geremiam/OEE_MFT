@@ -21,6 +21,7 @@ private:
     int*const coord_varid_; // Array of IDs for coord vars (may not be used in whole or in part)
     int*const varid_; // Array of IDs for user-defined variables
     int varid_energy_=-99; // ID for energy variable
+    int varid_mu_=-99; // ID for mu variable (the chemical potential)
     int varid_loops_=-99; // ID for numloops variable
 public:
     int ncid_=-99; // ID for dataset
@@ -44,6 +45,7 @@ public:
     void WriteCoordVar_custom(const int coord_varid, const double*const coord_var); // Write a coord var whose ID the user keeps track of.
     void WriteVars(const double*const*const vars); // Write variables
     void WriteEnergy(const double*const energy); // Write energy variable
+    void Writemu(const double*const energy); // Write mu variable
     void WriteLoops(const int*const loops); // Write numloops variable
 };
 

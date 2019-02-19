@@ -56,6 +56,9 @@ newDS_t::newDS_t(const size_t dims_num, const std::string*const dim_names, const
     // Define a variable for the energy
     ErrorHandler( nc_def_var(ncid_, "energy", NC_DOUBLE, dims_num_, dimid_, &varid_energy_ ));
     
+    // Define a variable for the chemical potential
+    ErrorHandler( nc_def_var(ncid_, "mu",     NC_DOUBLE, dims_num_, dimid_, &varid_mu_ ));
+    
     // Variable for the number of loops
     ErrorHandler( nc_def_var(ncid_, "numloops", NC_INT, dims_num_, dimid_, &varid_loops_ ));
     
@@ -103,6 +106,11 @@ void newDS_t::WriteEnergy(const double*const energy)
 {
     // Write energy variable. The NetCDF C interface expects row-major layout.
     ErrorHandler( nc_put_var_double(ncid_, varid_energy_, energy) );
+}
+void newDS_t::Writemu(const double*const mu)
+{
+    // Write mu variable. The NetCDF C interface expects row-major layout.
+    ErrorHandler( nc_put_var_double(ncid_, varid_mu_, mu) );
 }
 void newDS_t::WriteLoops(const int*const loops)
 {
