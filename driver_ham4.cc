@@ -52,6 +52,7 @@ class pspaceA_t {
     double*const*const rho_a_grid; // 2D array
     int*const loops_grid; // holds the number of loops done at each point
     double*const energy_grid; // Holds the MF energy for later comparison
+    double*const mu_grid; // Holds the chemical potential for the converged system
     
     // Constructor declaration
     pspaceA_t(const int num_harmonics)
@@ -64,7 +65,8 @@ class pspaceA_t {
          rho_s_grid (Alloc2D_d(num_harmonics, parspace_pts)), // Vars
          rho_a_grid (Alloc2D_d(num_harmonics, parspace_pts)),
          loops_grid (new int    [parspace_pts]),
-         energy_grid(new double [parspace_pts]) // Important -- Note order
+         energy_grid(new double [parspace_pts]),
+         mu_grid    (new double [parspace_pts]) // Important -- Note order
     {
         // The initialization list initializes the parameters and allocates memory for 
         // the arrays.
@@ -84,6 +86,7 @@ class pspaceA_t {
         
         ValInitArray(parspace_pts, loops_grid, 0); // Initialize to 0
         ValInitArray(parspace_pts, energy_grid, -99.);
+        ValInitArray(parspace_pts, mu_grid,      -9.);
         
         std::cout << "pspaceA_t instance created.\n";
     }
@@ -98,6 +101,7 @@ class pspaceA_t {
         Dealloc2D(rho_a_grid); // MF variables
         delete [] loops_grid; // Other variables
         delete [] energy_grid;
+        delete [] mu_grid;
         
         std::cout << "pspaceA_t instance deleted.\n";
     }
@@ -161,6 +165,7 @@ class pspaceA_t {
         
         newDS.WriteLoops(loops_grid); // Write loops variable
         newDS.WriteEnergy(energy_grid); // Write energy variable
+        newDS.Writemu(mu_grid); // Write mu variable
     }
 };
 
@@ -197,6 +202,7 @@ class pspaceB_t {
     double*const*const rho_a_grid;
     int*const loops_grid; // holds the number of loops done at each point
     double*const energy_grid; // Holds the MF energy for later comparison
+    double*const mu_grid; // Holds the chemical potential for the converged system
     
     // Constructor declaration
     pspaceB_t(const int num_harmonics)
@@ -207,7 +213,8 @@ class pspaceB_t {
          rho_s_grid (Alloc2D_d(num_harmonics, parspace_pts)),
          rho_a_grid (Alloc2D_d(num_harmonics, parspace_pts)), // Vars
          loops_grid (new int    [parspace_pts]),
-         energy_grid(new double [parspace_pts]) // Important -- Note order
+         energy_grid(new double [parspace_pts]),
+         mu_grid    (new double [parspace_pts]) // Important -- Note order
     {
         // The initialization list initializes the parameters and allocates memory for 
         // the arrays.
@@ -228,6 +235,7 @@ class pspaceB_t {
         
         ValInitArray(parspace_pts, loops_grid, 0);     // Initialize to 0
         ValInitArray(parspace_pts, energy_grid, -99.);
+        ValInitArray(parspace_pts, mu_grid,      -9.);
         
         std::cout << "pspaceB_t instance created.\n";
     }
@@ -242,6 +250,7 @@ class pspaceB_t {
         Dealloc2D(rho_a_grid); // MF variables
         delete [] loops_grid; // Other variables
         delete [] energy_grid;
+        delete [] mu_grid;
         
         std::cout << "pspaceB_t instance deleted.\n";
     }
@@ -307,6 +316,7 @@ class pspaceB_t {
         
         newDS.WriteLoops(loops_grid); // Write loops variable
         newDS.WriteEnergy(energy_grid); // Write energy variable
+        newDS.Writemu(mu_grid); // Write mu variable
     }
 };
 
