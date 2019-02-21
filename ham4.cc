@@ -82,13 +82,42 @@ void ham4_t::set_nonzerotemp(const double T)
 
 
 /* Constructor and destructor */
-ham4_t::ham4_t(const int ka_pts, const int kb_pts, const int kc_pts)
-    :ka_pts_(ka_pts), kb_pts_(kb_pts), kc_pts_(kc_pts)
+ham4_t::ham4_t(const int ka_pts, const int kb_pts, const int kc_pts, const double tol, const int loops_lim,
+               const int mixing_vals_len, const int*const counter_vals, const double*const mixing_vals)
+    :ka_pts_(ka_pts), kb_pts_(kb_pts), kc_pts_(kc_pts), loops_lim_(loops_lim), tol_(tol)
 {
     /* Constructor implementation */
     assign_rho(rho_); // Sets initial value of 'filled_states'
     resetMFs(); // Sets the mean fields to default value
     std::cout << "ham4_t instance created.\n";
+    
+    const int len_default = 13;
+    const int   counter_vals_default [len_default] = { 10,  20,  30,  40,  50,  60,  90, 120, 150,  180,  210,  240,  270};
+    const double mixing_vals_default [len_default] = {0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.08, 0.06, 0.04, 0.02};
+    
+    if (mixing_vals_len==0) // Use the default values
+    {
+      mixing_vals_len_ = len_default; // The default value
+      counter_vals_ = new int [mixing_vals_len_]; // Reserve memory for arrays
+      mixing_vals_  = new double [mixing_vals_len_];
+      for (int i=0; i<mixing_vals_len_; ++i) // Assign values to default ones
+      {
+        counter_vals_[i] = counter_vals_default[i];
+        mixing_vals_[i]  = mixing_vals_default[i];
+      }
+    }
+    
+    else // Use the user input
+    {
+      mixing_vals_len_ = mixing_vals_len;
+      counter_vals_ = new int [mixing_vals_len_]; // Reserve memory for arrays
+      mixing_vals_  = new double [mixing_vals_len_];
+      for (int i=0; i<mixing_vals_len_; ++i) // Assign values to default ones
+      {
+        counter_vals_[i] = counter_vals[i];
+        mixing_vals_[i]  = mixing_vals[i];
+      }
+    }
 }
 
 ham4_t::~ham4_t()
@@ -478,11 +507,8 @@ bool ham4_t::FixedPoint(int*const num_loops_p, const bool with_output)
         
         
         // Past a certain number of loops, we mix in part of the previous input vals
-        const int len = 13;
-        const int counter_vals [len] = { 10,  20,  30,  40,  50,  60,  90, 120, 150,  180,  210,  240,  270};
-        const double  chi_vals [len] = {0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.08, 0.06, 0.04, 0.02};
         // Mixing fraction chi (chi=1 corresponds to using fully new value)
-        const double chi = Set_chi(counter, counter_vals, chi_vals, len, with_output);
+        const double chi = Set_chi(counter, counter_vals_, mixing_vals_, mixing_vals_len_, with_output);
         
         for (int Q=0; Q<num_harmonics; ++Q) // Update mean-field values
         {

@@ -178,7 +178,8 @@ class pspaceAA_t { // Interaction strength and temperature varied at constant fi
     
   public:
     // T (temperature)
-    const size_t T_pts = 5;
+    const size_t T_pts = 8;
+    const double T_bounds [2] = {1.e-2, 7.+1.e-2};
     // g: determines all the interaction strengths
     const size_t g_pts = 11;
     const double V1_bounds  [2] = {0.,5.0};
@@ -226,12 +227,7 @@ class pspaceAA_t { // Interaction strength and temperature varied at constant fi
         
         // Coordinate variables are initialized
         const bool endpoint = true; // Include endpoint (not an important choice)
-        //LinInitArray(rho_bounds[0], rho_bounds[1], T_pts, rho_grid, endpoint);
-        T_grid[0] = 1.e-3;
-        T_grid[1] = 1.e-2;
-        T_grid[2] = 0.1;
-        T_grid[3] = 1.0;
-        T_grid[4] = 10.;
+        LinInitArray(T_bounds[0], T_bounds[1], T_pts, T_grid, endpoint);
         
         LinInitArray( V1_bounds[0],  V1_bounds[1], g_pts,  V1_grid, endpoint);
         LinInitArray(V1p_bounds[0], V1p_bounds[1], g_pts, V1p_grid, endpoint);
@@ -488,8 +484,17 @@ int pstudyA()
     const bool with_output = true; // Show output for diagnostics
     int numfails = 0; // Tracks number of points which failed to converge after loops_lim
     
+    const int ka_pts=62; // Choose twice a prime number for grid resolution
+    const int kb_pts=62;
+    const int kc_pts=62;
+    const double tol=4.e-6;
+    const int loops_lim=300;
+    const int mixing_vals_len = 13;
+    const int   counter_vals [mixing_vals_len] = { 10,  20,  30,  40,  50,  60,  90, 120, 150,  180,  210,  240,  270};
+    const double mixing_vals [mixing_vals_len] = {0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.08, 0.06, 0.04, 0.02};
+    
     // Declare and construct an instance of ham4_t
-    ham4_t ham4(62,62,62); // Choose twice a prime number for grid resolution
+    ham4_t ham4(ka_pts, kb_pts, kc_pts, tol, loops_lim, mixing_vals_len, counter_vals, mixing_vals);
     
     pspaceA_t pspaceA(ham4.num_harmonics); // Declare object of type pspaceA (parameter space)
     
@@ -561,8 +566,17 @@ int pstudyAA()
     const bool with_output = true; // Show output for diagnostics
     int numfails = 0; // Tracks number of points which failed to converge after loops_lim
     
+    const int ka_pts=46; // Choose twice a prime number for grid resolution
+    const int kb_pts=46;
+    const int kc_pts=46;
+    const double tol=4.e-6;
+    const int loops_lim=300;
+    const int mixing_vals_len = 7;
+    const int   counter_vals [mixing_vals_len] = { 30,  60,  90, 120, 150, 180, 210};
+    const double mixing_vals [mixing_vals_len] = {0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3};
+    
     // Declare and construct an instance of ham4_t
-    ham4_t ham4(62,62,62); // Choose twice a prime number for grid resolution
+    ham4_t ham4(ka_pts, kb_pts, kc_pts, tol, loops_lim, mixing_vals_len, counter_vals, mixing_vals);
     
     pspaceAA_t pspaceAA(ham4.num_harmonics); // Declare object of type pspaceAA (parameter space)
     

@@ -32,6 +32,11 @@ class ham4_t
     const double a_ = 1.; // a- and b-axis length
     const double c_ = 1.; // c-axis length
     
+    int mixing_vals_len_;
+    int*   counter_vals_;
+    double* mixing_vals_;
+    const int loops_lim_; // Limit to the number of iteration loops. Assigned in constructor.
+    
     // Parameters for the momentum space grid. Assigned in the constructor.
     // Sets the number of momentum points IN THE FULL BZ
     const int ka_pts_; // Useful to allow the user to set these for convergence studies
@@ -57,7 +62,6 @@ class ham4_t
     const int ham_array_cols = num_bands; // Same as matrix order for full storage
     const int num_states = num_unit_cells * states_per_cell;
     
-    const int loops_lim_ = 200; // Limit to the number of iteration loops
     
     
     /* Parameters that have dependencies or are dependent on other parameters. These 
@@ -98,7 +102,7 @@ class ham4_t
     double HFE_ = -99.; // For storing the free energy
     double mu_  = -9.;  // For storing the chemical potential
     
-    const double tol_ = 4.e-6; // Tolerance for the equality of the mean fields
+    const double tol_; // Tolerance for the equality of the mean fields
     
     
     // Hamiltonian parameters that the user may want to change
@@ -119,7 +123,9 @@ class ham4_t
     void set_zerotemp();
     void set_nonzerotemp(const double T);
     
-    ham4_t(const int ka_pts=62, const int kb_pts=62, const int kc_pts=62); // Constructor declaration
+    // Constructor declaration
+    ham4_t(const int ka_pts=62, const int kb_pts=62, const int kc_pts=62, const double tol=4.e-6, const int loops_lim=300,
+           const int mixing_vals_len=0, const int*const counter_vals=NULL, const double*const mixing_vals=NULL);
     ~ham4_t(); // Destructor declaration
     
     bool FixedPoint(int*const num_loops_p=NULL, const bool with_output=false);
