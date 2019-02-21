@@ -46,3 +46,20 @@ def ColorPlot(fig, ax, data, Labels, horiz_extent=(), vert_extent=(), logscale=F
     ax.set_xlabel(Labels[0])
     ax.set_ylabel(Labels[1])
     cbar.set_label(Labels[2])
+    
+    return
+
+def Plot(ax, x, y, Labels):
+    """ Plots the 2D array "data" (first index along horizontal axis and second index 
+    along vertical axis). The three strings in the list "Labels" correspond to labels for 
+    the horizontal, vertical, and color axes, respectively. Axis ends can be specified as 
+    tuples (optional). """
+    
+    ax.plot(x, y, color='tab:grey', zorder=1)
+    ax.scatter(x, y, color='tab:red', marker='.', s=16., zorder=2)
+    
+    # Set axis labels
+    ax.set_xlabel(Labels[0])
+    ax.set_ylabel(Labels[1])
+    
+    return

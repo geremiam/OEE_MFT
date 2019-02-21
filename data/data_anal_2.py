@@ -34,7 +34,7 @@ def find_vars(varname, dims_dict):
     
     return vars_to_plot
 
-def grid_plot(rows, numplots):
+def grid_plot(rows, numplots, **kwargs):
     """ Outputs a grid of subplots given the number of subplots needed as well as the 
     desired number of rows. Also returns the number of columns. """
     # Plotting commands
@@ -45,18 +45,13 @@ def grid_plot(rows, numplots):
         cols = numplots//rows + 1 # Need extra column if remainder is nonzero
     
     # Create figure and subplots
-    fig, axes = plt.subplots(rows, cols, sharex='all', sharey='all', subplot_kw={'aspect':'auto', 'adjustable':'box'}, figsize=(14.4,4.8))
+    fig, axes = plt.subplots(rows, cols, subplot_kw={'aspect':'auto', 'adjustable':'box'}, figsize=(14.4,4.8), **kwargs)
     
     return fig, axes, cols
 
 
 def main():
-    
     filename, varname, dims = parse_args(argv)
-    
-    # Check that exactly two dims were chosen for plotting
-    if ( np.sum(np.array(dims)<0) != 2 ):
-        print("\tWARNING: NUMBER OF PLOTTING DIMENSIONS SHOULD BE 2")
     
     vars_dict, dims_dict, coord_vars = nc_IO.nc_read(filename) # Get data
     var      = vars_dict[varname] # Get the requested variable
@@ -65,8 +60,7 @@ def main():
     # "coord_vars" is a dictionary containing coordinate variables
     
     # Check that the right number of dimensions were provided on the command line
-    if (len(var_dims) != len(dims)):
-        print("\tWARNING: INCORRECT NUMBER OF DIMENSIONS WAS PROVIDED")
+    assert (len(var_dims) == len(dims)), "Incorrect number of dimensions was provided."
     
     
     # Build a tuple to index the variable
@@ -78,48 +72,77 @@ def main():
             plotting_dims.append(var_dims[idx])
     tup = tuple(tup) # Redefine as tuple
     
+    
     print("Plotting dimensions: {}".format(plotting_dims))
+    # Check that either one or two dims were chosen for plotting
+    assert (len(plotting_dims)==1 or len(plotting_dims)==2), "Number of plotting dimensions should be 1 or 2."
     
-    
-    # We plot every var in the dataset against the first two dimensions
-    
-    # Define the extents of the axes if they have coordinate variables
-    if (plotting_dims[0] in coord_vars):
-        X = coord_vars[plotting_dims[0]]
-        dx = (X[1] - X[0])/2.
-        horiz_extent = (X[0]-dx, X[-1]+dx)
-    else:
-        horiz_extent = () # Leads to default behaviour
-    
-    if (plotting_dims[1] in coord_vars):
-        Y = coord_vars[plotting_dims[1]]
-        dy = (Y[1] - Y[0])/2.
-        vert_extent = (Y[0]-dy, Y[-1]+dy)
-    else:
-        vert_extent = () # Leads to default behaviour
-    
-    
+    # Get all the vars that share the same dimensions as "varname"
     vars_to_plot = find_vars(varname, dims_dict)
     
-    #fig, ax = plt.subplots(1, len(vars_to_plot))
-    rows = 2
-    fig, axes, cols = grid_plot(rows, len(vars_to_plot))
-    for idx, val in enumerate(vars_to_plot):
-        Labels = [plotting_dims[0], plotting_dims[1], val] # Axis labels
-        plot_routines.ColorPlot(fig, axes.flatten(order='F')[idx], vars_dict[val][tup], Labels, horiz_extent, vert_extent)
-        axes.flatten(order='F')[idx].locator_params(axis='x', min_n_ticks=3) # Sets minimum tick number
+    if ( len(plotting_dims) == 2 ): # We plot every var in the dataset against the first two dimensions
+        
+        # Define the extents of the axes if they have coordinate variables
+        if (plotting_dims[0] in coord_vars):
+            X = coord_vars[plotting_dims[0]]
+            dx = (X[1] - X[0])/2.
+            horiz_extent = (X[0]-dx, X[-1]+dx)
+        else:
+            horiz_extent = () # Leads to default behaviour
+        
+        if (plotting_dims[1] in coord_vars):
+            Y = coord_vars[plotting_dims[1]]
+            dy = (Y[1] - Y[0])/2.
+            vert_extent = (Y[0]-dy, Y[-1]+dy)
+        else:
+            vert_extent = () # Leads to default behaviour
+        
+        
+        rows = 2 # Number of rows of plots
+        fig, axes, cols = grid_plot(rows, len(vars_to_plot), sharex='all', sharey='all')
+        for idx, val in enumerate(vars_to_plot):
+            Labels = [plotting_dims[0], plotting_dims[1], val] # Axis labels
+            plot_routines.ColorPlot(fig, axes.flatten(order='F')[idx], vars_dict[val][tup], Labels, horiz_extent, vert_extent)
+            axes.flatten(order='F')[idx].locator_params(axis='x', min_n_ticks=3) # Sets minimum tick number
+        
+        for row in range(rows): # Go through rows and cols to turn off axis labels except at edges
+            for col in range(cols):
+                if (row!=rows-1):
+                    axes[row][col].set_xlabel('')
+                if (col!=0):
+                    axes[row][col].set_ylabel('')
+        
+        plt.tight_layout()
+        plt.savefig(filename+".pdf",bbox_inches='tight')
+        plt.show()
     
-    for row in range(rows): # Go through rows and cols to turn off axis labels except at edges
-        for col in range(cols):
-            if (row!=rows-1):
-                axes[row][col].set_xlabel('')
-            if (col!=0):
-                axes[row][col].set_ylabel('')
+    elif ( len(plotting_dims) == 1 ): # We plot every var in the dataset against the single plotting dimension
+        
+        # The horizontal axis for the plot
+        if (plotting_dims[0] in coord_vars): # Get the coordinate variable if possible
+            horiz_axis = coord_vars[plotting_dims[0]]
+        else: # Otherwise just plot vs. index
+            horiz_axis = range(len(var[tup]))
+        
+        
+        rows = 2 # Number of rows of plots
+        fig, axes, cols = grid_plot(rows, len(vars_to_plot), sharex='all')
+        for idx, val in enumerate(vars_to_plot):
+            Labels = [plotting_dims[0], val] # Axis labels
+            #plot_routines.ColorPlot(fig, axes.flatten(order='F')[idx], vars_dict[val][tup], Labels, horiz_extent, vert_extent)
+            plot_routines.Plot(axes.flatten(order='F')[idx], horiz_axis, vars_dict[val][tup], Labels)
+            axes.flatten(order='F')[idx].locator_params(axis='x', min_n_ticks=3) # Sets minimum tick number
+        
+        for row in range(rows): # Go through rows and cols to turn off x-axis labels except at bottom
+            for col in range(cols):
+                if (row!=rows-1):
+                    axes[row][col].set_xlabel('')
+        
+        plt.tight_layout()
+        plt.savefig(filename+".pdf",bbox_inches='tight')
+        plt.show()
     
-    
-    plt.tight_layout()
-    plt.savefig(filename+".pdf",bbox_inches='tight')
-    plt.show()
+    return
 
 if __name__ == "__main__":
     main()
