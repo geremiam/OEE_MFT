@@ -27,14 +27,14 @@ class pspaceA_t { // Filling and interaction strength varied with temp held cons
     
   public:
     // rho
-    const size_t rho_pts = 5;
-    const double rho_bounds [2] = {0.4, 0.6};
+    const size_t rho_pts = 7;
+    const double rho_bounds [2] = {0.2, 0.8};
     // g: determines all the interaction strengths
     const size_t g_pts = 11;
-    const double V1_bounds  [2] = {0.,5.0};
-    const double V1p_bounds [2] = {0.,2.5};
-    const double V2_bounds  [2] = {0.,2.5};
-    const double V3_bounds  [2] = {0.,2.5};
+    const double V1_bounds  [2] = {0.,2.50};
+    const double V1p_bounds [2] = {0.,1.25};
+    const double V2_bounds  [2] = {0.,1.25};
+    const double V3_bounds  [2] = {0.,1.25};
     
     const int parspace_pts = rho_pts*g_pts;
     
@@ -180,14 +180,14 @@ class pspaceAA_t { // Interaction strength and temperature varied at constant fi
     
   public:
     // T (temperature)
-    const size_t T_pts = 8;
-    const double T_bounds [2] = {1.e-2, 7.+1.e-2};
+    const size_t T_pts = 16;
+    const double T_bounds [2] = {0.01, 3.01};
     // g: determines all the interaction strengths
-    const size_t g_pts = 11;
-    const double V1_bounds  [2] = {0.,5.0};
-    const double V1p_bounds [2] = {0.,2.5};
-    const double V2_bounds  [2] = {0.,2.5};
-    const double V3_bounds  [2] = {0.,2.5};
+    const size_t g_pts = 21;
+    const double V1_bounds  [2] = {0.,2.50};
+    const double V1p_bounds [2] = {0.,1.25};
+    const double V2_bounds  [2] = {0.,1.25};
+    const double V3_bounds  [2] = {0.,1.25};
     
     const int parspace_pts = T_pts*g_pts;
     
@@ -334,8 +334,8 @@ class pspaceAB_t { // Temperature varied at constant interaction strength and fi
     
   public:
     // T (temperature)
-    const size_t T_pts = 31;
-    const double T_bounds [2] = {0.001, 3.001};
+    const size_t T_pts = 41;
+    const double T_bounds [2] = {0.01, 2.01};
     
     const int parspace_pts = T_pts;
     
@@ -607,14 +607,14 @@ int pstudyA()
     const bool with_output = true; // Show output for diagnostics
     int numfails = 0; // Tracks number of points which failed to converge after loops_lim
     
-    const int ka_pts=62; // Choose twice a prime number for grid resolution
-    const int kb_pts=62;
-    const int kc_pts=62;
+    const int ka_pts=46; // Choose twice a prime number for grid resolution
+    const int kb_pts=46;
+    const int kc_pts=46;
     const double tol=4.e-6;
-    const int loops_lim=300;
-    const int mixing_vals_len = 13;
-    const int   counter_vals [mixing_vals_len] = { 10,  20,  30,  40,  50,  60,  90, 120, 150,  180,  210,  240,  270};
-    const double mixing_vals [mixing_vals_len] = {0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.08, 0.06, 0.04, 0.02};
+    const int loops_lim=320;
+    const int mixing_vals_len = 7;
+    const int   counter_vals [mixing_vals_len] = { 40,  80,  120,  160,  200, 240, 280};
+    const double mixing_vals [mixing_vals_len] = {0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3};
     
     // Declare and construct an instance of ham4_t
     ham4_t ham4(ka_pts, kb_pts, kc_pts, tol, loops_lim, mixing_vals_len, counter_vals, mixing_vals);
@@ -622,7 +622,7 @@ int pstudyA()
     pspaceA_t pspaceA(ham4.num_harmonics); // Declare object of type pspaceA (parameter space)
     
     // Make any initial adjustment to the parameters
-    ham4.set_nonzerotemp(1.e-3);
+    ham4.set_nonzerotemp(1.e-2);
     //ham4.set_zerotemp();
     
     const string GlobalAttr = ham4.GetAttributes(); // assign attributes to GlobalAttr
@@ -693,10 +693,10 @@ int pstudyAA()
     const int kb_pts=46;
     const int kc_pts=46;
     const double tol=4.e-6;
-    const int loops_lim=300;
-    const int mixing_vals_len = 7;
-    const int   counter_vals [mixing_vals_len] = { 30,  60,  90, 120, 150, 180, 210};
-    const double mixing_vals [mixing_vals_len] = {0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3};
+    const int loops_lim=400;
+    const int mixing_vals_len = 6;
+    const int   counter_vals [mixing_vals_len] = { 30,  60,  90, 120, 150, 180};
+    const double mixing_vals [mixing_vals_len] = {0.9, 0.8, 0.7, 0.6, 0.5, 0.4};
     
     // Declare and construct an instance of ham4_t
     ham4_t ham4(ka_pts, kb_pts, kc_pts, tol, loops_lim, mixing_vals_len, counter_vals, mixing_vals);
@@ -774,10 +774,10 @@ int pstudyAB()
     const int kb_pts=46;
     const int kc_pts=46;
     const double tol=4.e-6;
-    const int loops_lim=300;
-    const int mixing_vals_len = 7;
-    const int   counter_vals [mixing_vals_len] = { 30,  60,  90, 120, 150, 180, 210};
-    const double mixing_vals [mixing_vals_len] = {0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3};
+    const int loops_lim=400;
+    const int mixing_vals_len = 6;
+    const int   counter_vals [mixing_vals_len] = { 30,  60,  90, 120, 150, 180};
+    const double mixing_vals [mixing_vals_len] = {0.9, 0.8, 0.7, 0.6, 0.5, 0.4};
     
     // Declare and construct an instance of ham4_t
     ham4_t ham4(ka_pts, kb_pts, kc_pts, tol, loops_lim, mixing_vals_len, counter_vals, mixing_vals);
@@ -914,7 +914,7 @@ int main(int argc, char* argv[])
     
     //int info = pstudyAA();
     
-    int info = pstudyAB();
+    //int info = pstudyAB();
     
     //int info = pstudyB();
     
