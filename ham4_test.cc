@@ -51,6 +51,18 @@ void test_ComputeMFs()
     
     ham4_t ham4(ka_pts, kb_pts, kc_pts);
     ham4.set_nonzerotemp(1.e-1);
+    //ham4.set_zerotemp();
+    
+    /*ham4.assign_rho(0.7);
+    ham4.V1_ = 40.;
+    ham4.V1p_ = 30.;
+    ham4.V2_ = 6.;
+    ham4.V3_ = 8.;
+    
+    ham4.rho_s_[0] = 0.2;    ham4.rho_a_[0] = 0.1;
+    ham4.rho_s_[1] = 0.3;    ham4.rho_a_[1] = 0.1;
+    ham4.rho_s_[2] = 0.0;    ham4.rho_a_[2] = 0.0;
+    ham4.rho_s_[3] = 0.0;    ham4.rho_a_[3] = 0.0;*/
     
     std::cout << "num_states: " << ham4.num_states << std::endl;
     std::cout << "filled_states: " << ham4.filled_states << std::endl;
@@ -83,6 +95,12 @@ void test_FixedPoint()
     
     int num_loops;
     const bool with_output = true;
+    
+    ham4.assign_rho(0.7);
+    ham4.V1_ = 40.;
+    ham4.V1p_ = 30.;
+    ham4.V2_ = 6.;
+    ham4.V3_ = 8.;
     
     ham4.FixedPoint(&num_loops, with_output);
     
