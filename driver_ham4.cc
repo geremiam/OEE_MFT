@@ -868,6 +868,171 @@ class pspaceB_t {
     }
 };
 
+class pspaceC_t { // Filling and interaction strength varied with temp held constant
+  private:
+    // Private copy constructor (prohibits copy creation)
+    pspaceC_t(const pspaceC_t&);
+    // Private assignment operator (prohibits assignment)
+    const pspaceC_t& operator=(const pspaceC_t&);
+    
+  public:
+    // T (temperature). Index with "e".
+    const size_t T_pts = 16;
+    const double T_bounds [2] = {0.01, 3.01};
+    // rho. Index with "f".
+    const size_t rho_pts = 2;
+    const double rho_bounds [2] = {0.499, 0.501};
+    // g: determines all the interaction strengths
+    const size_t g_pts = 21;
+    const double V1_bounds  [2] = {0.,2.50};
+    const double V1p_bounds [2] = {0.,1.25};
+    const double V2_bounds  [2] = {0.,1.25};
+    const double V3_bounds  [2] = {0.,1.25};
+    
+    const int parspace_pts = T_pts*rho_pts*g_pts;
+    
+    
+    // Coordinate variables
+    double*const T_grid;// T (temperature) coordinate variable
+    double*const rho_grid;// rho coordinate variable
+    double*const V1_grid; //  V1 coordinate variable (depends on g)
+    double*const V1p_grid;// V1p coordinate variable (depends on g)
+    double*const V2_grid; //  V2 coordinate variable (depends on g)
+    double*const V3_grid; //  V3 coordinate variable (depends on g)
+    
+    // Variables for MF parameters. We store them in 2D arrays. The first index is the 
+    // harmonic, while the next keeps track of the point in parameter space (using the 
+    // method index()). 
+    const size_t num_harmonics_; // We need the number of harmonics being considered.
+    double*const*const rho_s_grid; // 2D array
+    double*const*const rho_a_grid; // 2D array
+    int*const loops_grid; // holds the number of loops done at each point
+    double*const energy_grid; // Holds the MF energy for later comparison
+    double*const mu_grid; // Holds the chemical potential for the converged system
+    
+    // Constructor declaration
+    pspaceC_t(const int num_harmonics)
+        :num_harmonics_(num_harmonics),
+         T_grid  (new double [T_pts]), // Coord vars
+         rho_grid(new double [rho_pts]),
+         V1_grid (new double [g_pts]),
+         V1p_grid(new double [g_pts]),
+         V2_grid (new double [g_pts]),
+         V3_grid (new double [g_pts]),
+         rho_s_grid (Alloc2D_d(num_harmonics, parspace_pts)), // Vars
+         rho_a_grid (Alloc2D_d(num_harmonics, parspace_pts)),
+         loops_grid (new int    [parspace_pts]),
+         energy_grid(new double [parspace_pts]),
+         mu_grid    (new double [parspace_pts]) // Important -- Note order
+    {
+        // The initialization list initializes the parameters and allocates memory for 
+        // the arrays.
+        
+        // Coordinate variables are initialized
+        const bool endpoint = true; // Include endpoint (not an important choice)
+        LinInitArray(T_bounds[0], T_bounds[1], T_pts, T_grid, endpoint);
+        LinInitArray(rho_bounds[0], rho_bounds[1], rho_pts, rho_grid, endpoint);
+        
+        LinInitArray( V1_bounds[0],  V1_bounds[1], g_pts,  V1_grid, endpoint);
+        LinInitArray(V1p_bounds[0], V1p_bounds[1], g_pts, V1p_grid, endpoint);
+        LinInitArray( V2_bounds[0],  V2_bounds[1], g_pts,  V2_grid, endpoint);
+        LinInitArray( V3_bounds[0],  V3_bounds[1], g_pts,  V3_grid, endpoint);
+        
+        // The other variables (the order parameters) span the coordinate space
+        ValInitArray(num_harmonics * parspace_pts, &(rho_s_grid[0][0]), -99.);//Init to unlikely value
+        ValInitArray(num_harmonics * parspace_pts, &(rho_a_grid[0][0]), -99.);//Init to unlikely value
+        
+        ValInitArray(parspace_pts, loops_grid, 0); // Initialize to 0
+        ValInitArray(parspace_pts, energy_grid, -99.);
+        ValInitArray(parspace_pts, mu_grid,      -9.);
+        
+        std::cout << "pspaceC_t instance created.\n";
+    }
+    // Destructor declaration
+    ~pspaceC_t()
+    {
+        delete [] T_grid; // Coordinate variables
+        delete [] rho_grid;
+        delete [] V1_grid; delete [] V1p_grid;
+        delete [] V2_grid; delete [] V3_grid;
+        
+        Dealloc2D(rho_s_grid); // MF variables
+        Dealloc2D(rho_a_grid); // MF variables
+        delete [] loops_grid; // Other variables
+        delete [] energy_grid;
+        delete [] mu_grid;
+        
+        std::cout << "pspaceC_t instance deleted.\n";
+    }
+    
+    int Index(const int e, const int f, const int g)
+    {
+        // Returns the index of the var arrays corresponding to indices i, j of the coord
+        // var arrays. We pick the order rho, V1, T.
+        return g + 
+               g_pts*f + 
+               g_pts*rho_pts*e;
+    }
+    
+    void SaveData(const string GlobalAttr, const string path)
+    {
+        // Method for saving the data of this class. This method uses the class from the 
+        // module nc_IO that creates a simple NetCDF class and allows writing of variables.
+        // We define parameters required to create the dataset. Don't forget to adjust these depending on the parameter space defined above. 
+        // Important: Note that the order of the variables must be kept consistent.
+        const size_t dims_num = 3;
+        const string dim_names [dims_num] = {"T", "rho", "g"};
+        const size_t dim_lengths [dims_num] = {T_pts, rho_pts, g_pts};
+        const size_t vars_num = 2*num_harmonics_; // Variables other than coord variables
+        
+        string var_names [2*num_harmonics_]; // List for the variable names
+        bool var_complex [2*num_harmonics_]; // List for indicating whether vars are complex
+        for (int Q=0; Q<num_harmonics_; ++Q) { // Loop over harmonics to fill up lists
+          std::ostringstream strs_s, strs_a;
+          strs_s << "rho_s[" << Q << "]";
+          strs_a << "rho_a[" << Q << "]";
+          var_names[2*Q]   = strs_s.str(); // Use same order below
+          var_names[2*Q+1] = strs_a.str();
+          
+          var_complex[2*Q]   = false;
+          var_complex[2*Q+1] = false;
+        }
+        
+        // Constructor for the dataset class creates a dataset
+        newDS_t newDS(dims_num, dim_names, dim_lengths, vars_num, var_names, var_complex, GlobalAttr, path);
+        
+        
+        newDS.DefCoordVar(0, "T"); // Define "default" coordinate variables
+        newDS.DefCoordVar(1, "rho");
+        // Define "custom" coordinate variables
+        const int varid_V1 = newDS.DefCoordVar_custom(2, "V1"); // Vary with g
+        const int varid_V1p= newDS.DefCoordVar_custom(2, "V1p");
+        const int varid_V2 = newDS.DefCoordVar_custom(2, "V2");
+        const int varid_V3 = newDS.DefCoordVar_custom(2, "V3");
+        
+        newDS.EndDef(); // Exit definition mode
+        
+        newDS.WriteCoordVar(0, T_grid); // Write "default" coordinate variables
+        newDS.WriteCoordVar(1, rho_grid);
+        newDS.WriteCoordVar_custom(varid_V1,  V1_grid); // Write "custom" coordinate variables
+        newDS.WriteCoordVar_custom(varid_V1p, V1p_grid);
+        newDS.WriteCoordVar_custom(varid_V2,  V2_grid);
+        newDS.WriteCoordVar_custom(varid_V3,  V3_grid);
+        
+        double* vars [2*num_harmonics_]; // List for holding the pointers to the vars
+        for (int Q=0; Q<num_harmonics_; ++Q) { // Fill up that list
+          vars[2*Q]   = rho_s_grid[Q];
+          vars[2*Q+1] = rho_a_grid[Q];
+        }
+        newDS.WriteVars(vars); // Write the variables
+        
+        newDS.WriteLoops(loops_grid); // Write loops variable
+        newDS.WriteEnergy(energy_grid); // Write energy variable
+        newDS.Writemu(mu_grid); // Write mu variable
+    }
+};
+
+
 // ######################################################################################
 
 int pstudyA()
@@ -1336,6 +1501,91 @@ int pstudyB()
     return numfails;
 }
 
+int pstudyC()
+{
+    // This routine performs the mean-field iterative search at every point in the 
+    // parameter space defined above.
+    
+    const bool with_output = true; // Show output for diagnostics
+    int numfails = 0; // Tracks number of points which failed to converge after loops_lim
+    
+    const int ka_pts=46; // Choose twice a prime number for grid resolution
+    const int kb_pts=46;
+    const int kc_pts=46;
+    const double tol=4.e-6;
+    const int loops_lim=320;
+    const int mixing_vals_len = 7;
+    const int   counter_vals [mixing_vals_len] = { 40,  80,  120,  160,  200, 240, 280};
+    const double mixing_vals [mixing_vals_len] = {0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3};
+    
+    // Declare and construct an instance of ham4_t
+    ham4_t ham4(ka_pts, kb_pts, kc_pts, tol, loops_lim, mixing_vals_len, counter_vals, mixing_vals);
+    
+    pspaceC_t pspaceC(ham4.num_harmonics); // Declare object of type pspaceC (parameter space)
+    
+    // Make any initial adjustment to the parameters
+    // None to be made.
+    
+    const string GlobalAttr = ham4.GetAttributes(); // assign attributes to GlobalAttr
+    std::cout << "\n\n\ttol = " << ham4.tol_ << "\n";//Print tolerance for equality of MFs.
+    
+    // Loop over values of the parameter space
+    for (int e=0; e<pspaceC.T_pts; ++e)
+     for (int f=0; f<pspaceC.rho_pts; ++f)
+      for (int g=0; g<pspaceC.g_pts; ++g)
+      {
+        if (with_output) // Print current params
+          std::cout << "\n\nT = " << pspaceC.T_grid[e]
+                    << "; rho = " << pspaceC.rho_grid[f] << "; g = " << g 
+                    << " (V1 = " << pspaceC.V1_grid[g] << ", V1p = " << pspaceC.V1p_grid[g]
+                    << ", V2 = " << pspaceC.V2_grid[g] << ", V3 = " << pspaceC.V3_grid[g] << ")\n";
+        
+        // Adjust phase space parameters
+        ham4.set_nonzerotemp(pspaceC.T_grid[e]); // Assign temperature
+        ham4.assign_rho(pspaceC.rho_grid[f]); // Assign value of rho
+        ham4.V1_  = pspaceC.V1_grid[g]; // g-dependent params
+        ham4.V1p_ = pspaceC.V1p_grid[g];
+        ham4.V2_  = pspaceC.V2_grid[g];
+        ham4.V3_  = pspaceC.V3_grid[g];
+        
+        ham4.resetMFs(); // Resets MFs to default starting values.
+        
+        int loops=0; // Will be assigned the number of loops performed
+        const bool fail = ham4.FixedPoint(&loops, with_output);
+        
+        
+        if (fail) // Print current params
+        {
+            std::cout << "\tWARNING: failure to converge after limit reached\t"
+                      << "T = " << pspaceC.T_grid[e]
+                      << ", rho = " << pspaceC.rho_grid[f] << ", g = " << g
+                      << " (V1 = " << pspaceC.V1_grid[g] << ", V1p = " << pspaceC.V1p_grid[g]
+                      << ", V2 = " << pspaceC.V2_grid[g] << ", V3 = "  << pspaceC.V3_grid[g]  << ")\n";
+            ++numfails;
+        }
+        
+        for (int Q=0; Q<ham4.num_harmonics; ++Q)
+        { // We save the MF parameters to the pspaceC arrays.
+          pspaceC.rho_s_grid[Q][pspaceC.Index(e,f,g)] = ham4.rho_s_[Q];
+          pspaceC.rho_a_grid[Q][pspaceC.Index(e,f,g)] = ham4.rho_a_[Q];
+        }
+        pspaceC.loops_grid[pspaceC.Index(e,f,g)] = loops; // Save the number of loops to pspaceC array.
+        pspaceC.energy_grid[pspaceC.Index(e,f,g)]= ham4.HFE_;
+        pspaceC.mu_grid[pspaceC.Index(e,f,g)]    = ham4.mu_;
+        
+        if (with_output) std::cout << std::endl;
+      }
+    
+    
+    // We save to a NetCDF dataset using the class defined in nc_IO. Call saving method.
+    pspaceC.SaveData(GlobalAttr, "data/ham4/"); // Include final '/' in path for saving
+    
+    // Print out numfails
+    std::cout << "\n\tNUMBER OF FAILURES TO CONVERGE: " << numfails << "\n\n";
+    
+    return numfails;
+}
+
 int main(int argc, char* argv[])
 {
     //int info = pstudyA();
@@ -1346,9 +1596,11 @@ int main(int argc, char* argv[])
     
     //int info = pstudyAC();
     
-    int info = pstudyAD();
+    //int info = pstudyAD();
     
     //int info = pstudyB();
+    
+    int info = pstudyC();
     
     return info;
 }
